@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const { pool, genId, now, mapApp } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
+const { sendStatusEmail } = require('../lib/mailer');
 
 /* GET /api/applications */
 router.get('/', requireAdmin, async (req, res) => {
@@ -137,6 +138,12 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       `UPDATE applications SET status = $1, status_history = $2, updated_at = $3 WHERE id = $4 RETURNING *`,
       [status, JSON.stringify(history), ts, req.params.id]
     );
+
+    // 录用或婉拒时发邮件通知候选人（异步，不阻塞响应）
+    if (status === 'hired' || status === 'rejected') {
+      sendStatusEmail(app.email, app.name, app.jobTitle, status);
+    }
+
     res.json(mapApp(rows[0]));
   } catch (e) {
     console.error(e);
