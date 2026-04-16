@@ -4,8 +4,11 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 
-// 存储有效 token（内存），重启后失效（需重新登录）
-const validTokens = new Set();
+// 用 ADMIN_PASSWORD 对固定字符串做 HMAC 签名，生成无状态 token
+// 无需内存存储，serverless 冷启动后仍然有效
+function makeToken(password) {
+  return crypto.createHmac('sha256', password).update('admin-token').digest('hex');
+}
 
 /* POST /api/admin/login */
 router.post('/login', (req, res) => {
@@ -19,16 +22,13 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid password' });
   }
 
-  const token = crypto.randomBytes(32).toString('hex');
-  validTokens.add(token);
-  res.json({ token });
+  res.json({ token: makeToken(adminPassword) });
 });
 
 /* POST /api/admin/logout */
 router.post('/logout', (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (token) validTokens.delete(token);
+  // 无状态 token 无需服务端清除，客户端删除即可
   res.json({ ok: true });
 });
 
-module.exports = { router, validTokens };
+module.exports = { router, makeToken };

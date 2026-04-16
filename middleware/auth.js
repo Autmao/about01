@@ -1,10 +1,12 @@
 /* ===== middleware/auth.js ===== */
 
-const { validTokens } = require('../routes/auth');
+const { makeToken } = require('../routes/auth');
 
 function requireAdmin(req, res, next) {
   const token = req.headers['x-admin-token'];
-  if (!token || !validTokens.has(token)) {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!token || !adminPassword || token !== makeToken(adminPassword)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
