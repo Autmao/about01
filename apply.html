@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投递申请 | 杂志书工作室</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="page-enter">
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">
+        <span class="nav__logo-dot"></span>
+        STUDIO × 派单
+      </a>
+    </div>
+  </nav>
+
+  <main class="container" style="max-width: 720px; padding-top: var(--space-8); padding-bottom: var(--space-16);">
+
+    <nav class="breadcrumb">
+      <a href="index.html">首页</a>
+      <span class="breadcrumb__sep">/</span>
+      <a href="#" id="bc-job" onclick="history.back();return false;">工种详情</a>
+      <span class="breadcrumb__sep">/</span>
+      <span class="breadcrumb__current">投递申请</span>
+    </nav>
+
+    <!-- 工种摘要 -->
+    <div class="job-summary-card" id="job-summary"></div>
+
+    <!-- 表单区域 -->
+    <form id="apply-form" novalidate>
+
+      <div class="form-section">
+        <h2 class="form-section__title">基本信息</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">姓名 <span class="form-required">*</span></label>
+            <input type="text" class="form-input" id="field-name" name="name" placeholder="你的真实姓名">
+            <span class="form-error" id="err-name"></span>
+          </div>
+          <div class="form-field">
+            <label class="form-label">联系邮箱 <span class="form-required">*</span></label>
+            <input type="email" class="form-input" id="field-email" name="email" placeholder="用于接收状态通知">
+            <span class="form-error" id="err-email"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">手机号 <span class="form-required">*</span></label>
+            <input type="tel" class="form-input" id="field-phone" name="phone" placeholder="11位手机号">
+            <span class="form-error" id="err-phone"></span>
+          </div>
+          <div class="form-field">
+            <label class="form-label">微信号 <span class="form-optional">选填</span></label>
+            <input type="text" class="form-input" id="field-wechat" name="wechat" placeholder="方便快速沟通">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="form-section__title">自我介绍</h2>
+        <div class="form-field">
+          <label class="form-label">
+            个人介绍 <span class="form-optional">选填</span>
+            <span class="char-count" id="bio-count">0/500</span>
+          </label>
+          <textarea class="form-input" id="field-bio" name="bio" rows="5"
+            placeholder="介绍你的背景、代表作品、工作风格——让我们更好地了解你"></textarea>
+          <span class="form-hint">简洁真实最好，不需要长篇大论</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="form-section__title">作品集</h2>
+        <div class="form-field">
+          <label class="form-label">作品集链接 <span class="form-optional">选填，最多3个</span></label>
+          <div id="portfolio-links-container"></div>
+          <button type="button" class="btn btn--ghost btn--sm" id="add-link-btn" style="margin-top: var(--space-2);">+ 添加链接</button>
+          <span class="form-hint">可以是 Behance、网盘分享、个人网站、公众号等任何链接</span>
+        </div>
+        <div class="form-field">
+          <label class="form-label">补充说明 <span class="form-optional">选填</span></label>
+          <textarea class="form-input" id="field-note" name="portfolioNote" rows="3"
+            placeholder="如有特别说明（如作品集密码、特定代表作品等）可在此注明"></textarea>
+        </div>
+      </div>
+
+      <div style="font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-6); line-height: var(--leading-loose);">
+        提交即代表您同意我们将您的信息用于本次合作筛选，不会向第三方披露。
+      </div>
+
+      <div class="form-actions" style="border-top:none; padding-top:0;">
+        <button type="button" class="btn btn--ghost" onclick="history.back()">返回</button>
+        <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">提交投递</button>
+      </div>
+    </form>
+
+    <!-- 成功状态 -->
+    <div class="success-state" id="success-state">
+      <span class="success-icon">🎉</span>
+      <h2 class="success-title">投递成功！</h2>
+      <p class="success-desc">我们已收到您的申请，通常在 3 个工作日内回复</p>
+      <p class="success-desc">请留意您填写的邮箱：<strong id="success-email"></strong></p>
+      <div class="success-id" id="success-id"></div>
+      <a href="index.html" class="btn btn--primary">返回首页，查看其他工种</a>
+    </div>
+
+  </main>
+
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/pages/apply.js"></script>
+</body>
+</html>

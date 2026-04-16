@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>发布工种 | 管理后台</title>
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__brand">
+      <div class="admin-sidebar__logo">STUDIO × 派单</div>
+      <div class="admin-sidebar__tag">管理后台</div>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html" class="admin-nav-item active">
+        <span class="admin-nav-item__icon">📋</span> 工种管理
+      </a>
+      <a href="applications.html" class="admin-nav-item">
+        <span class="admin-nav-item__icon">📬</span> 投递管理
+      </a>
+      <a href="collaborators.html" class="admin-nav-item">
+        <span class="admin-nav-item__icon">👥</span> 合作者档案
+      </a>
+    </nav>
+    <div class="admin-sidebar__footer">
+      <a href="../index.html" target="_blank">↗ 访问前台</a>
+    </div>
+  </aside>
+
+  <main class="admin-main page-enter">
+    <div class="admin-topbar">
+      <h1 class="admin-page-title" id="page-title">发布新工种</h1>
+      <button class="btn btn--ghost" onclick="history.back()">← 返回</button>
+    </div>
+
+    <div class="admin-content" style="max-width: 800px;">
+      <form id="job-form" novalidate>
+
+        <div style="background:white;border-radius:var(--radius-xl);padding:var(--space-8);border:1px solid var(--color-border-light);box-shadow:var(--shadow-sm);">
+
+          <div class="form-section">
+            <h2 class="form-section__title">基本信息</h2>
+            <div class="form-field">
+              <label class="form-label">工种名称 <span class="form-required">*</span></label>
+              <input type="text" class="form-input" id="f-title" placeholder="如：城市切面专题摄影师">
+              <span class="form-error" id="err-title"></span>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">工种类型 <span class="form-required">*</span></label>
+                <select class="form-input" id="f-category">
+                  <option value="">请选择</option>
+                  <option value="photography">摄影</option>
+                  <option value="writing">撰稿</option>
+                  <option value="interview">采访</option>
+                  <option value="editing">编辑</option>
+                  <option value="planning">活动策划</option>
+                  <option value="other">其他</option>
+                </select>
+                <span class="form-error" id="err-category"></span>
+              </div>
+              <div class="form-field">
+                <label class="form-label">招募人数</label>
+                <input type="number" class="form-input" id="f-slots" min="1" max="99" value="1">
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">工种描述 <span class="form-required">*</span></label>
+              <textarea class="form-input" id="f-desc" rows="6"
+                placeholder="详细描述工作背景、内容、期望产出..."></textarea>
+              <span class="form-error" id="err-desc"></span>
+            </div>
+            <div class="form-field">
+              <label class="form-label">具体要求 <span class="form-optional">每行一条</span></label>
+              <textarea class="form-input" id="f-reqs" rows="4"
+                placeholder="如：3年以上相关经验&#10;有杂志出版经验优先"></textarea>
+            </div>
+            <div class="form-field">
+              <label class="form-label">交付物说明</label>
+              <input type="text" class="form-input" id="f-deliverables" placeholder="如：10张精修图 + RAW源文件，一周内交付">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2 class="form-section__title">薪酬与时间</h2>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">稿费范围</label>
+                <input type="text" class="form-input" id="f-fee" placeholder="如：2000-4000 或 面议">
+              </div>
+              <div class="form-field">
+                <label class="form-label">结算方式</label>
+                <select class="form-input" id="f-fee-type">
+                  <option value="per_project">按项目</option>
+                  <option value="per_word">按字数</option>
+                  <option value="per_day">按天</option>
+                  <option value="negotiable">面议</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">截止日期 <span class="form-required">*</span></label>
+              <input type="date" class="form-input" id="f-deadline" style="max-width:200px;">
+              <span class="form-error" id="err-deadline"></span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2 class="form-section__title">标签与展示</h2>
+            <div class="form-field">
+              <label class="form-label">标签 <span class="form-optional">逗号分隔</span></label>
+              <input type="text" class="form-input" id="f-tags" placeholder="如：摄影,城市,纪实">
+            </div>
+            <div class="form-field">
+              <label class="form-label">卡片封面色</label>
+              <div class="color-picker" id="color-picker">
+                <div class="color-swatch selected" data-color="#E8DDD0" style="background:#E8DDD0;"></div>
+                <div class="color-swatch" data-color="#D0DDE8" style="background:#D0DDE8;"></div>
+                <div class="color-swatch" data-color="#D8E8D0" style="background:#D8E8D0;"></div>
+                <div class="color-swatch" data-color="#E8D0D8" style="background:#E8D0D8;"></div>
+                <div class="color-swatch" data-color="#E8E0D0" style="background:#E8E0D0;"></div>
+                <div class="color-swatch" data-color="#D8D0E8" style="background:#D8D0E8;"></div>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">发布状态</label>
+              <div class="radio-group">
+                <label><input type="radio" name="status" value="open" checked> 立即发布</label>
+                <label><input type="radio" name="status" value="draft"> 存为草稿</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions" style="padding-top:var(--space-6);">
+            <button type="button" class="btn btn--ghost" onclick="history.back()">取消</button>
+            <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">发布工种</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/store.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/pages/admin-edit.js"></script>
+</body>
+</html>

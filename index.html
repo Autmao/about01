@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创作伙伴招募 | 杂志书工作室</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body class="page-enter">
+
+  <!-- 导航 -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">
+        <span class="nav__logo-dot"></span>
+        STUDIO × 派单
+      </a>
+      <div class="nav__actions">
+        <a href="admin/index.html" class="btn btn--ghost btn--sm">管理后台 →</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__inner">
+      <div class="hero__content">
+        <span class="hero__label">OPEN CALL 2026</span>
+        <h1 class="hero__title">
+          寻找下一位
+          <em>创作伙伴</em>
+        </h1>
+        <p class="hero__subtitle">我们是一家杂志书工作室，每一季都在与最合适的创作者共同完成一本书。你可能是摄影师、撰稿人、策划人——只要你相信手艺的价值。</p>
+        <div class="hero__badge">
+          <span class="hero__badge-dot"></span>
+          <span id="open-count">加载中</span>个工种正在招募
+        </div>
+      </div>
+      <div class="hero__deco" aria-hidden="true">
+        <div class="hero__deco-block"></div>
+        <div class="hero__deco-block"></div>
+        <div class="hero__deco-block"></div>
+        <div class="hero__deco-block"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 筛选栏 -->
+  <div class="filter-bar">
+    <div class="filter-bar__inner">
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="filter-tab active" data-category="all">全部</button>
+        <button class="filter-tab" data-category="photography">摄影</button>
+        <button class="filter-tab" data-category="writing">撰稿</button>
+        <button class="filter-tab" data-category="interview">采访</button>
+        <button class="filter-tab" data-category="editing">编辑</button>
+        <button class="filter-tab" data-category="planning">策划</button>
+        <button class="filter-tab" data-category="other">其他</button>
+      </div>
+      <div class="filter-bar__search">
+        <span class="filter-search-icon">🔍</span>
+        <input type="search" class="filter-search-input" id="search-input" placeholder="搜索工种...">
+      </div>
+    </div>
+  </div>
+
+  <!-- 工种列表 -->
+  <main class="container section">
+    <div class="jobs-grid" id="jobs-grid"></div>
+    <div class="empty-state" id="empty-state" style="display:none;">
+      <div class="empty-state__icon">🌱</div>
+      <div class="empty-state__title">暂无符合条件的工种</div>
+      <div class="empty-state__desc">试试调整筛选条件，或等待新工种发布</div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="container">
+      <p>© 2026 杂志书工作室 &nbsp;·&nbsp; 合作咨询：<a href="mailto:studio@example.com">studio@example.com</a></p>
+      <p style="margin-top:6px;">
+        <a href="#" onclick="checkMyApplication(); return false;" style="color:var(--color-text-muted)">查询我的投递状态</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/pages/home.js"></script>
+</body>
+</html>
