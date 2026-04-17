@@ -139,9 +139,9 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       [status, JSON.stringify(history), ts, req.params.id]
     );
 
-    // 录用或婉拒时发邮件通知候选人（异步，不阻塞响应）
+    // 录用或婉拒时发邮件通知候选人（await 确保 serverless 函数退出前完成）
     if (status === 'hired' || status === 'rejected') {
-      sendStatusEmail(app.email, app.name, app.jobTitle, status);
+      await sendStatusEmail(app.email, app.name, app.jobTitle, status);
     }
 
     res.json(mapApp(rows[0]));
