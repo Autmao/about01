@@ -43,12 +43,23 @@
     <button class="btn btn--primary btn--full" id="apply-btn-mobile">立即投递</button>
   </div>
 
+  <!-- 海报弹窗 -->
+  <div class="poster-overlay" id="poster-overlay" onclick="closePoster(event)">
+    <div class="poster-modal">
+      <button class="poster-close" onclick="closePosterBtn()">×</button>
+      <canvas id="poster-canvas"></canvas>
+      <div class="poster-tip">长按图片保存 · 或点击下方按钮下载</div>
+      <button class="btn btn--primary" id="poster-download-btn" onclick="downloadPoster()">下载海报</button>
+    </div>
+  </div>
+
   <footer class="footer" style="margin-top: var(--space-16);">
     <div class="container">
       <p>© 2026 杂志书工作室 &nbsp;·&nbsp; <a href="mailto:studio@example.com">studio@example.com</a></p>
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="assets/js/store.js"></script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/pages/job-detail.js"></script>

@@ -342,10 +342,14 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   font-size: var(--text-xl);
   color: var(--color-brand);
 }
+.sidebar-share-row {
+  display: flex; gap: var(--space-4); margin-top: var(--space-2);
+  border-top: 1px solid var(--color-border-light); padding-top: var(--space-3);
+}
 .sidebar-share {
   display: flex; align-items: center; gap: var(--space-2);
   font-size: var(--text-xs); color: var(--color-text-muted);
-  cursor: pointer; padding: var(--space-2) 0;
+  cursor: pointer; padding: var(--space-1) 0;
   transition: color var(--transition-fast);
 }
 .sidebar-share:hover { color: var(--color-brand); }
@@ -434,6 +438,48 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   color: var(--color-text-primary); flex-shrink: 0;
 }
 .avatar--lg { width: 52px; height: 52px; font-size: var(--text-xl); }
+
+/* === 海报弹窗 === */
+.poster-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.poster-overlay.active {
+  opacity: 1; pointer-events: auto;
+}
+.poster-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-4);
+  max-width: 420px; width: 90%;
+  max-height: 90vh; overflow-y: auto;
+  position: relative;
+  box-shadow: var(--shadow-hover);
+}
+.poster-modal canvas {
+  width: 100%; border-radius: var(--radius-lg);
+  display: block;
+}
+.poster-close {
+  position: absolute; top: var(--space-4); right: var(--space-4);
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--color-surface-warm); border: none;
+  font-size: 18px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-muted);
+  transition: background var(--transition-fast);
+}
+.poster-close:hover { background: var(--color-border); }
+.poster-tip {
+  font-size: var(--text-xs); color: var(--color-text-muted);
+  text-align: center;
+}
 
 /* 响应式 */
 @media (max-width: 768px) {

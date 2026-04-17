@@ -67,8 +67,13 @@ function renderDetail(job) {
             ? `<button class="btn btn--ghost btn--full" disabled style="cursor:not-allowed;">招募已截止</button>`
             : `<a href="${applyUrl}" class="btn btn--primary btn--full btn--lg">立即投递</a>`}
         </div>
-        <div class="sidebar-share" onclick="copyLink()">
-          <span>🔗</span> 复制分享链接
+        <div class="sidebar-share-row">
+          <div class="sidebar-share" onclick="copyLink()">
+            <span>🔗</span> 复制链接
+          </div>
+          <div class="sidebar-share" onclick="openPoster()">
+            <span>🪄</span> 生成海报
+          </div>
         </div>
       </div>
     </aside>`;
@@ -114,8 +119,204 @@ function copyLink() {
 }
 window.copyLink = copyLink;
 
+/* ===== 海报生成 ===== */
+let _currentJob = null;
+
+function openPoster() {
+  if (!_currentJob) return;
+  document.getElementById('poster-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  drawPoster(_currentJob);
+}
+window.openPoster = openPoster;
+
+function closePosterBtn() {
+  document.getElementById('poster-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+window.closePosterBtn = closePosterBtn;
+
+function closePoster(e) {
+  if (e.target === document.getElementById('poster-overlay')) closePosterBtn();
+}
+window.closePoster = closePoster;
+
+function downloadPoster() {
+  const canvas = document.getElementById('poster-canvas');
+  const a = document.createElement('a');
+  a.download = `about编辑部-${(_currentJob?.title || '岗位').slice(0, 12)}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+window.downloadPoster = downloadPoster;
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const chars = text.split('');
+  let line = '';
+  let currentY = y;
+  for (let i = 0; i < chars.length; i++) {
+    const testLine = line + chars[i];
+    if (ctx.measureText(testLine).width > maxWidth && line) {
+      ctx.fillText(line, x, currentY);
+      line = chars[i];
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) ctx.fillText(line, x, currentY);
+  return currentY;
+}
+
+async function generateQRDataURL(url) {
+  return new Promise((resolve, reject) => {
+    const div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = '-9999px';
+    document.body.appendChild(div);
+    try {
+      const qr = new QRCode(div, {
+        text: url, width: 200, height: 200,
+        colorDark: '#2C4A3E', colorLight: '#FFFFFF',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+      setTimeout(() => {
+        const img = div.querySelector('img') || div.querySelector('canvas');
+        const src = img?.src || (img instanceof HTMLCanvasElement ? img.toDataURL() : null);
+        document.body.removeChild(div);
+        src ? resolve(src) : reject(new Error('QR generation failed'));
+      }, 200);
+    } catch (e) {
+      document.body.removeChild(div);
+      reject(e);
+    }
+  });
+}
+
+async function drawPoster(job) {
+  const canvas = document.getElementById('poster-canvas');
+  const W = 750, H = 1200;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const cat = Utils.getCategoryInfo(job.category);
+  const dl = Utils.deadlineText(job.deadline);
+  const fee = job.fee ? `¥${job.fee}` : '面议';
+  const url = window.location.href;
+
+  // ── 背景 ──
+  ctx.fillStyle = '#FAF8F5';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── 顶部色块 ──
+  const coverColor = job.coverColor || cat.color || '#E8DDD0';
+  ctx.fillStyle = coverColor;
+  ctx.fillRect(0, 0, W, 380);
+
+  // ── 顶部 icon ──
+  ctx.font = '72px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(cat.icon, W / 2, 180);
+
+  // ── 品牌名 ──
+  ctx.font = 'bold 22px "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillText('about 编辑部', W / 2, 240);
+
+  // ── 类型标签 ──
+  const tagText = cat.label;
+  ctx.font = '20px "PingFang SC", "Noto Sans SC", sans-serif';
+  const tagW = ctx.measureText(tagText).width + 32;
+  const tagX = (W - tagW) / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  roundRect(ctx, tagX, 268, tagW, 36, 18);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillText(tagText, W / 2, 292);
+
+  // ── 岗位标题 ──
+  ctx.fillStyle = '#1A1A1A';
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 44px "PingFang SC", "Noto Sans SC", sans-serif';
+  const titleY = wrapText(ctx, job.title, 60, 460, W - 120, 58);
+
+  // ── 分割线 ──
+  ctx.strokeStyle = '#E8E4DC';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(60, titleY + 40);
+  ctx.lineTo(W - 60, titleY + 40);
+  ctx.stroke();
+
+  // ── 信息行 ──
+  const infoItems = [
+    { label: '稿费', value: fee },
+    { label: '招募人数', value: `${job.slots || 1} 人` },
+    { label: '截止日期', value: dl.text },
+  ];
+  let infoY = titleY + 80;
+  ctx.font = '24px "PingFang SC", "Noto Sans SC", sans-serif';
+  for (const item of infoItems) {
+    ctx.fillStyle = '#999999';
+    ctx.fillText(item.label, 60, infoY);
+    ctx.fillStyle = '#1A1A1A';
+    ctx.textAlign = 'right';
+    ctx.fillText(item.value, W - 60, infoY);
+    ctx.textAlign = 'left';
+    infoY += 54;
+  }
+
+  // ── 简介（截取前60字）──
+  if (job.description) {
+    ctx.fillStyle = '#5C5C5C';
+    ctx.font = '26px "PingFang SC", "Noto Sans SC", sans-serif';
+    const descShort = job.description.replace(/\n/g, ' ').slice(0, 60) + (job.description.length > 60 ? '…' : '');
+    wrapText(ctx, descShort, 60, infoY + 20, W - 120, 42);
+  }
+
+  // ── 底部区域 ──
+  ctx.fillStyle = '#2C4A3E';
+  ctx.fillRect(0, H - 280, W, 280);
+
+  // ── 二维码 ──
+  try {
+    const qrSrc = await generateQRDataURL(url);
+    const qrImg = new Image();
+    await new Promise(res => { qrImg.onload = res; qrImg.onerror = res; qrImg.src = qrSrc; });
+    // 白色底
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(ctx, 60, H - 250, 160, 160, 12);
+    ctx.fill();
+    ctx.drawImage(qrImg, 68, H - 242, 144, 144);
+  } catch (_) { /* QR 失败静默 */ }
+
+  // ── 底部文案 ──
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = 'bold 28px "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('扫码查看岗位详情', 250, H - 190);
+  ctx.font = '22px "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText('投递截止 ' + (job.deadline || dl.text), 250, H - 150);
+  ctx.fillText('about 编辑部  ×  派单合作', 250, H - 108);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-  await Store.seedDemoData();
 
   if (!jobId) {
     document.getElementById('detail-layout').innerHTML = `<div style="padding:60px 0;text-align:center;color:var(--color-text-muted);">参数缺失，<a href="index.html" style="color:var(--color-brand);">返回首页</a></div>`;
@@ -128,6 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  _currentJob = job;
   renderDetail(job);
   await renderRelated(job);
 });
