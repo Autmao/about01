@@ -241,65 +241,46 @@ async function drawPoster(job) {
   ctx.font = 'bold 44px "PingFang SC", "Noto Sans SC", sans-serif';
   const titleY = wrapText(ctx, job.title, 60, 460, W - 120, 58);
 
-  // ── 分割线 ──
-  ctx.strokeStyle = '#E8E4DC';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(60, titleY + 40);
-  ctx.lineTo(W - 60, titleY + 40);
-  ctx.stroke();
-
-  // ── 信息行 ──
-  const infoItems = [
-    { label: '稿费', value: fee },
-    { label: '招募人数', value: `${job.slots || 1} 人` },
-    { label: '截止日期', value: dl.text },
-  ];
-  let infoY = titleY + 80;
+  // ── 截止日期 ──
+  ctx.fillStyle = '#999999';
   ctx.font = '24px "PingFang SC", "Noto Sans SC", sans-serif';
-  for (const item of infoItems) {
-    ctx.fillStyle = '#999999';
-    ctx.fillText(item.label, 60, infoY);
-    ctx.fillStyle = '#1A1A1A';
-    ctx.textAlign = 'right';
-    ctx.fillText(item.value, W - 60, infoY);
-    ctx.textAlign = 'left';
-    infoY += 54;
-  }
+  ctx.fillText('截止日期', 60, titleY + 60);
+  ctx.fillStyle = '#1A1A1A';
+  ctx.textAlign = 'right';
+  ctx.fillText(dl.text, W - 60, titleY + 60);
+  ctx.textAlign = 'left';
 
   // ── 简介（截取前60字）──
   if (job.description) {
     ctx.fillStyle = '#5C5C5C';
     ctx.font = '26px "PingFang SC", "Noto Sans SC", sans-serif';
     const descShort = job.description.replace(/\n/g, ' ').slice(0, 60) + (job.description.length > 60 ? '…' : '');
-    wrapText(ctx, descShort, 60, infoY + 20, W - 120, 42);
+    wrapText(ctx, descShort, 60, titleY + 120, W - 120, 42);
   }
 
   // ── 底部区域 ──
   ctx.fillStyle = '#2C4A3E';
-  ctx.fillRect(0, H - 280, W, 280);
+  ctx.fillRect(0, H - 240, W, 240);
 
   // ── 二维码 ──
   try {
     const qrSrc = await generateQRDataURL(url);
     const qrImg = new Image();
     await new Promise(res => { qrImg.onload = res; qrImg.onerror = res; qrImg.src = qrSrc; });
-    // 白色底
     ctx.fillStyle = '#FFFFFF';
-    roundRect(ctx, 60, H - 250, 160, 160, 12);
+    roundRect(ctx, 60, H - 210, 160, 160, 12);
     ctx.fill();
-    ctx.drawImage(qrImg, 68, H - 242, 144, 144);
+    ctx.drawImage(qrImg, 68, H - 202, 144, 144);
   } catch (_) { /* QR 失败静默 */ }
 
   // ── 底部文案 ──
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
   ctx.font = 'bold 28px "PingFang SC", "Noto Sans SC", sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('扫码查看岗位详情', 250, H - 190);
+  ctx.fillText('扫码查看岗位详情', 250, H - 145);
   ctx.font = '22px "PingFang SC", "Noto Sans SC", sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('投递截止 ' + (job.deadline || dl.text), 250, H - 150);
-  ctx.fillText('about 编辑部  ×  派单合作', 250, H - 108);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('about 编辑部', 250, H - 105);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
