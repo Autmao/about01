@@ -79,7 +79,8 @@ router.get('/:id', requireAdmin, async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { jobId, name, email, phone, wechat = '', bio = '',
-      portfolioNote = '', portfolioLinks = [] } = req.body;
+      portfolioNote = '', portfolioLinks = [],
+      resumeUrl = '', portfolioFiles = [] } = req.body;
 
     if (!jobId || !name || !email || !phone)
       return res.status(400).json({ error: 'jobId, name, email, phone required' });
@@ -101,10 +102,12 @@ router.post('/', async (req, res) => {
 
     const { rows } = await pool.query(
       `INSERT INTO applications (id,job_id,job_title,job_category,name,email,phone,wechat,
-        bio,portfolio_note,portfolio_links,status,status_history,admin_note,submitted_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+        bio,portfolio_note,portfolio_links,resume_url,portfolio_files,
+        status,status_history,admin_note,submitted_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
       [id, jobId, jobRows[0].title, jobRows[0].category,
        name, email, phone, wechat, bio, portfolioNote, JSON.stringify(portfolioLinks),
+       resumeUrl, JSON.stringify(portfolioFiles),
        'pending', history, '', ts, ts]
     );
 

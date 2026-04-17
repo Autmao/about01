@@ -4,6 +4,114 @@ const params = new URLSearchParams(window.location.search);
 const jobId = params.get('jobId');
 let linkCount = 1;
 
+// 已上传的文件 URL
+let uploadedResumeUrl = '';
+let uploadedPortfolioFiles = []; // [{ name, size, url }]
+
+/* ===== 文件上传 ===== */
+async function uploadFile(file) {
+  const res = await fetch(
+    `/api/upload?filename=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`,
+    { method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' } }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || '上传失败');
+  }
+  const { url } = await res.json();
+  return url;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function setUploading(zoneId, text) {
+  const zone = document.getElementById(zoneId);
+  let el = zone.querySelector('.upload-uploading');
+  if (!el) { el = document.createElement('div'); el.className = 'upload-uploading'; zone.appendChild(el); }
+  el.textContent = text;
+}
+function clearUploading(zoneId) {
+  const el = document.getElementById(zoneId)?.querySelector('.upload-uploading');
+  if (el) el.remove();
+}
+
+/* 简历上传 */
+async function handleResumeChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const preview = document.getElementById('resume-preview');
+  setUploading('resume-zone', '上传中…');
+  try {
+    uploadedResumeUrl = await uploadFile(file);
+    preview.style.display = 'flex';
+    preview.innerHTML = `
+      <span class="upload-file-item__name">📄 ${file.name}</span>
+      <span class="upload-file-item__size">${formatSize(file.size)}</span>
+      <button type="button" class="upload-file-item__remove" onclick="removeResume()">×</button>`;
+    clearUploading('resume-zone');
+  } catch (err) {
+    clearUploading('resume-zone');
+    Utils.showToast(`简历上传失败：${err.message}`, 'error');
+    e.target.value = '';
+  }
+}
+
+function removeResume() {
+  uploadedResumeUrl = '';
+  document.getElementById('resume-preview').style.display = 'none';
+  document.getElementById('resume-input').value = '';
+}
+window.removeResume = removeResume;
+
+/* 作品集文件上传 */
+async function handlePortfolioChange(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const remaining = 3 - uploadedPortfolioFiles.length;
+  const toUpload = files.slice(0, remaining);
+  if (toUpload.length < files.length) Utils.showToast('最多上传3个作品集文件', 'warning');
+
+  setUploading('portfolio-zone', `上传中… (0/${toUpload.length})`);
+  for (let i = 0; i < toUpload.length; i++) {
+    const file = toUpload[i];
+    try {
+      setUploading('portfolio-zone', `上传中… (${i + 1}/${toUpload.length})`);
+      const url = await uploadFile(file);
+      uploadedPortfolioFiles.push({ name: file.name, size: file.size, url });
+    } catch (err) {
+      Utils.showToast(`「${file.name}」上传失败：${err.message}`, 'error');
+    }
+  }
+  clearUploading('portfolio-zone');
+  renderPortfolioFilePreviews();
+  e.target.value = '';
+  if (uploadedPortfolioFiles.length >= 3) {
+    document.getElementById('portfolio-zone').querySelector('.upload-zone__inner').style.display = 'none';
+  }
+}
+
+function removePortfolioFile(idx) {
+  uploadedPortfolioFiles.splice(idx, 1);
+  renderPortfolioFilePreviews();
+  document.getElementById('portfolio-zone').querySelector('.upload-zone__inner').style.display = '';
+}
+window.removePortfolioFile = removePortfolioFile;
+
+function renderPortfolioFilePreviews() {
+  const container = document.getElementById('portfolio-files-preview');
+  container.innerHTML = uploadedPortfolioFiles.map((f, i) => `
+    <div class="upload-file-item">
+      <span class="upload-file-item__name">🗂️ ${f.name}</span>
+      <span class="upload-file-item__size">${formatSize(f.size)}</span>
+      <button type="button" class="upload-file-item__remove" onclick="removePortfolioFile(${i})">×</button>
+    </div>`).join('');
+}
+
+/* ===== 岗位摘要 ===== */
 function renderJobSummary(job) {
   const cat = Utils.getCategoryInfo(job.category);
   const dl = Utils.deadlineText(job.deadline);
@@ -23,6 +131,7 @@ function renderJobSummary(job) {
   if (bcJob) { bcJob.textContent = job.title; bcJob.href = `job-detail.html?id=${job.id}`; }
 }
 
+/* ===== 链接行 ===== */
 function addLinkRow(index) {
   const container = document.getElementById('portfolio-links-container');
   const row = document.createElement('div');
@@ -42,6 +151,7 @@ function removeLinkRow(btn) {
 }
 window.removeLinkRow = removeLinkRow;
 
+/* ===== 表单收集 / 验证 ===== */
 function collectFormData() {
   const links = [];
   document.querySelectorAll('.portfolio-link-row').forEach(row => {
@@ -57,6 +167,8 @@ function collectFormData() {
     bio:            document.getElementById('field-bio').value.trim(),
     portfolioNote:  document.getElementById('field-note').value.trim(),
     portfolioLinks: links,
+    resumeUrl:      uploadedResumeUrl,
+    portfolioFiles: uploadedPortfolioFiles.map(f => ({ name: f.name, url: f.url })),
   };
 }
 
@@ -95,6 +207,7 @@ function showSuccess(app) {
   document.getElementById('success-id').textContent = `投递编号：${app.id}`;
 }
 
+/* ===== 提交 ===== */
 async function handleSubmit(e) {
   e.preventDefault();
   clearErrors();
@@ -120,9 +233,8 @@ async function handleSubmit(e) {
   }
 }
 
+/* ===== 初始化 ===== */
 document.addEventListener('DOMContentLoaded', async () => {
-  await Store.seedDemoData();
-
   if (!jobId) {
     document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">参数缺失，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
     return;
@@ -136,6 +248,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderJobSummary(job);
   addLinkRow(1);
+
+  document.getElementById('resume-input').addEventListener('change', handleResumeChange);
+  document.getElementById('portfolio-input').addEventListener('change', handlePortfolioChange);
 
   document.getElementById('add-link-btn').addEventListener('click', () => {
     if (linkCount >= 3) return;

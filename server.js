@@ -29,6 +29,9 @@ app.use(async (req, res, next) => {
 // 认证接口（公开，无需 token）
 app.use('/api/admin', authRouter);
 
+// 文件上传（公开，投递者使用）
+app.use('/api/upload', require('./routes/upload'));
+
 // ── 路由挂载 ────────────────────────────────────────────────────
 app.use('/api/jobs',          require('./routes/jobs'));          // 内部区分公开/后台
 app.use('/api/applications',  require('./routes/applications'));  // 内部区分

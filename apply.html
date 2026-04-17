@@ -76,7 +76,35 @@
       </div>
 
       <div class="form-section">
+        <h2 class="form-section__title">简历</h2>
+        <div class="form-field">
+          <label class="form-label">上传简历 <span class="form-optional">选填</span></label>
+          <div class="upload-zone" id="resume-zone">
+            <input type="file" id="resume-input" accept=".pdf,.doc,.docx" style="display:none">
+            <div class="upload-zone__inner" onclick="document.getElementById('resume-input').click()">
+              <span class="upload-zone__icon">📄</span>
+              <span class="upload-zone__text">点击上传简历</span>
+              <span class="upload-zone__hint">支持 PDF、Word，不超过 10MB</span>
+            </div>
+            <div class="upload-file-item" id="resume-preview" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
         <h2 class="form-section__title">作品集</h2>
+        <div class="form-field">
+          <label class="form-label">上传作品集文件 <span class="form-optional">选填，最多3个</span></label>
+          <div class="upload-zone" id="portfolio-zone">
+            <input type="file" id="portfolio-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" multiple>
+            <div class="upload-zone__inner" onclick="document.getElementById('portfolio-input').click()">
+              <span class="upload-zone__icon">🗂️</span>
+              <span class="upload-zone__text">点击上传作品集</span>
+              <span class="upload-zone__hint">支持 PDF、图片，单个不超过 10MB</span>
+            </div>
+            <div id="portfolio-files-preview"></div>
+          </div>
+        </div>
         <div class="form-field">
           <label class="form-label">作品集链接 <span class="form-optional">选填，最多3个</span></label>
           <div id="portfolio-links-container"></div>

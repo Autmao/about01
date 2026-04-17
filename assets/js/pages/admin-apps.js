@@ -44,9 +44,16 @@ async function updateCounts() {
 function renderAppCard(app) {
   const avatar = Utils.getAvatarInfo(app.name);
   const statusInfo = Utils.getStatusInfo(app.status);
+  const resumeLink = app.resumeUrl
+    ? `<a href="${app.resumeUrl}" target="_blank" rel="noopener">📄 下载简历</a>`
+    : '';
+  const portfolioFileLinks = (app.portfolioFiles || []).map(f =>
+    `<a href="${f.url}" target="_blank" rel="noopener">🗂️ ${f.name || '作品集文件'}</a>`
+  ).join('');
   const links = (app.portfolioLinks || []).map(l =>
     `<a href="${l.url}" target="_blank" rel="noopener">🔗 ${l.label || '作品链接'}</a>`
   ).join('');
+  const allLinks = resumeLink + portfolioFileLinks + links;
 
   return `
     <div class="app-card" id="app-card-${app.id}">
@@ -69,7 +76,7 @@ function renderAppCard(app) {
       </div>
       <div class="app-detail" id="detail-${app.id}">
         ${app.bio ? `<div class="app-detail__bio">${app.bio}</div>` : ''}
-        ${links ? `<div class="app-detail__links">${links}</div>` : ''}
+        ${allLinks ? `<div class="app-detail__links">${allLinks}</div>` : ''}
         ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${app.portfolioNote}</p>` : ''}
         <div class="app-detail__actions">
           <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">

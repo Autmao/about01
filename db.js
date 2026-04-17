@@ -49,6 +49,8 @@ async function initDB() {
       bio TEXT DEFAULT '',
       portfolio_note TEXT DEFAULT '',
       portfolio_links JSONB DEFAULT '[]',
+      resume_url TEXT DEFAULT '',
+      portfolio_files JSONB DEFAULT '[]',
       status TEXT NOT NULL DEFAULT 'pending',
       status_history JSONB DEFAULT '[]',
       admin_note TEXT DEFAULT '',
@@ -87,6 +89,12 @@ async function initDB() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+
+  // 为已存在的表补充新列（幂等）
+  await pool.query(`
+    ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT DEFAULT '';
+    ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
+  `);
 }
 
 /* ===== 行映射：数据库 snake_case → JS camelCase ===== */
@@ -111,6 +119,8 @@ function mapApp(r) {
     name: r.name, email: r.email, phone: r.phone, wechat: r.wechat,
     bio: r.bio, portfolioNote: r.portfolio_note,
     portfolioLinks: r.portfolio_links || [],
+    resumeUrl: r.resume_url || '',
+    portfolioFiles: r.portfolio_files || [],
     status: r.status,
     statusHistory: r.status_history || [],
     adminNote: r.admin_note,
