@@ -28,7 +28,9 @@ const Utils = {
   /* 截止日期文案 */
   deadlineText(dateString) {
     if (!dateString) return { text: '—', cls: '' };
-    const deadline = new Date(dateString);
+    // 纯日期字符串（YYYY-MM-DD）加 T00:00 按本地时区解析，避免 UTC 时差导致日期偏移
+    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(dateString) ? dateString + 'T00:00' : dateString;
+    const deadline = new Date(normalized);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     deadline.setHours(0, 0, 0, 0);
