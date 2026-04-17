@@ -42,12 +42,12 @@ const Utils = {
 
   /* 岗位类型映射 */
   categoryMap: {
-    writing:     { label: '撰稿',    icon: '✍️',  color: '#D0DDE8' },
-    interview:   { label: '采访',    icon: '🎙️', color: '#E8E0D0' },
-    editing:     { label: '编辑',    icon: '📝',  color: '#D8D0E8' },
-    photography: { label: '摄影',    icon: '📷',  color: '#E8DDD0' },
-    planning:    { label: '活动策划', icon: '🎪', color: '#D8E8D0' },
-    other:       { label: '其他',    icon: '✨',  color: '#E8D0D8' },
+    writing:  { label: '撰稿人',    icon: '✍️',  color: '#D0DDE8' },
+    editing:  { label: '编辑',      icon: '📝',  color: '#D8D0E8' },
+    design:   { label: '设计师',    icon: '🎨',  color: '#E8DDD0' },
+    planning: { label: '活动策划执行', icon: '🎪', color: '#D8E8D0' },
+    podcast:  { label: '播客制作人', icon: '🎙️', color: '#E8E0D0' },
+    other:    { label: '其他',      icon: '✨',  color: '#E8D0D8' },
   },
 
   getCategoryInfo(category) {
