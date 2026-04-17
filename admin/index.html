@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>工种管理 | 管理后台</title>
+  <title>岗位管理 | 管理后台</title>
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/components.css">
@@ -20,7 +20,7 @@
       </div>
       <nav class="admin-nav">
         <a href="index.html" class="admin-nav-item active">
-          <span class="admin-nav-item__icon">📋</span> 工种管理
+          <span class="admin-nav-item__icon">📋</span> 岗位管理
         </a>
         <a href="applications.html" class="admin-nav-item">
           <span class="admin-nav-item__icon">📬</span> 投递管理
@@ -38,15 +38,15 @@
     <!-- 主内容 -->
     <main class="admin-main page-enter">
       <div class="admin-topbar">
-        <h1 class="admin-page-title">工种管理</h1>
-        <a href="job-edit.html" class="btn btn--primary">+ 发布新工种</a>
+        <h1 class="admin-page-title">岗位管理</h1>
+        <a href="job-edit.html" class="btn btn--primary">+ 发布新岗位</a>
       </div>
 
       <div class="admin-content">
         <!-- 统计卡片 -->
         <div class="stat-cards" id="stat-cards">
           <div class="stat-card">
-            <div class="stat-card__label">招募中工种</div>
+            <div class="stat-card__label">招募中岗位</div>
             <div class="stat-card__value" id="stat-open">—</div>
           </div>
           <div class="stat-card">
@@ -63,7 +63,7 @@
           </div>
         </div>
 
-        <!-- 工种表格 -->
+        <!-- 岗位表格 -->
         <div class="data-table-wrap">
           <div class="table-toolbar">
             <div class="status-tabs" id="status-tabs">
@@ -73,13 +73,13 @@
               <button class="status-tab" data-status="draft">草稿 <span class="status-tab__count" id="count-draft">0</span></button>
             </div>
             <div class="table-search">
-              <input type="search" placeholder="搜索工种名称..." id="table-search">
+              <input type="search" placeholder="搜索岗位名称..." id="table-search">
             </div>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>工种名称</th>
+                <th>岗位名称</th>
                 <th>类型</th>
                 <th>状态</th>
                 <th>投递数</th>
@@ -92,7 +92,7 @@
           </table>
           <div class="admin-empty" id="jobs-empty" style="display:none;">
             <div class="admin-empty__icon">📭</div>
-            <div class="admin-empty__text">暂无工种，<a href="job-edit.html" style="color:var(--color-brand);">立即发布</a></div>
+            <div class="admin-empty__text">暂无岗位，<a href="job-edit.html" style="color:var(--color-brand);">立即发布</a></div>
           </div>
         </div>
       </div>

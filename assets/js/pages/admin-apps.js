@@ -22,13 +22,13 @@ let currentKeyword = '';
 const STATUS_MSGS = {
   read:     '我们已收到您的投递，正在认真审阅中，请耐心等待。',
   hired:    '恭喜！您已通过审核，我们会尽快联系您确认合作细节。',
-  rejected: '感谢您的投递，本次暂未通过，欢迎关注我们后续的工种发布。',
+  rejected: '感谢您的投递，本次暂未通过，欢迎关注我们后续的岗位发布。',
 };
 
 async function renderJobSelector() {
   const selector = document.getElementById('job-selector');
   const jobs = await Store.getAllJobsAdmin({});
-  selector.innerHTML = `<option value="">全部工种</option>` +
+  selector.innerHTML = `<option value="">全部岗位</option>` +
     jobs.map(j => `<option value="${j.id}" ${j.id === currentJobId ? 'selected' : ''}>${j.title}</option>`).join('');
 }
 
@@ -58,7 +58,7 @@ function renderAppCard(app) {
             <span>📧 ${app.email}</span>
             <span>📱 ${app.phone}</span>
             ${app.wechat ? `<span>💬 ${app.wechat}</span>` : ''}
-            ${app.jobTitle ? `<span>工种：${app.jobTitle}</span>` : ''}
+            ${app.jobTitle ? `<span>岗位：${app.jobTitle}</span>` : ''}
           </div>
         </div>
         <div class="app-card__right">

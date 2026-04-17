@@ -17,7 +17,7 @@
   --color-text-muted:     #999999;
   --color-text-inverse:   #FFFFFF;
 
-  /* 工种状态 */
+  /* 岗位状态 */
   --color-status-open:   #2C4A3E;
   --color-status-closed: #999999;
   --color-status-draft:  #B08850;

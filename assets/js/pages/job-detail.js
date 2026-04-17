@@ -27,7 +27,7 @@ function renderDetail(job) {
       </div>
       <h1 class="detail-title">${job.title}</h1>
       <div class="detail-section">
-        <p class="detail-section-title">工种描述</p>
+        <p class="detail-section-title">岗位描述</p>
         <p class="detail-desc">${job.description || ''}</p>
       </div>
       ${reqs ? `<div class="detail-section">
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const job = await Store.getJobById(jobId);
   if (!job) {
-    document.getElementById('detail-layout').innerHTML = `<div style="padding:60px 0;text-align:center;color:var(--color-text-muted);">工种不存在，<a href="index.html" style="color:var(--color-brand);">返回首页</a></div>`;
+    document.getElementById('detail-layout').innerHTML = `<div style="padding:60px 0;text-align:center;color:var(--color-text-muted);">岗位不存在，<a href="index.html" style="color:var(--color-brand);">返回首页</a></div>`;
     return;
   }
 

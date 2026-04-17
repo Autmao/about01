@@ -93,7 +93,7 @@ async function checkMyApplication() {
     return;
   }
   const statusLabels = { pending: '审核中', read: '已读取', hired: '已录用 🎉', rejected: '未通过' };
-  const lines = apps.map(a => `• ${a.jobTitle || '未知工种'}：${statusLabels[a.status] || a.status}`).join('\n');
+  const lines = apps.map(a => `• ${a.jobTitle || '未知岗位'}：${statusLabels[a.status] || a.status}`).join('\n');
   alert(`您的投递记录（${apps.length}条）：\n\n${lines}`);
 }
 window.checkMyApplication = checkMyApplication;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>发布工种 | 管理后台</title>
+  <title>发布岗位 | 管理后台</title>
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/components.css">
@@ -18,7 +18,7 @@
     </div>
     <nav class="admin-nav">
       <a href="index.html" class="admin-nav-item active">
-        <span class="admin-nav-item__icon">📋</span> 工种管理
+        <span class="admin-nav-item__icon">📋</span> 岗位管理
       </a>
       <a href="applications.html" class="admin-nav-item">
         <span class="admin-nav-item__icon">📬</span> 投递管理
@@ -34,7 +34,7 @@
 
   <main class="admin-main page-enter">
     <div class="admin-topbar">
-      <h1 class="admin-page-title" id="page-title">发布新工种</h1>
+      <h1 class="admin-page-title" id="page-title">发布新岗位</h1>
       <button class="btn btn--ghost" onclick="history.back()">← 返回</button>
     </div>
 
@@ -46,13 +46,13 @@
           <div class="form-section">
             <h2 class="form-section__title">基本信息</h2>
             <div class="form-field">
-              <label class="form-label">工种名称 <span class="form-required">*</span></label>
+              <label class="form-label">岗位名称 <span class="form-required">*</span></label>
               <input type="text" class="form-input" id="f-title" placeholder="如：城市切面专题摄影师">
               <span class="form-error" id="err-title"></span>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <label class="form-label">工种类型 <span class="form-required">*</span></label>
+                <label class="form-label">岗位类型 <span class="form-required">*</span></label>
                 <select class="form-input" id="f-category">
                   <option value="">请选择</option>
                   <option value="photography">摄影</option>
@@ -70,7 +70,7 @@
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">工种描述 <span class="form-required">*</span></label>
+              <label class="form-label">岗位描述 <span class="form-required">*</span></label>
               <textarea class="form-input" id="f-desc" rows="6"
                 placeholder="详细描述工作背景、内容、期望产出..."></textarea>
               <span class="form-error" id="err-desc"></span>
@@ -138,7 +138,7 @@
 
           <div class="form-actions" style="padding-top:var(--space-6);">
             <button type="button" class="btn btn--ghost" onclick="history.back()">取消</button>
-            <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">发布工种</button>
+            <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">发布岗位</button>
           </div>
         </div>
       </form>

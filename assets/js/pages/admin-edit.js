@@ -37,9 +37,9 @@ function collectData() {
 
 function validate(data) {
   const errors = {};
-  if (!data.title) errors.title = '请填写工种名称';
-  if (!data.category) errors.category = '请选择工种类型';
-  if (!data.description) errors.desc = '请填写工种描述';
+  if (!data.title) errors.title = '请填写岗位名称';
+  if (!data.category) errors.category = '请选择岗位类型';
+  if (!data.description) errors.desc = '请填写岗位描述';
   if (!data.deadline) errors.deadline = '请选择截止日期';
   return errors;
 }
@@ -72,7 +72,7 @@ function fillForm(job) {
   const statusRadio = document.querySelector(`input[name=status][value="${job.status}"]`);
   if (statusRadio) statusRadio.checked = true;
 
-  document.getElementById('page-title').textContent = '编辑工种';
+  document.getElementById('page-title').textContent = '编辑岗位';
   document.getElementById('submit-btn').textContent = '保存修改';
 }
 
@@ -90,16 +90,16 @@ async function handleSubmit(e) {
   try {
     if (editId) {
       await Store.updateJob(editId, data);
-      Utils.showToast('工种已更新', 'success');
+      Utils.showToast('岗位已更新', 'success');
     } else {
       await Store.createJob(data);
-      Utils.showToast('工种已发布', 'success');
+      Utils.showToast('岗位已发布', 'success');
     }
     await Utils.sleep(800);
     window.location.href = 'index.html';
   } catch (err) {
     btn.classList.remove('btn--loading');
-    btn.textContent = editId ? '保存修改' : '发布工种';
+    btn.textContent = editId ? '保存修改' : '发布岗位';
     Utils.showToast('操作失败，请重试', 'error');
   }
 }

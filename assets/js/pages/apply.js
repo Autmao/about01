@@ -113,7 +113,7 @@ async function handleSubmit(e) {
     btn.classList.remove('btn--loading');
     btn.innerHTML = '提交投递';
     if (err.status === 409) {
-      Utils.showToast('您已经投递过该工种，无需重复提交', 'warning', 4000);
+      Utils.showToast('您已经投递过该岗位，无需重复提交', 'warning', 4000);
     } else {
       Utils.showToast('提交失败，请稍后重试', 'error');
     }
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const job = await Store.getJobById(jobId);
   if (!job || job.status !== 'open') {
-    document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该工种不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
+    document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该岗位不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
     return;
   }
 

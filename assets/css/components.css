@@ -62,7 +62,7 @@
 .tag--hired    { background: var(--color-brand-pale); color: var(--color-hired); }
 .tag--rejected { background: #FDECEA; color: var(--color-rejected); }
 
-/* === 工种卡片 === */
+/* === 岗位卡片 === */
 .job-card {
   background: var(--color-surface);
   border-radius: var(--radius-xl);
@@ -341,7 +341,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   margin-top: var(--space-4); margin-bottom: var(--space-8);
 }
 
-/* 工种摘要卡（投递页顶部） */
+/* 岗位摘要卡（投递页顶部） */
 .job-summary-card {
   background: var(--color-surface-warm);
   border: 1px solid var(--color-border);
@@ -369,7 +369,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
 }
 
-/* 相关工种 */
+/* 相关岗位 */
 .related-section { border-top: 1px solid var(--color-border); padding-top: var(--space-10); margin-top: var(--space-10); }
 .related-title {
   font-size: var(--text-xl); font-weight: var(--weight-semibold);

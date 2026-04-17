@@ -40,7 +40,7 @@ const Utils = {
     return { text: dateString, cls: 'deadline--normal' };
   },
 
-  /* 工种类型映射 */
+  /* 岗位类型映射 */
   categoryMap: {
     writing:     { label: '撰稿',    icon: '✍️',  color: '#D0DDE8' },
     interview:   { label: '采访',    icon: '🎙️', color: '#E8E0D0' },
@@ -66,7 +66,7 @@ const Utils = {
     return this.statusMap[status] || { label: status, cls: '' };
   },
 
-  /* 工种状态映射 */
+  /* 岗位状态映射 */
   jobStatusMap: {
     open:   { label: '招募中', cls: 'tag--open' },
     closed: { label: '已截止', cls: 'tag--closed' },

@@ -88,7 +88,7 @@ async function openModal(collabId) {
     <div class="timeline-item">
       <div class="timeline-dot"></div>
       <div class="timeline-content">
-        ${h.jobTitle || '未知工种'}
+        ${h.jobTitle || '未知岗位'}
         <div class="timeline-date">${h.date || ''}</div>
       </div>
     </div>`).join('');
