@@ -56,8 +56,8 @@
   line-height: var(--leading-tight);
   margin-bottom: var(--space-4);
 }
-.hero__title-normal { font-weight: var(--weight-normal); display: block; }
-.hero__title em { font-style: normal; color: rgba(255,255,255,0.5); display: block; font-weight: var(--weight-bold); }
+.hero__title-normal { font-weight: var(--weight-bold); color: rgba(255,255,255,0.45); display: block; }
+.hero__title em { font-style: normal; color: #fff; display: block; font-weight: var(--weight-bold); }
 .hero__subtitle {
   font-size: var(--text-base);
   color: rgba(255,255,255,0.65);
