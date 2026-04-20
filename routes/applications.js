@@ -63,6 +63,22 @@ router.get('/counts', requireAdmin, async (req, res) => {
   }
 });
 
+/* GET /api/applications/my?email=... — 公开接口，投递者查询自己的投递状态 */
+router.get('/my', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'email required' });
+    const { rows } = await pool.query(
+      `SELECT job_title, status FROM applications WHERE email = $1 ORDER BY submitted_at DESC`,
+      [email.toLowerCase().trim()]
+    );
+    res.json(rows.map(r => ({ jobTitle: r.job_title, status: r.status })));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 /* GET /api/applications/:id */
 router.get('/:id', requireAdmin, async (req, res) => {
   try {

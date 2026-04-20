@@ -13,8 +13,8 @@ function initSidebar() {
   if (!user) return;
   const el = document.getElementById('sidebar-user');
   if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
-  const navAccounts = document.getElementById('nav-accounts');
-  if (navAccounts && user.role === 'superadmin') navAccounts.style.display = 'flex';
+  const navLabel = document.getElementById('nav-accounts-label');
+  if (navLabel) navLabel.textContent = user.role === 'superadmin' ? '账号管理' : '账号设置';
 }
 
 let currentSort = 'recent';

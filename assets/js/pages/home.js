@@ -86,15 +86,19 @@ function bindEvents() {
 
 async function checkMyApplication() {
   const email = prompt('请输入您投递时填写的邮箱：');
-  if (!email) return;
-  const apps = await Store.getApplicationsByEmail(email);
-  if (apps.length === 0) {
-    Utils.showToast('未找到该邮箱的投递记录', 'warning');
-    return;
+  if (!email || !email.trim()) return;
+  try {
+    const apps = await Store.getMyApplications(email.trim());
+    if (apps.length === 0) {
+      Utils.showToast('未找到该邮箱的投递记录', 'warning');
+      return;
+    }
+    const statusLabels = { pending: '审核中', read: '已读取', hired: '已录用 🎉', rejected: '未通过' };
+    const lines = apps.map(a => `• ${a.jobTitle || '未知岗位'}：${statusLabels[a.status] || a.status}`).join('\n');
+    alert(`您的投递记录（${apps.length}条）：\n\n${lines}`);
+  } catch (e) {
+    Utils.showToast('查询失败，请稍后重试', 'error');
   }
-  const statusLabels = { pending: '审核中', read: '已读取', hired: '已录用 🎉', rejected: '未通过' };
-  const lines = apps.map(a => `• ${a.jobTitle || '未知岗位'}：${statusLabels[a.status] || a.status}`).join('\n');
-  alert(`您的投递记录（${apps.length}条）：\n\n${lines}`);
 }
 window.checkMyApplication = checkMyApplication;
 

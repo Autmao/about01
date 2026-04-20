@@ -133,6 +133,9 @@ const Store = {
   async getApplicationsByEmail(email) {
     return _get(`${API}/applications${_qs({ email })}`);
   },
+  async getMyApplications(email) {
+    return _get(`${API}/applications/my${_qs({ email })}`);
+  },
   async createApplication(data) {
     return _post(`${API}/applications`, data);
   },
