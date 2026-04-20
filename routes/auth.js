@@ -20,7 +20,7 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
-    const token = signToken({ sub: user.id, username: user.username, role: user.role });
+    const token = signToken({ sub: user.id, username: user.username, displayName: user.display_name, role: user.role });
     res.json({ token, user: mapAdminUser(user) });
   } catch (e) {
     console.error(e);

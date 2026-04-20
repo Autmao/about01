@@ -92,7 +92,7 @@ const Store = {
     if (!token) return null;
     try {
       const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      return { id: payload.sub, username: payload.username, role: payload.role };
+      return { id: payload.sub, username: payload.username, displayName: payload.displayName, role: payload.role };
     } catch { return null; }
   },
   isSuperAdmin() {

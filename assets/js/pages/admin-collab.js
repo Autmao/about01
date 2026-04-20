@@ -12,7 +12,7 @@ function initSidebar() {
   const user = Store.getCurrentUser();
   if (!user) return;
   const el = document.getElementById('sidebar-user');
-  if (el) el.textContent = `${user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
+  if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
   const navAccounts = document.getElementById('nav-accounts');
   if (navAccounts && user.role === 'superadmin') navAccounts.style.display = 'flex';
 }
