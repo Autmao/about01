@@ -39,6 +39,9 @@ app.use('/api/admin-users',       requireSuperAdmin, require('./routes/admin-use
 // 投递者登录 & 查询（公开）
 app.use('/api/applicant', require('./routes/applicant'));
 
+// AI 聊天（公开发消息 + 管理员查询，路由内部区分权限）
+app.use('/api/chat', require('./routes/chat'));
+
 // 文件上传（公开，投递者使用）
 app.use('/api/upload', require('./routes/upload'));
 

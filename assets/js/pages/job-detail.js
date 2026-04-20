@@ -66,6 +66,8 @@ function renderDetail(job) {
           ${isClosed
             ? `<button class="btn btn--ghost btn--full" disabled style="cursor:not-allowed;">招募已截止</button>`
             : `<a href="${applyUrl}" class="btn btn--primary btn--full btn--lg">立即投递</a>`}
+          <button class="btn btn--ghost btn--full" style="margin-top:var(--space-2);"
+            onclick="if(window.openChatWidget)openChatWidget();">💬 咨询岗位问题</button>
         </div>
         <div class="sidebar-share-row">
           <div class="sidebar-share" onclick="copyLink()">

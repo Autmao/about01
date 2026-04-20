@@ -128,6 +128,25 @@ async function initDB() {
       used BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+      id TEXT PRIMARY KEY,
+      job_id TEXT REFERENCES jobs(id) ON DELETE SET NULL,
+      job_title TEXT,
+      visitor_id TEXT,
+      email TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'bot',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // 为已存在的表补充新列（幂等）
@@ -400,6 +419,60 @@ async function upsertMemberPreferences(adminUserId, preferences) {
   );
 }
 
+/* ===== chat_sessions + chat_messages ===== */
+function mapSession(r) {
+  if (!r) return null;
+  return { id: r.id, jobId: r.job_id, jobTitle: r.job_title, visitorId: r.visitor_id,
+    email: r.email, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at };
+}
+function mapMessage(r) {
+  if (!r) return null;
+  return { id: r.id, sessionId: r.session_id, role: r.role, content: r.content, createdAt: r.created_at };
+}
+async function createChatSession({ jobId, jobTitle, visitorId, email = '' }) {
+  const id = genId('cs');
+  const ts = now();
+  const { rows } = await pool.query(
+    `INSERT INTO chat_sessions (id, job_id, job_title, visitor_id, email, status, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,'bot',$6,$6) RETURNING *`,
+    [id, jobId || null, jobTitle || '', visitorId || '', email, ts]
+  );
+  return mapSession(rows[0]);
+}
+async function getChatSession(id) {
+  const { rows } = await pool.query('SELECT * FROM chat_sessions WHERE id = $1', [id]);
+  return rows[0] ? mapSession(rows[0]) : null;
+}
+async function listChatSessions({ status } = {}) {
+  let q = 'SELECT * FROM chat_sessions WHERE 1=1';
+  const params = [];
+  if (status && status !== 'all') { params.push(status); q += ` AND status = $${params.length}`; }
+  q += ' ORDER BY updated_at DESC';
+  const { rows } = await pool.query(q, params);
+  return rows.map(mapSession);
+}
+async function updateChatSessionStatus(id, status) {
+  const ts = now();
+  await pool.query('UPDATE chat_sessions SET status=$1, updated_at=$2 WHERE id=$3', [status, ts, id]);
+}
+async function addChatMessage({ sessionId, role, content }) {
+  const id = genId('cm');
+  const ts = now();
+  const { rows } = await pool.query(
+    `INSERT INTO chat_messages (id, session_id, role, content, created_at) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [id, sessionId, role, content, ts]
+  );
+  await pool.query('UPDATE chat_sessions SET updated_at=$1 WHERE id=$2', [ts, sessionId]);
+  return mapMessage(rows[0]);
+}
+async function getChatMessages(sessionId) {
+  const { rows } = await pool.query(
+    'SELECT * FROM chat_messages WHERE session_id=$1 ORDER BY created_at ASC',
+    [sessionId]
+  );
+  return rows.map(mapMessage);
+}
+
 /* ===== applicant_otps ===== */
 async function createOtp(email) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -442,4 +515,7 @@ module.exports = {
   getMemberNote, upsertMemberNote,
   getMemberPreferences, upsertMemberPreferences,
   createOtp, verifyOtp,
+  mapSession, mapMessage,
+  createChatSession, getChatSession, listChatSessions,
+  updateChatSessionStatus, addChatMessage, getChatMessages,
 };
