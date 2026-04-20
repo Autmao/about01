@@ -127,6 +127,12 @@ async function initDB() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
   `);
 
+  // 数据迁移：将旧用户名 '江舟' 更新为手机号登录账号
+  await pool.query(`
+    UPDATE admin_users SET username = '18610292109', updated_at = NOW()
+    WHERE username = '江舟'
+  `);
+
   // Bootstrap superadmin — 若 admin_users 为空则用 ADMIN_PASSWORD 创建
   try {
     const { rows: cnt } = await pool.query('SELECT COUNT(*) FROM admin_users');
