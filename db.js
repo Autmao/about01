@@ -127,28 +127,23 @@ async function initDB() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
   `);
 
-  // 数据迁移：将旧用户名 '江舟' 更新为手机号登录账号
-  await pool.query(`
-    UPDATE admin_users SET username = '18610292109', updated_at = NOW()
-    WHERE username = '江舟'
-  `);
-
-  // Bootstrap superadmin — 若 admin_users 为空则用 ADMIN_PASSWORD 创建
-  try {
-    const { rows: cnt } = await pool.query('SELECT COUNT(*) FROM admin_users');
-    if (parseInt(cnt[0].count) === 0 && process.env.ADMIN_PASSWORD) {
+  // 确保超级管理员账号始终存在且密码正确（每次冷启动同步）
+  if (process.env.ADMIN_PASSWORD) {
+    try {
       const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
       const id = genId('usr');
       const ts = now();
       await pool.query(
         `INSERT INTO admin_users (id, username, display_name, role, password_hash, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [id, '江舟', '江舟', 'superadmin', hash, ts, ts]
+         VALUES ($1, '18610292109', '江舟', 'superadmin', $2, $3, $3)
+         ON CONFLICT (username) DO UPDATE
+           SET password_hash = $2, display_name = '江舟', role = 'superadmin', updated_at = $3`,
+        [id, hash, ts]
       );
-      console.log('[db] bootstrapped superadmin from ADMIN_PASSWORD');
+      console.log('[db] superadmin account synced');
+    } catch (e) {
+      console.error('[db] superadmin sync error:', e.message);
     }
-  } catch (e) {
-    if (e.code !== '23505') throw e; // 忽略并发冷启动导致的唯一约束冲突
   }
 }
 
