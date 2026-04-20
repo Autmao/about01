@@ -91,7 +91,8 @@ const Store = {
     const token = sessionStorage.getItem('mgs_admin_token');
     if (!token) return null;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')));
       return { id: payload.sub, username: payload.username, displayName: payload.displayName, role: payload.role };
     } catch { return null; }
   },
