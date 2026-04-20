@@ -137,7 +137,7 @@ async function initDB() {
       await pool.query(
         `INSERT INTO admin_users (id, username, display_name, role, password_hash, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [id, 'admin', '管理员', 'superadmin', hash, ts, ts]
+        [id, '江舟', '江舟', 'superadmin', hash, ts, ts]
       );
       console.log('[db] bootstrapped superadmin from ADMIN_PASSWORD');
     }
