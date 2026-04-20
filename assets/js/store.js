@@ -136,6 +136,60 @@ const Store = {
   async getMyApplications(email) {
     return _get(`${API}/applications/my${_qs({ email })}`);
   },
+
+  /* ====== APPLICANT AUTH ====== */
+  async sendOtp(email) {
+    const res = await fetch(`${API}/applicant/send-otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err.message || 'Failed');
+      e.code = err.error; e.status = res.status;
+      throw e;
+    }
+    return res.json();
+  },
+  async verifyOtp(email, code) {
+    const res = await fetch(`${API}/applicant/verify-otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err.message || 'Failed');
+      e.code = err.error; e.status = res.status;
+      throw e;
+    }
+    const { token, email: verifiedEmail } = await res.json();
+    sessionStorage.setItem('mgs_applicant_token', token);
+    sessionStorage.setItem('mgs_applicant_email', verifiedEmail);
+    return true;
+  },
+  getApplicantEmail() {
+    return sessionStorage.getItem('mgs_applicant_email') || null;
+  },
+  isApplicantLoggedIn() {
+    return !!sessionStorage.getItem('mgs_applicant_token');
+  },
+  applicantLogout() {
+    sessionStorage.removeItem('mgs_applicant_token');
+    sessionStorage.removeItem('mgs_applicant_email');
+  },
+  async getApplicantApplications() {
+    const token = sessionStorage.getItem('mgs_applicant_token');
+    if (!token) throw new Error('Not logged in');
+    const res = await fetch(`${API}/applicant/me/applications`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.status === 401) {
+      this.applicantLogout();
+      throw new Error('Session expired');
+    }
+    if (!res.ok) throw new Error('Failed');
+    return res.json();
+  },
   async createApplication(data) {
     return _post(`${API}/applications`, data);
   },

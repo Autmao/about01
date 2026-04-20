@@ -119,6 +119,15 @@ async function initDB() {
       preferences JSONB NOT NULL DEFAULT '{}',
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS applicant_otps (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // 为已存在的表补充新列（幂等）
@@ -391,6 +400,32 @@ async function upsertMemberPreferences(adminUserId, preferences) {
   );
 }
 
+/* ===== applicant_otps ===== */
+async function createOtp(email) {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const id = genId('otp');
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5分钟
+  // 先删除该邮箱旧的未使用验证码
+  await pool.query('DELETE FROM applicant_otps WHERE email = $1 AND used = FALSE', [email]);
+  await pool.query(
+    `INSERT INTO applicant_otps (id, email, code, expires_at, used, created_at)
+     VALUES ($1, $2, $3, $4, FALSE, NOW())`,
+    [id, email.toLowerCase().trim(), code, expiresAt]
+  );
+  return code;
+}
+async function verifyOtp(email, code) {
+  const { rows } = await pool.query(
+    `SELECT * FROM applicant_otps
+     WHERE email = $1 AND code = $2 AND used = FALSE AND expires_at > NOW()
+     ORDER BY created_at DESC LIMIT 1`,
+    [email.toLowerCase().trim(), code]
+  );
+  if (!rows[0]) return false;
+  await pool.query('UPDATE applicant_otps SET used = TRUE WHERE id = $1', [rows[0].id]);
+  return true;
+}
+
 /* ===== 懒初始化（serverless 冷启动安全）===== */
 let _dbReady = false;
 async function ensureDB() {
@@ -406,4 +441,5 @@ module.exports = {
   createAdminUser, deleteAdminUser, updateAdminUserPassword,
   getMemberNote, upsertMemberNote,
   getMemberPreferences, upsertMemberPreferences,
+  createOtp, verifyOtp,
 };
