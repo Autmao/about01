@@ -2,33 +2,70 @@
 
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
-
-// 用 ADMIN_PASSWORD 对固定字符串做 HMAC 签名，生成无状态 token
-// 无需内存存储，serverless 冷启动后仍然有效
-function makeToken(password) {
-  return crypto.createHmac('sha256', password).update('admin-token').digest('hex');
-}
+const bcrypt = require('bcryptjs');
+const {
+  getAdminUserByUsername, getAdminUserById,
+  updateAdminUserPassword, mapAdminUser,
+} = require('../db');
+const { signToken, requireAdmin } = require('../middleware/auth');
 
 /* POST /api/admin/login */
-router.post('/login', (req, res) => {
-  const { password } = req.body;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  if (!adminPassword) {
-    return res.status(500).json({ error: 'Server misconfigured: ADMIN_PASSWORD not set' });
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username and password required' });
   }
-  if (!password || password !== adminPassword) {
-    return res.status(401).json({ error: 'Invalid password' });
+  try {
+    const user = await getAdminUserByUsername(username);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = signToken({ sub: user.id, username: user.username, role: user.role });
+    res.json({ token, user: mapAdminUser(user) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  res.json({ token: makeToken(adminPassword) });
 });
 
 /* POST /api/admin/logout */
 router.post('/logout', (req, res) => {
-  // 无状态 token 无需服务端清除，客户端删除即可
   res.json({ ok: true });
 });
 
-module.exports = { router, makeToken };
+/* GET /api/admin/me */
+router.get('/me', requireAdmin, async (req, res) => {
+  try {
+    const user = await getAdminUserById(req.adminUser.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(mapAdminUser(user));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* PATCH /api/admin/me/password */
+router.patch('/me/password', requireAdmin, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'currentPassword and newPassword required' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: '新密码至少6位' });
+  }
+  try {
+    const user = await getAdminUserById(req.adminUser.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const match = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!match) return res.status(401).json({ error: '当前密码不正确' });
+    const hash = await bcrypt.hash(newPassword, 10);
+    await updateAdminUserPassword(req.adminUser.id, hash);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = { router };

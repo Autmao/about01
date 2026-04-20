@@ -4,7 +4,7 @@ const express = require('express');
 const path = require('path');
 const { ensureDB, initDB, seedDemoData } = require('./db');
 const { router: authRouter } = require('./routes/auth');
-const { requireAdmin } = require('./middleware/auth');
+const { requireAdmin, requireSuperAdmin } = require('./middleware/auth');
 
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -28,6 +28,13 @@ app.use(async (req, res, next) => {
 
 // 认证接口（公开，无需 token）
 app.use('/api/admin', authRouter);
+
+// 成员私有备注 & 筛选偏好（需登录）
+app.use('/api/admin/notes',       requireAdmin,      require('./routes/member-notes'));
+app.use('/api/admin/preferences', requireAdmin,      require('./routes/member-prefs'));
+
+// 账号管理（仅 superadmin）
+app.use('/api/admin-users',       requireSuperAdmin, require('./routes/admin-users'));
 
 // 文件上传（公开，投递者使用）
 app.use('/api/upload', require('./routes/upload'));

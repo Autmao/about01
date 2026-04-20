@@ -60,11 +60,11 @@ function _qs(obj) {
 const Store = {
 
   /* ====== AUTH ====== */
-  async adminLogin(password) {
+  async adminLogin(username, password) {
     const res = await fetch(`${API}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -86,6 +86,18 @@ const Store = {
   },
   isAdminLoggedIn() {
     return !!sessionStorage.getItem('mgs_admin_token');
+  },
+  getCurrentUser() {
+    const token = sessionStorage.getItem('mgs_admin_token');
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return { id: payload.sub, username: payload.username, role: payload.role };
+    } catch { return null; }
+  },
+  isSuperAdmin() {
+    const u = this.getCurrentUser();
+    return u?.role === 'superadmin';
   },
 
   /* ====== JOBS ====== */
@@ -149,6 +161,39 @@ const Store = {
   },
   async deleteCollaborator(id) {
     return _delete(`${API}/collaborators/${id}`);
+  },
+
+  /* ====== ADMIN USERS ====== */
+  async listAdminUsers() {
+    return _get(`${API}/admin-users`);
+  },
+  async createAdminUser(data) {
+    return _post(`${API}/admin-users`, data);
+  },
+  async deleteAdminUser(id) {
+    return _delete(`${API}/admin-users/${id}`);
+  },
+  async resetAdminUserPassword(id, newPassword) {
+    return _patch(`${API}/admin-users/${id}/password`, { newPassword });
+  },
+  async changeMyPassword(currentPassword, newPassword) {
+    return _patch(`${API}/admin/me/password`, { currentPassword, newPassword });
+  },
+
+  /* ====== MEMBER NOTES ====== */
+  async getMemberNote(appId) {
+    return _get(`${API}/admin/notes/${appId}`);
+  },
+  async saveMemberNote(appId, note) {
+    return _put(`${API}/admin/notes/${appId}`, { note });
+  },
+
+  /* ====== MEMBER PREFERENCES ====== */
+  async getPreferences() {
+    return _get(`${API}/admin/preferences`);
+  },
+  async savePreferences(prefs) {
+    return _put(`${API}/admin/preferences`, prefs);
   },
 
   /* ====== STATS ====== */

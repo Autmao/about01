@@ -1,20 +1,21 @@
 /* ===== ADMIN-JOBS.JS ===== */
 
-async function checkAuth() {
+function checkAuth() {
   if (Store.isAdminLoggedIn()) return true;
-  const pwd = prompt('请输入管理员密码：');
-  if (!pwd) { window.location.href = '../index.html'; return false; }
-  try {
-    await Store.adminLogin(pwd);
-    return true;
-  } catch {
-    alert('密码错误');
-    window.location.href = '../index.html';
-    return false;
-  }
+  window.location.href = 'login.html';
+  return false;
 }
-function logout() { Store.adminLogout(); window.location.href = '../index.html'; }
+function logout() { Store.adminLogout(); window.location.href = 'login.html'; }
 window.logout = logout;
+
+function initSidebar() {
+  const user = Store.getCurrentUser();
+  if (!user) return;
+  const el = document.getElementById('sidebar-user');
+  if (el) el.textContent = `${user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
+  const navAccounts = document.getElementById('nav-accounts');
+  if (navAccounts && user.role === 'superadmin') navAccounts.style.display = 'flex';
+}
 
 let currentStatus = 'all';
 let currentKeyword = '';
@@ -98,7 +99,8 @@ async function deleteJob(jobId) {
 window.deleteJob = deleteJob;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!await checkAuth()) return;
+  if (!checkAuth()) return;
+  initSidebar();
   await Promise.all([renderStats(), renderJobsTable()]);
 
   document.getElementById('status-tabs').addEventListener('click', e => {

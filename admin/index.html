@@ -18,6 +18,7 @@
         <div class="admin-sidebar__logo">about编辑部</div>
         <div class="admin-sidebar__tag">管理后台</div>
       </div>
+      <div class="admin-sidebar__user" id="sidebar-user"></div>
       <nav class="admin-nav">
         <a href="index.html" class="admin-nav-item active">
           <span class="admin-nav-item__icon">📋</span> 岗位管理
@@ -28,10 +29,13 @@
         <a href="collaborators.html" class="admin-nav-item">
           <span class="admin-nav-item__icon">👥</span> 合作者档案
         </a>
+        <a href="accounts.html" class="admin-nav-item" id="nav-accounts" style="display:none;">
+          <span class="admin-nav-item__icon">🔑</span> 账号管理
+        </a>
       </nav>
       <div class="admin-sidebar__footer">
         <a href="../index.html" target="_blank">↗ 访问前台</a>
-        <a href="#" onclick="logout()">退出登录</a>
+        <a href="#" onclick="logout(); return false;">退出登录</a>
       </div>
     </aside>
 

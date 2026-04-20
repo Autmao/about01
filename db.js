@@ -1,6 +1,7 @@
 /* ===== DB.JS — PostgreSQL (pg) 数据层 ===== */
 
 const { Pool, types } = require('pg');
+const bcrypt = require('bcryptjs');
 
 // 阻止 pg 把 DATE 列自动转为 JS Date 对象（会引入 UTC 时差导致日期偏移一天）
 // OID 1082 = DATE，直接返回原始字符串如 "2026-05-01"
@@ -92,6 +93,32 @@ async function initDB() {
       status TEXT DEFAULT 'unread',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      display_name TEXT,
+      role TEXT NOT NULL DEFAULT 'member',
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS member_notes (
+      id TEXT PRIMARY KEY,
+      admin_user_id TEXT NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+      app_id TEXT NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+      note TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(admin_user_id, app_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS member_preferences (
+      id TEXT PRIMARY KEY,
+      admin_user_id TEXT NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE UNIQUE,
+      preferences JSONB NOT NULL DEFAULT '{}',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // 为已存在的表补充新列（幂等）
@@ -99,6 +126,24 @@ async function initDB() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT DEFAULT '';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
   `);
+
+  // Bootstrap superadmin — 若 admin_users 为空则用 ADMIN_PASSWORD 创建
+  try {
+    const { rows: cnt } = await pool.query('SELECT COUNT(*) FROM admin_users');
+    if (parseInt(cnt[0].count) === 0 && process.env.ADMIN_PASSWORD) {
+      const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+      const id = genId('usr');
+      const ts = now();
+      await pool.query(
+        `INSERT INTO admin_users (id, username, display_name, role, password_hash, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, 'admin', '管理员', 'superadmin', hash, ts, ts]
+      );
+      console.log('[db] bootstrapped superadmin from ADMIN_PASSWORD');
+    }
+  } catch (e) {
+    if (e.code !== '23505') throw e; // 忽略并发冷启动导致的唯一约束冲突
+  }
 }
 
 /* ===== 行映射：数据库 snake_case → JS camelCase ===== */
@@ -262,6 +307,89 @@ async function seedDemoData() {
   return { seeded: true };
 }
 
+/* ===== 行映射：admin_users ===== */
+function mapAdminUser(r) {
+  if (!r) return null;
+  return {
+    id: r.id, username: r.username, displayName: r.display_name,
+    role: r.role, createdAt: r.created_at, updatedAt: r.updated_at,
+    // password_hash 不对外暴露
+  };
+}
+
+/* ===== admin_users CRUD ===== */
+async function getAdminUserByUsername(username) {
+  const { rows } = await pool.query('SELECT * FROM admin_users WHERE username = $1', [username]);
+  return rows[0] || null;
+}
+async function getAdminUserById(id) {
+  const { rows } = await pool.query('SELECT * FROM admin_users WHERE id = $1', [id]);
+  return rows[0] || null;
+}
+async function listAdminUsers() {
+  const { rows } = await pool.query('SELECT * FROM admin_users ORDER BY created_at ASC');
+  return rows.map(mapAdminUser);
+}
+async function createAdminUser({ username, displayName, role = 'member', passwordHash }) {
+  const id = genId('usr');
+  const ts = now();
+  const { rows } = await pool.query(
+    `INSERT INTO admin_users (id, username, display_name, role, password_hash, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [id, username, displayName || username, role, passwordHash, ts, ts]
+  );
+  return mapAdminUser(rows[0]);
+}
+async function deleteAdminUser(id) {
+  const { rowCount } = await pool.query('DELETE FROM admin_users WHERE id = $1', [id]);
+  return rowCount > 0;
+}
+async function updateAdminUserPassword(id, passwordHash) {
+  const ts = now();
+  await pool.query(
+    'UPDATE admin_users SET password_hash = $1, updated_at = $2 WHERE id = $3',
+    [passwordHash, ts, id]
+  );
+}
+
+/* ===== member_notes CRUD ===== */
+async function getMemberNote(adminUserId, appId) {
+  const { rows } = await pool.query(
+    'SELECT note FROM member_notes WHERE admin_user_id = $1 AND app_id = $2',
+    [adminUserId, appId]
+  );
+  return { note: rows[0]?.note || '' };
+}
+async function upsertMemberNote(adminUserId, appId, note) {
+  const id = genId('note');
+  const ts = now();
+  await pool.query(
+    `INSERT INTO member_notes (id, admin_user_id, app_id, note, updated_at)
+     VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (admin_user_id, app_id) DO UPDATE SET note = $4, updated_at = $5`,
+    [id, adminUserId, appId, note, ts]
+  );
+}
+
+/* ===== member_preferences CRUD ===== */
+async function getMemberPreferences(adminUserId) {
+  const { rows } = await pool.query(
+    'SELECT preferences FROM member_preferences WHERE admin_user_id = $1',
+    [adminUserId]
+  );
+  return rows[0]?.preferences || {};
+}
+async function upsertMemberPreferences(adminUserId, preferences) {
+  const id = genId('pref');
+  const ts = now();
+  await pool.query(
+    `INSERT INTO member_preferences (id, admin_user_id, preferences, updated_at)
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT (admin_user_id) DO UPDATE SET preferences = $3, updated_at = $4`,
+    [id, adminUserId, JSON.stringify(preferences), ts]
+  );
+}
+
 /* ===== 懒初始化（serverless 冷启动安全）===== */
 let _dbReady = false;
 async function ensureDB() {
@@ -270,4 +398,11 @@ async function ensureDB() {
   _dbReady = true;
 }
 
-module.exports = { pool, genId, now, initDB, ensureDB, seedDemoData, mapJob, mapApp, mapCollab };
+module.exports = {
+  pool, genId, now, initDB, ensureDB, seedDemoData,
+  mapJob, mapApp, mapCollab, mapAdminUser,
+  getAdminUserByUsername, getAdminUserById, listAdminUsers,
+  createAdminUser, deleteAdminUser, updateAdminUserPassword,
+  getMemberNote, upsertMemberNote,
+  getMemberPreferences, upsertMemberPreferences,
+};

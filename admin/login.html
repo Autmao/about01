@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 | 管理后台</title>
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">about 编辑部</div>
+    <div class="auth-subtitle">管理后台 · 请登录</div>
+    <form id="login-form">
+      <div class="form-field" style="margin-bottom: var(--space-4); text-align:left;">
+        <label class="form-label">用户名</label>
+        <input type="text" class="form-input" id="f-username" autocomplete="username" required>
+      </div>
+      <div class="form-field" style="margin-bottom: var(--space-6); text-align:left;">
+        <label class="form-label">密码</label>
+        <input type="password" class="form-input" id="f-password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn--primary btn--full" id="login-btn">登录</button>
+      <div class="auth-error" id="login-error"></div>
+    </form>
+  </div>
+
+  <script src="../assets/js/store.js"></script>
+  <script>
+    if (Store.isAdminLoggedIn()) window.location.href = 'index.html';
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('f-username').value.trim();
+      const password = document.getElementById('f-password').value;
+      const btn = document.getElementById('login-btn');
+      const errEl = document.getElementById('login-error');
+      errEl.textContent = '';
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+      try {
+        await Store.adminLogin(username, password);
+        const from = new URLSearchParams(window.location.search).get('from') || 'index.html';
+        window.location.href = from;
+      } catch (err) {
+        errEl.textContent = err.message === 'Invalid credentials' ? '用户名或密码错误' : (err.message || '登录失败，请重试');
+        btn.disabled = false;
+        btn.textContent = '登录';
+      }
+    });
+  </script>
+</body>
+</html>

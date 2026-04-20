@@ -1,17 +1,20 @@
 /* ===== ADMIN-APPS.JS ===== */
 
-async function checkAuth() {
+function checkAuth() {
   if (Store.isAdminLoggedIn()) return true;
-  const pwd = prompt('请输入管理员密码：');
-  if (!pwd) { window.location.href = '../index.html'; return false; }
-  try {
-    await Store.adminLogin(pwd);
-    return true;
-  } catch {
-    alert('密码错误');
-    window.location.href = '../index.html';
-    return false;
-  }
+  window.location.href = 'login.html';
+  return false;
+}
+function logout() { Store.adminLogout(); window.location.href = 'login.html'; }
+window.logout = logout;
+
+function initSidebar() {
+  const user = Store.getCurrentUser();
+  if (!user) return;
+  const el = document.getElementById('sidebar-user');
+  if (el) el.textContent = `${user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
+  const navAccounts = document.getElementById('nav-accounts');
+  if (navAccounts && user.role === 'superadmin') navAccounts.style.display = 'flex';
 }
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -85,9 +88,19 @@ function renderAppCard(app) {
             ${app.status !== 'rejected' ? `<button class="btn btn--ghost btn--sm" style="color:var(--color-rejected);border-color:var(--color-rejected);" onclick="changeStatus('${app.id}','rejected')">婉拒</button>` : ''}
           </div>
           <div class="app-detail__note">
-            <input type="text" class="app-note-input" placeholder="内部备注（仅自己可见）"
-              value="${app.adminNote || ''}"
-              onblur="saveNote('${app.id}', this.value)">
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+              <div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">共享备注（所有成员可见）</div>
+                <input type="text" class="app-note-input" placeholder="添加共享备注..."
+                  value="${app.adminNote || ''}"
+                  onblur="saveNote('${app.id}', this.value)">
+              </div>
+              <div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">我的备注（仅自己可见）</div>
+                <input type="text" class="app-note-input" id="my-note-${app.id}" placeholder="添加私人备注..."
+                  onblur="saveMyNote('${app.id}', this.value)">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -121,6 +134,12 @@ async function toggleDetail(appId) {
   if (toggle) toggle.textContent = isOpen ? '▼' : '▲';
 
   if (!isOpen) {
+    // 加载成员私有备注
+    Store.getMemberNote(appId).then(({ note }) => {
+      const el = document.getElementById(`my-note-${appId}`);
+      if (el) el.value = note || '';
+    }).catch(() => {});
+
     // 自动标记为已读
     const app = await Store.getApplicationById(appId);
     if (app && app.status === 'pending') {
@@ -162,13 +181,44 @@ async function saveNote(appId, note) {
 }
 window.saveNote = saveNote;
 
+async function saveMyNote(appId, note) {
+  await Store.saveMemberNote(appId, note);
+}
+window.saveMyNote = saveMyNote;
+
+let _prefsLoaded = false;
+function _savePrefs() {
+  if (!_prefsLoaded) return;
+  Store.savePreferences({ jobId: currentJobId, status: currentStatus }).catch(() => {});
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!await checkAuth()) return;
+  if (!checkAuth()) return;
+  initSidebar();
   await renderJobSelector();
+
+  // 恢复筛选偏好
+  try {
+    const prefs = await Store.getPreferences();
+    if (prefs.jobId !== undefined) {
+      currentJobId = prefs.jobId;
+      const sel = document.getElementById('job-selector');
+      if (sel) sel.value = prefs.jobId;
+    }
+    if (prefs.status) {
+      currentStatus = prefs.status;
+      document.querySelectorAll('.status-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.status === currentStatus);
+      });
+    }
+  } catch {}
+  _prefsLoaded = true;
+
   await renderApps();
 
   document.getElementById('job-selector').addEventListener('change', e => {
     currentJobId = e.target.value;
+    _savePrefs();
     renderApps();
   });
 
@@ -178,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentStatus = tab.dataset.status;
+    _savePrefs();
     renderApps();
   });
 
