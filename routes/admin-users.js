@@ -24,7 +24,13 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const { username, displayName, password, role = 'member' } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ error: '用户名和密码不能为空' });
+    return res.status(400).json({ error: '登录账号和密码不能为空' });
+  }
+  if (!/^1[3-9]\d{9}$/.test(username)) {
+    return res.status(400).json({ error: '登录账号请填写有效的11位手机号' });
+  }
+  if (!displayName) {
+    return res.status(400).json({ error: '用户名不能为空' });
   }
   if (!['member', 'superadmin'].includes(role)) {
     return res.status(400).json({ error: 'Invalid role' });

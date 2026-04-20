@@ -46,13 +46,20 @@ async function createMember() {
   const username    = document.getElementById('f-username').value.trim();
   const displayName = document.getElementById('f-displayname').value.trim();
   const password    = document.getElementById('f-password').value;
+  const role        = document.getElementById('f-role').value;
   const errEl = document.getElementById('create-error');
   errEl.style.display = 'none';
   if (!username || !password) {
-    errEl.textContent = '请填写用户名和密码'; errEl.style.display = 'block'; return;
+    errEl.textContent = '请填写登录账号和密码'; errEl.style.display = 'block'; return;
+  }
+  if (!/^1[3-9]\d{9}$/.test(username)) {
+    errEl.textContent = '登录账号请填写有效的11位手机号'; errEl.style.display = 'block'; return;
+  }
+  if (!displayName) {
+    errEl.textContent = '请填写用户名（后台显示名字）'; errEl.style.display = 'block'; return;
   }
   try {
-    await Store.createAdminUser({ username, displayName, password, role: 'member' });
+    await Store.createAdminUser({ username, displayName, password, role });
     document.getElementById('f-username').value = '';
     document.getElementById('f-displayname').value = '';
     document.getElementById('f-password').value = '';

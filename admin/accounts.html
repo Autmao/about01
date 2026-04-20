@@ -51,17 +51,26 @@
           <h2 style="font-size:var(--text-base);font-weight:var(--weight-semibold);margin-bottom:var(--space-4);">添加成员账号</h2>
           <div class="form-row" style="margin-bottom:var(--space-3);">
             <div>
-              <label class="form-label">用户名</label>
-              <input type="text" class="form-input" id="f-username" placeholder="登录用，英文/数字">
+              <label class="form-label">登录账号</label>
+              <input type="tel" class="form-input" id="f-username" placeholder="手机号码">
             </div>
             <div>
-              <label class="form-label">显示名称 <span class="form-optional">可选</span></label>
-              <input type="text" class="form-input" id="f-displayname" placeholder="如：小明">
+              <label class="form-label">用户名</label>
+              <input type="text" class="form-input" id="f-displayname" placeholder="后台显示的名字">
             </div>
           </div>
-          <div class="form-field" style="margin-bottom:var(--space-4);">
-            <label class="form-label">初始密码</label>
-            <input type="password" class="form-input" id="f-password" placeholder="至少6位">
+          <div class="form-row" style="margin-bottom:var(--space-4);">
+            <div>
+              <label class="form-label">初始密码</label>
+              <input type="password" class="form-input" id="f-password" placeholder="至少6位">
+            </div>
+            <div>
+              <label class="form-label">角色</label>
+              <select class="form-input" id="f-role">
+                <option value="member">成员</option>
+                <option value="superadmin">管理员</option>
+              </select>
+            </div>
           </div>
           <button class="btn btn--primary" onclick="createMember()">创建账号</button>
           <div id="create-error" style="color:var(--color-rejected);font-size:var(--text-sm);margin-top:8px;display:none;"></div>
@@ -71,8 +80,8 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th>登录账号</th>
                 <th>用户名</th>
-                <th>显示名称</th>
                 <th>角色</th>
                 <th>创建时间</th>
                 <th>操作</th>
