@@ -36,6 +36,9 @@ app.use('/api/admin/preferences', requireAdmin,      require('./routes/member-pr
 // 账号管理（仅 superadmin）
 app.use('/api/admin-users',       requireSuperAdmin, require('./routes/admin-users'));
 
+// 投递者注册/登录（手机号 OTP，公开）
+app.use('/api/users', require('./routes/users'));
+
 // 投递者登录 & 查询（公开）
 app.use('/api/applicant', require('./routes/applicant'));
 

@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, genId, now, mapCollab } = require('../db');
+const { pool, genId, now, mapCollab, getAllMemberNotesByAppId } = require('../db');
 
 /* GET /api/collaborators */
 router.get('/', async (req, res) => {
@@ -40,6 +40,66 @@ router.get('/:id', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM collaborators WHERE id = $1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(mapCollab(rows[0]));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* GET /api/collaborators/:id/activity — 成员备注 + 操作记录聚合 */
+router.get('/:id/activity', async (req, res) => {
+  try {
+    const { rows: collabRows } = await pool.query('SELECT * FROM collaborators WHERE id = $1', [req.params.id]);
+    if (!collabRows[0]) return res.status(404).json({ error: 'Not found' });
+    const email = collabRows[0].email;
+
+    // 查该邮箱所有投递
+    const { rows: appRows } = await pool.query(
+      'SELECT id, job_title, status_history FROM applications WHERE email = $1 ORDER BY submitted_at ASC',
+      [email]
+    );
+
+    // 聚合成员备注（按 admin_user 分组）
+    const notesByMember = {};
+    for (const app of appRows) {
+      const notes = await getAllMemberNotesByAppId(app.id);
+      for (const n of notes) {
+        if (!notesByMember[n.adminUserId]) {
+          notesByMember[n.adminUserId] = { displayName: n.displayName, notes: [] };
+        }
+        notesByMember[n.adminUserId].notes.push({
+          note: n.note,
+          jobTitle: app.job_title,
+          updatedAt: n.updatedAt,
+        });
+      }
+    }
+
+    // 聚合操作记录（有 actor 的 status_history 条目）
+    const actionLog = [];
+    for (const app of appRows) {
+      const history = Array.isArray(app.status_history)
+        ? app.status_history
+        : JSON.parse(app.status_history || '[]');
+      for (const h of history) {
+        if (!h.actor) continue;
+        if (h.from === h.to && h.action !== 'archived') continue;
+        actionLog.push({
+          jobTitle: app.job_title,
+          actor: h.actor,
+          action: h.action || null,
+          from: h.from,
+          to: h.to,
+          at: h.at,
+        });
+      }
+    }
+    actionLog.sort((a, b) => new Date(b.at) - new Date(a.at));
+
+    res.json({
+      memberNotes: Object.values(notesByMember),
+      actionLog,
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });

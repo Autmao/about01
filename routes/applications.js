@@ -2,8 +2,9 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, genId, now, mapApp } = require('../db');
+const { pool, genId, now, mapApp, mapCollab, getUserById } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
+const { requireUser } = require('./users');
 const { sendStatusEmail } = require('../lib/mailer');
 
 /* GET /api/applications */
@@ -91,20 +92,27 @@ router.get('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-/* POST /api/applications */
-router.post('/', async (req, res) => {
+/* POST /api/applications — 需登录 */
+router.post('/', requireUser, async (req, res) => {
   try {
-    const { jobId, name, email, phone, wechat = '', bio = '',
+    const { jobId, wechat = '', bio = '',
       portfolioNote = '', portfolioLinks = [],
       resumeUrl = '', portfolioFiles = [] } = req.body;
 
-    if (!jobId || !name || !email || !phone)
-      return res.status(400).json({ error: 'jobId, name, email, phone required' });
+    if (!jobId) return res.status(400).json({ error: 'jobId required' });
 
-    // 防重复投递
+    // 从已登录用户资料获取姓名/手机
+    const user = await getUserById(req.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
+
+    const name = req.body.name || user.name || '';
+    const phone = user.phone;
+    const email = req.body.email || user.email || '';
+
+    // 防重复投递（按 user_id）
     const { rows: dupRows } = await pool.query(
-      'SELECT id FROM applications WHERE job_id = $1 AND email = $2',
-      [jobId, email]
+      'SELECT id FROM applications WHERE job_id = $1 AND user_id = $2',
+      [jobId, req.userId]
     );
     if (dupRows[0]) return res.status(409).json({ error: 'Already applied', appId: dupRows[0].id });
 
@@ -119,12 +127,12 @@ router.post('/', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO applications (id,job_id,job_title,job_category,name,email,phone,wechat,
         bio,portfolio_note,portfolio_links,resume_url,portfolio_files,
-        status,status_history,admin_note,submitted_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+        status,status_history,admin_note,user_id,submitted_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [id, jobId, jobRows[0].title, jobRows[0].category,
        name, email, phone, wechat, bio, portfolioNote, JSON.stringify(portfolioLinks),
        resumeUrl, JSON.stringify(portfolioFiles),
-       'pending', history, '', ts, ts]
+       'pending', history, '', req.userId, ts, ts]
     );
 
     await pool.query(
@@ -151,7 +159,8 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
 
     const ts = now();
     const app = mapApp(existing[0]);
-    const history = [...(app.statusHistory || []), { from: app.status, to: status, at: ts, note }];
+    const actor = req.adminUser.displayName || req.adminUser.username || '';
+    const history = [...(app.statusHistory || []), { from: app.status, to: status, at: ts, note, actor }];
 
     const { rows } = await pool.query(
       `UPDATE applications SET status = $1, status_history = $2, updated_at = $3 WHERE id = $4 RETURNING *`,
@@ -164,6 +173,66 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
     }
 
     res.json(mapApp(rows[0]));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* POST /api/applications/:id/archive — 加入合作者档案（独立操作，不影响 status） */
+router.post('/:id/archive', requireAdmin, async (req, res) => {
+  try {
+    const { rows: existing } = await pool.query('SELECT * FROM applications WHERE id = $1', [req.params.id]);
+    if (!existing[0]) return res.status(404).json({ error: 'Not found' });
+
+    const ts = now();
+    const app = mapApp(existing[0]);
+    const actor = req.adminUser.displayName || req.adminUser.username || '';
+
+    // 在 status_history 里追加一条 archive 操作记录
+    const history = [...(app.statusHistory || []), {
+      from: app.status, to: app.status, at: ts, note: '', actor, action: 'archived',
+    }];
+
+    await pool.query(
+      `UPDATE applications SET status_history = $1, updated_at = $2 WHERE id = $3`,
+      [JSON.stringify(history), ts, req.params.id]
+    );
+
+    // 创建或更新合作者档案
+    const historyEntry = {
+      jobId: app.jobId, jobTitle: app.jobTitle, status: app.status, date: ts.slice(0, 7),
+    };
+    const { rows: existing_collab } = await pool.query(
+      'SELECT * FROM collaborators WHERE email = $1', [app.email]
+    );
+
+    let collab;
+    if (existing_collab[0]) {
+      const c = existing_collab[0];
+      const cHistory = Array.isArray(c.cooperation_history) ? c.cooperation_history : JSON.parse(c.cooperation_history || '[]');
+      if (!cHistory.find(h => h.jobId === app.jobId)) cHistory.push(historyEntry);
+      const { rows: updated } = await pool.query(
+        `UPDATE collaborators SET cooperation_history = $1, updated_at = $2 WHERE id = $3 RETURNING *`,
+        [JSON.stringify(cHistory), ts, c.id]
+      );
+      collab = updated[0];
+    } else {
+      const id = genId('collab');
+      const categories = app.jobCategory ? JSON.stringify([app.jobCategory]) : '[]';
+      const { rows: inserted } = await pool.query(
+        `INSERT INTO collaborators (id,name,email,phone,wechat,categories,bio,portfolio_links,
+          cooperation_history,rating,internal_tags,internal_note,source_app_id,added_at,updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+        [id, app.name, app.email, app.phone, app.wechat || '',
+         categories, app.bio || '', JSON.stringify(app.portfolioLinks || []),
+         JSON.stringify([historyEntry]),
+         0, '[]', '', req.params.id, ts, ts]
+      );
+      collab = inserted[0];
+    }
+
+    res.json({ ok: true, collabId: collab?.id });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });

@@ -147,12 +147,31 @@ async function initDB() {
       content TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      phone TEXT UNIQUE NOT NULL,
+      name TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS phone_otps (
+      id TEXT PRIMARY KEY,
+      phone TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // 为已存在的表补充新列（幂等）
   await pool.query(`
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT DEFAULT '';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
+    ALTER TABLE applications ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);
   `);
 
   // 确保超级管理员账号始终存在且密码正确（每次冷启动同步）
@@ -389,6 +408,22 @@ async function getMemberNote(adminUserId, appId) {
   );
   return { note: rows[0]?.note || '' };
 }
+async function getAllMemberNotesByAppId(appId) {
+  const { rows } = await pool.query(
+    `SELECT mn.note, mn.updated_at, au.display_name, au.id as admin_user_id
+     FROM member_notes mn
+     JOIN admin_users au ON au.id = mn.admin_user_id
+     WHERE mn.app_id = $1 AND mn.note != ''
+     ORDER BY mn.updated_at DESC`,
+    [appId]
+  );
+  return rows.map(r => ({
+    adminUserId: r.admin_user_id,
+    displayName: r.display_name,
+    note: r.note,
+    updatedAt: r.updated_at,
+  }));
+}
 async function upsertMemberNote(adminUserId, appId, note) {
   const id = genId('note');
   const ts = now();
@@ -473,6 +508,71 @@ async function getChatMessages(sessionId) {
   return rows.map(mapMessage);
 }
 
+/* ===== users ===== */
+function mapUser(r) {
+  if (!r) return null;
+  return { id: r.id, phone: r.phone, name: r.name || '', email: r.email || '',
+    createdAt: r.created_at, updatedAt: r.updated_at };
+}
+async function getUserByPhone(phone) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
+  return rows[0] ? mapUser(rows[0]) : null;
+}
+async function getUserById(id) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+  return rows[0] ? mapUser(rows[0]) : null;
+}
+async function createUser({ phone, name = '', email = '' }) {
+  const id = genId('u');
+  const ts = now();
+  const { rows } = await pool.query(
+    `INSERT INTO users (id, phone, name, email, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$5) RETURNING *`,
+    [id, phone, name, email, ts]
+  );
+  return mapUser(rows[0]);
+}
+async function updateUser(id, { name, email }) {
+  const ts = now();
+  const sets = [];
+  const params = [];
+  if (name !== undefined) { params.push(name); sets.push(`name = $${params.length}`); }
+  if (email !== undefined) { params.push(email); sets.push(`email = $${params.length}`); }
+  if (!sets.length) return getUserById(id);
+  params.push(ts); sets.push(`updated_at = $${params.length}`);
+  params.push(id);
+  const { rows } = await pool.query(
+    `UPDATE users SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  );
+  return mapUser(rows[0]);
+}
+
+/* ===== phone_otps ===== */
+async function createPhoneOtp(phone) {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const id = genId('potp');
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  await pool.query('DELETE FROM phone_otps WHERE phone = $1 AND used = FALSE', [phone]);
+  await pool.query(
+    `INSERT INTO phone_otps (id, phone, code, expires_at, used, created_at)
+     VALUES ($1,$2,$3,$4,FALSE,NOW())`,
+    [id, phone, code, expiresAt]
+  );
+  return code;
+}
+async function verifyPhoneOtp(phone, code) {
+  const { rows } = await pool.query(
+    `SELECT * FROM phone_otps
+     WHERE phone = $1 AND code = $2 AND used = FALSE AND expires_at > NOW()
+     ORDER BY created_at DESC LIMIT 1`,
+    [phone, code]
+  );
+  if (!rows[0]) return false;
+  await pool.query('UPDATE phone_otps SET used = TRUE WHERE id = $1', [rows[0].id]);
+  return true;
+}
+
 /* ===== applicant_otps ===== */
 async function createOtp(email) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -518,4 +618,7 @@ module.exports = {
   mapSession, mapMessage,
   createChatSession, getChatSession, listChatSessions,
   updateChatSessionStatus, addChatMessage, getChatMessages,
+  mapUser, getUserByPhone, getUserById, createUser, updateUser,
+  createPhoneOtp, verifyPhoneOtp,
+  getAllMemberNotesByAppId,
 };

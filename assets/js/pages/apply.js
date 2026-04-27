@@ -240,10 +240,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // 需要登录才能投递
+  if (!Store.isUserLoggedIn()) {
+    window.location.href = `user-login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    return;
+  }
+
   const job = await Store.getJobById(jobId);
   if (!job || job.status !== 'open') {
     document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该岗位不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
     return;
+  }
+
+  // 预填已登录用户信息
+  const user = Store.getCurrentApplicant();
+  if (user) {
+    const phoneField = document.getElementById('field-phone');
+    const nameField = document.getElementById('field-name');
+    if (phoneField) { phoneField.value = user.phone || ''; phoneField.readOnly = true; }
+    if (nameField && user.name) nameField.value = user.name;
   }
 
   renderJobSummary(job);

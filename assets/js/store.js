@@ -137,6 +137,103 @@ const Store = {
     return _get(`${API}/applications/my${_qs({ email })}`);
   },
 
+  /* ====== USER AUTH (手机号 OTP) ====== */
+  async sendUserOtp(phone) {
+    const res = await fetch(`${API}/users/send-otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err.error || 'Failed');
+      e.status = res.status;
+      throw e;
+    }
+    return res.json();
+  },
+  async verifyUserOtp(phone, code, name, email) {
+    const res = await fetch(`${API}/users/verify-otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code, name, email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err.error || 'Failed');
+      e.status = res.status;
+      throw e;
+    }
+    const { token, user } = await res.json();
+    localStorage.setItem('mgs_user_token', token);
+    localStorage.setItem('mgs_user_info', JSON.stringify(user));
+    return user;
+  },
+  isUserLoggedIn() {
+    return !!localStorage.getItem('mgs_user_token');
+  },
+  getCurrentApplicant() {
+    try {
+      const info = localStorage.getItem('mgs_user_info');
+      if (info) return JSON.parse(info);
+      const token = localStorage.getItem('mgs_user_token');
+      if (!token) return null;
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')));
+      return { id: payload.sub, phone: payload.phone };
+    } catch { return null; }
+  },
+  userLogout() {
+    localStorage.removeItem('mgs_user_token');
+    localStorage.removeItem('mgs_user_info');
+  },
+  async getMe() {
+    const token = localStorage.getItem('mgs_user_token');
+    if (!token) throw new Error('Not logged in');
+    const res = await fetch(`${API}/users/me`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.status === 401) { this.userLogout(); throw new Error('Session expired'); }
+    if (!res.ok) throw new Error('Failed');
+    return res.json();
+  },
+  async updateMe(data) {
+    const token = localStorage.getItem('mgs_user_token');
+    if (!token) throw new Error('Not logged in');
+    const res = await fetch(`${API}/users/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed');
+    const user = await res.json();
+    localStorage.setItem('mgs_user_info', JSON.stringify(user));
+    return user;
+  },
+  async getUserApplications() {
+    const token = localStorage.getItem('mgs_user_token');
+    if (!token) throw new Error('Not logged in');
+    const res = await fetch(`${API}/users/me/applications`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.status === 401) { this.userLogout(); throw new Error('Session expired'); }
+    if (!res.ok) throw new Error('Failed');
+    return res.json();
+  },
+  async createApplication(data) {
+    const token = localStorage.getItem('mgs_user_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API}/applications`, {
+      method: 'POST', headers, body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err.error || `POST failed: ${res.status}`);
+      e.status = res.status; e.data = err;
+      throw e;
+    }
+    return res.json();
+  },
+
   /* ====== APPLICANT AUTH ====== */
   async sendOtp(email) {
     const res = await fetch(`${API}/applicant/send-otp`, {
@@ -190,9 +287,6 @@ const Store = {
     if (!res.ok) throw new Error('Failed');
     return res.json();
   },
-  async createApplication(data) {
-    return _post(`${API}/applications`, data);
-  },
   async updateApplicationStatus(id, status, note = '') {
     return _patch(`${API}/applications/${id}/status`, { status, note });
   },
@@ -210,6 +304,10 @@ const Store = {
   async getCollaboratorById(id) {
     try { return await _get(`${API}/collaborators/${id}`); }
     catch { return null; }
+  },
+  async getCollaboratorActivity(id) {
+    try { return await _get(`${API}/collaborators/${id}/activity`); }
+    catch { return { memberNotes: [], actionLog: [] }; }
   },
   async createCollaboratorFromApp(appId) {
     return _post(`${API}/collaborators/from-app/${appId}`, {});
@@ -241,6 +339,12 @@ const Store = {
   /* ====== MEMBER NOTES ====== */
   async getMemberNote(appId) {
     return _get(`${API}/admin/notes/${appId}`);
+  },
+  async getAllMemberNotes(appId) {
+    return _get(`${API}/admin/notes/${appId}/all`);
+  },
+  async archiveToCollaborator(appId) {
+    return _post(`${API}/applications/${appId}/archive`, {});
   },
   async saveMemberNote(appId, note) {
     return _put(`${API}/admin/notes/${appId}`, { note });

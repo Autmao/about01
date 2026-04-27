@@ -17,6 +17,7 @@
     "express": "^4.18.3",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.11.3",
-    "resend": "^6.12.0"
+    "resend": "^6.12.0",
+    "tencentcloud-sdk-nodejs-sms": "^4.1.213"
   }
 }

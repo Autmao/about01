@@ -74,7 +74,10 @@ async function setRating(collabId, rating) {
 window.setRating = setRating;
 
 async function openModal(collabId) {
-  const collab = await Store.getCollaboratorById(collabId);
+  const [collab, activity] = await Promise.all([
+    Store.getCollaboratorById(collabId),
+    Store.getCollaboratorActivity(collabId),
+  ]);
   if (!collab) return;
 
   const avatar = Utils.getAvatarInfo(collab.name);
@@ -95,6 +98,38 @@ async function openModal(collabId) {
         <div class="timeline-date">${h.date || ''}</div>
       </div>
     </div>`).join('');
+
+  // 成员备注区块
+  const memberNotesHtml = (activity.memberNotes || []).length
+    ? (activity.memberNotes || []).map(m => `
+        <div class="collab-member-notes">
+          <div class="collab-member-notes__name">${m.displayName}</div>
+          ${m.notes.map(n => `
+            <div class="collab-member-note-item">
+              <span class="collab-member-note-item__job">${n.jobTitle || ''}</span>
+              <span class="collab-member-note-item__text">${n.note}</span>
+              <span class="collab-member-note-item__time">${n.updatedAt ? n.updatedAt.slice(0,10) : ''}</span>
+            </div>`).join('')}
+        </div>`).join('')
+    : `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无成员备注</p>`;
+
+  // 操作记录区块
+  const ACTION_LABELS = { pending:'待查看', read:'已读', hired:'录用', rejected:'婉拒' };
+  const actionLogHtml = (activity.actionLog || []).length
+    ? (activity.actionLog || []).map(h => {
+        const time = h.at ? h.at.slice(0,16).replace('T',' ') : '';
+        if (h.action === 'archived') {
+          return `<div class="action-log-item">
+            <span class="action-log__actor">${h.actor}</span> 将「${h.jobTitle || ''}」加入了合作档案
+            <span class="action-log__time">${time}</span>
+          </div>`;
+        }
+        return `<div class="action-log-item">
+          <span class="action-log__actor">${h.actor}</span> 将「${h.jobTitle || ''}」标记为「${ACTION_LABELS[h.to] || h.to}」
+          <span class="action-log__time">${time}</span>
+        </div>`;
+      }).join('')
+    : `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无操作记录</p>`;
 
   document.getElementById('modal-name').textContent = collab.name;
   document.getElementById('modal-body').innerHTML = `
@@ -126,6 +161,16 @@ async function openModal(collabId) {
       <div class="modal-section-title">合作历史</div>
       <div class="timeline">${history}</div>
     </div>` : ''}
+
+    <div class="modal-section">
+      <div class="modal-section-title">成员备注</div>
+      ${memberNotesHtml}
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">操作记录</div>
+      <div class="action-log">${actionLogHtml}</div>
+    </div>
 
     <div class="modal-section">
       <div class="modal-section-title">评分</div>

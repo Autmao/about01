@@ -44,9 +44,29 @@ async function updateCounts() {
   document.getElementById('cnt-rejected').textContent = counts.rejected;
 }
 
+function isArchived(app) {
+  return (app.statusHistory || []).some(h => h.action === 'archived');
+}
+
+function renderActionHistory(history) {
+  if (!history || !history.length) return '';
+  const relevant = history.filter(h => h.actor && (h.from !== h.to || h.action === 'archived'));
+  if (!relevant.length) return '';
+  const items = relevant.map(h => {
+    const time = h.at ? h.at.slice(0, 16).replace('T', ' ') : '';
+    if (h.action === 'archived') {
+      return `<div class="action-log-item"><span class="action-log__actor">${h.actor}</span> 加入了合作档案 <span class="action-log__time">${time}</span></div>`;
+    }
+    const toLabel = { pending:'待查看', read:'已读', hired:'录用', rejected:'婉拒' }[h.to] || h.to;
+    return `<div class="action-log-item"><span class="action-log__actor">${h.actor}</span> 标记为「${toLabel}」<span class="action-log__time">${time}</span></div>`;
+  });
+  return `<div class="action-log" id="action-log-appId">${items.join('')}</div>`;
+}
+
 function renderAppCard(app) {
   const avatar = Utils.getAvatarInfo(app.name);
   const statusInfo = Utils.getStatusInfo(app.status);
+  const archived = isArchived(app);
   const resumeLink = app.resumeUrl
     ? `<a href="${app.resumeUrl}" target="_blank" rel="noopener">📄 下载简历</a>`
     : '';
@@ -57,6 +77,22 @@ function renderAppCard(app) {
     `<a href="${l.url}" target="_blank" rel="noopener">🔗 ${l.label || '作品链接'}</a>`
   ).join('');
   const allLinks = resumeLink + portfolioFileLinks + links;
+
+  // 录用/婉拒互斥：active 态显示已选中样式
+  const hiredActive   = app.status === 'hired';
+  const rejectedActive = app.status === 'rejected';
+
+  const hiredBtn = hiredActive
+    ? `<button class="btn btn--primary btn--sm action-btn--active" onclick="changeStatus('${app.id}','read')" title="撤销录用">✓ 已录用</button>`
+    : `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','hired')">录用</button>`;
+
+  const rejectedBtn = rejectedActive
+    ? `<button class="btn btn--ghost btn--sm action-btn--active-reject" onclick="changeStatus('${app.id}','read')" title="撤销婉拒">✓ 已婉拒</button>`
+    : `<button class="btn btn--ghost btn--sm" style="color:var(--color-rejected);border-color:var(--color-rejected);" onclick="changeStatus('${app.id}','rejected')">婉拒</button>`;
+
+  const archiveBtn = archived
+    ? `<button class="btn btn--ghost btn--sm action-btn--archived" disabled title="已在合作档案">📁 已入档</button>`
+    : `<button class="btn btn--ghost btn--sm" onclick="archiveApp('${app.id}')">加入合作档案</button>`;
 
   return `
     <div class="app-card" id="app-card-${app.id}">
@@ -73,6 +109,7 @@ function renderAppCard(app) {
         </div>
         <div class="app-card__right">
           <span class="tag ${statusInfo.cls}">${statusInfo.label}</span>
+          ${archived ? `<span class="tag tag--archived">📁 已入档</span>` : ''}
           <span class="app-card__time">${Utils.relativeTime(app.submittedAt)}</span>
           <span class="app-card__toggle">▼</span>
         </div>
@@ -82,11 +119,14 @@ function renderAppCard(app) {
         ${allLinks ? `<div class="app-detail__links">${allLinks}</div>` : ''}
         ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${app.portfolioNote}</p>` : ''}
         <div class="app-detail__actions">
-          <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
-            ${app.status !== 'read'     ? `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','read')">标记已读</button>` : ''}
-            ${app.status !== 'hired'    ? `<button class="btn btn--primary btn--sm" onclick="changeStatus('${app.id}','hired')">录用</button>` : ''}
-            ${app.status !== 'rejected' ? `<button class="btn btn--ghost btn--sm" style="color:var(--color-rejected);border-color:var(--color-rejected);" onclick="changeStatus('${app.id}','rejected')">婉拒</button>` : ''}
+          <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;">
+            ${app.status !== 'read' ? `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','read')">标记已读</button>` : ''}
+            ${hiredBtn}
+            ${rejectedBtn}
+            <span style="width:1px;height:20px;background:var(--color-border-light);margin:0 2px;"></span>
+            ${archiveBtn}
           </div>
+          ${renderActionHistory(app.statusHistory)}
           <div class="app-detail__note">
             <div style="display:flex;flex-direction:column;gap:var(--space-2);">
               <div>
@@ -158,23 +198,23 @@ window.toggleDetail = toggleDetail;
 
 async function changeStatus(appId, newStatus) {
   await Store.updateApplicationStatus(appId, newStatus);
-
-  if (newStatus === 'hired') {
-    const app = await Store.getApplicationById(appId);
-    Utils.showConfirm(
-      `是否将「${app?.name}」加入合作者档案库？`,
-      async () => {
-        await Store.createCollaboratorFromApp(appId);
-        Utils.showToast('已加入合作者档案库', 'success');
-      }
-    );
-  } else {
-    Utils.showToast(`状态已更新为「${Utils.getStatusInfo(newStatus).label}」`, 'success');
-  }
-
+  Utils.showToast(`已标记为「${Utils.getStatusInfo(newStatus).label}」`, 'success');
   await renderApps();
 }
 window.changeStatus = changeStatus;
+
+async function archiveApp(appId) {
+  const app = await Store.getApplicationById(appId);
+  Utils.showConfirm(
+    `将「${app?.name}」加入合作者档案？`,
+    async () => {
+      await Store.archiveToCollaborator(appId);
+      Utils.showToast('已加入合作者档案', 'success');
+      await renderApps();
+    }
+  );
+}
+window.archiveApp = archiveApp;
 
 async function saveNote(appId, note) {
   await Store.updateApplicationNote(appId, note);
