@@ -7,81 +7,168 @@
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/home-v2.css">
 </head>
-<body class="page-enter">
+<body class="home-v2">
 
-  <!-- 导航 -->
-  <nav class="nav">
-    <div class="nav__inner">
-      <a href="index.html" class="nav__logo">
-        <span class="nav__logo-dot"></span>
-        about编辑部
-      </a>
-      <div class="nav__actions">
-        <a href="my-applications.html" class="btn btn--ghost btn--sm">查询投递状态</a>
-      </div>
+  <nav class="home-nav" aria-label="主导航">
+    <a class="home-nav__brand" href="index.html">about编辑部</a>
+    <div class="home-nav__links">
+      <a href="#open-calls">正在招募</a>
+      <a href="#application-path">投递方式</a>
+      <a href="my-applications.html">查询状态</a>
     </div>
+    <a class="home-nav__cta" href="my-applications.html">查询投递</a>
   </nav>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero__inner">
-      <div class="hero__content">
-        <span class="hero__label">OPEN CALL 2026</span>
-        <h1 class="hero__title">
-          <span class="hero__title-normal">寻找下一位</span>
-          <em>创作伙伴</em>
-        </h1>
-        <div class="hero__subtitle">
-          <p>我们是 about编辑部。</p>
-          <p>"about关于"是小红书于2021年创立的内容品牌，延续 "Inspire Lives" 理念，关注人们生活的方式，重新思考生活的本质。</p>
-          <p>编辑部通过纸质出版物、播客、线下活动、联合创意项目等形式展开创作，基于不同项目需求，我们正在寻找各领域的创作者，包括撰稿人、摄影师、策划人及更多内容伙伴。期待与你共同完成下一次创作。</p>
-        </div>
-        <div class="hero__badge">
-          <span class="hero__badge-dot"></span>
-          <span id="open-count">加载中</span>个岗位正在招募
-        </div>
+  <header class="home-hero">
+    <div class="home-hero__object" aria-hidden="true"></div>
+    <div class="home-hero__content">
+      <div class="home-eyebrow">Open Call 2026 · Creative Partners</div>
+      <h1>
+        <span>寻找下一位</span>
+        <span>创作伙伴。</span>
+      </h1>
+      <p>
+        我们把每一次招募视为一次创作邀请。这里会发布编辑部正在推进的纸本、声音、影像与线下项目，等待合适的人加入。
+      </p>
+      <div class="home-hero__actions">
+        <a class="home-btn home-btn--paper" href="#open-calls">查看正在招募</a>
+        <a class="home-btn" href="#application-path">了解投递方式</a>
       </div>
     </div>
-  </section>
 
-  <!-- 筛选栏 -->
-  <div class="filter-bar">
-    <div class="filter-bar__inner">
-      <div class="filter-tabs" id="filter-tabs">
-        <button class="filter-tab active" data-category="all">全部</button>
-        <button class="filter-tab" data-category="writing">撰稿人</button>
-        <button class="filter-tab" data-category="editing">编辑</button>
-        <button class="filter-tab" data-category="design">设计师</button>
-        <button class="filter-tab" data-category="planning">活动策划执行</button>
-        <button class="filter-tab" data-category="podcast">播客制作人</button>
-        <button class="filter-tab" data-category="other">其他</button>
+    <div class="home-hero__meta">
+      <div class="home-open-count">
+        <strong id="open-count">00</strong>
+        <span>当前开放 brief</span>
       </div>
-      <div class="filter-bar__search">
-        <span class="filter-search-icon">🔍</span>
-        <input type="search" class="filter-search-input" id="search-input" placeholder="搜索岗位...">
+      <div class="home-ticker" aria-hidden="true">
+        <div class="home-ticker__track">
+          <span><em>Open Call</em> / Photography / Writing / Planning / Interview / Podcast / Design /</span>
+          <span><em>Open Call</em> / Photography / Writing / Planning / Interview / Podcast / Design /</span>
+          <span><em>Open Call</em> / Photography / Writing / Planning / Interview / Podcast / Design /</span>
+          <span><em>Open Call</em> / Photography / Writing / Planning / Interview / Podcast / Design /</span>
+        </div>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- 岗位列表 -->
-  <main class="container section">
-    <div class="jobs-grid" id="jobs-grid"></div>
-    <div class="empty-state" id="empty-state" style="display:none;">
-      <div class="empty-state__icon">🌱</div>
-      <div class="empty-state__title">暂无符合条件的岗位</div>
-      <div class="empty-state__desc">试试调整筛选条件，或等待新岗位发布</div>
-    </div>
+  <main>
+    <section class="home-section home-roles" id="open-calls">
+      <div class="home-section__head">
+        <div>
+          <div class="home-kicker">Current Calls</div>
+          <h2>正在发生的 brief。</h2>
+        </div>
+        <p>
+          每个岗位都是一个具体的项目入口。先读 brief，再判断是否适合；如果还有问题，可以在岗位页直接咨询编辑部。
+        </p>
+      </div>
+
+      <div class="home-call-sheet">
+        <aside class="home-feature-card" aria-label="招募说明">
+          <div class="home-feature-card__caption">
+            <span>about open call</span>
+            <span>2026</span>
+          </div>
+          <div class="home-feature-card__title">
+            <small>Special Recruitment Feature</small>
+            <strong>把一个想法，推进到真实发生。</strong>
+          </div>
+        </aside>
+
+        <div class="home-jobs-panel">
+          <div class="home-filter-bar">
+            <div class="home-filter-tabs" id="filter-tabs">
+              <button type="button" class="home-filter-chip active" data-category="all">全部</button>
+              <button type="button" class="home-filter-chip" data-category="writing">撰稿</button>
+              <button type="button" class="home-filter-chip" data-category="editing">编辑</button>
+              <button type="button" class="home-filter-chip" data-category="design">设计</button>
+              <button type="button" class="home-filter-chip" data-category="planning">策划</button>
+              <button type="button" class="home-filter-chip" data-category="podcast">播客</button>
+              <button type="button" class="home-filter-chip" data-category="other">其他</button>
+            </div>
+            <label class="home-search">
+              <span>Search</span>
+              <input type="search" id="search-input" placeholder="搜索岗位或关键词">
+            </label>
+          </div>
+
+          <div class="home-job-list" id="jobs-list"></div>
+          <div class="home-empty" id="empty-state" style="display:none;">
+            <strong>暂时没有匹配的 brief。</strong>
+            <span>可以换一个筛选条件，或稍后再来看看新的招募。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section home-system" id="application-path">
+      <div class="home-section__head">
+        <div>
+          <div class="home-kicker">Application Path</div>
+          <h2>从一个问题，到一次投递。</h2>
+        </div>
+        <p>
+          我们把投递路径尽量压短。你可以先了解岗位、提交材料，再用邮箱查询状态；必要的问题会被转给负责同事人工回复。
+        </p>
+      </div>
+
+      <div class="home-system-grid">
+        <article class="home-system-card">
+          <div>
+            <small>Step 01</small>
+            <strong>读清楚 brief</strong>
+            <p>岗位页会说明项目背景、期待产出、能力要求、费用方式与截止日期。</p>
+          </div>
+          <div class="home-system-mark">01</div>
+        </article>
+        <article class="home-system-card">
+          <div>
+            <small>Step 02</small>
+            <strong>提交作品与信息</strong>
+            <p>无需短信验证或创建账号。留下基础信息、作品链接或简历，让编辑部能快速判断匹配度。</p>
+          </div>
+          <div class="home-system-mark">02</div>
+        </article>
+        <article class="home-system-card">
+          <div>
+            <small>Step 03</small>
+            <strong>查询进度与沟通</strong>
+            <p>投递后可用邮箱查询状态。岗位问题先由 AI 助手回答，复杂问题会转给工作人员。</p>
+          </div>
+          <div class="home-system-mark">03</div>
+        </article>
+      </div>
+
+      <div class="home-mobile-preview">
+        <div>
+          <div class="home-kicker">Mobile First</div>
+          <h2>微信里打开，也要像一本轻应用手册。</h2>
+          <p>
+            正式页面会优先照顾手机体验：岗位信息可扫读，投递按钮明确，聊天入口不打扰阅读。
+          </p>
+        </div>
+        <div class="home-phone" aria-hidden="true">
+          <div class="home-phone__top">
+            <small>about editor's office</small>
+            <strong>Open<br>Call<br>2026</strong>
+            <span>View calls</span>
+          </div>
+          <div class="home-phone__list">
+            <div><small>01 / Photography</small><strong>城市切面专题摄影师</strong></div>
+            <div><small>02 / Writing</small><strong>生活方式专栏撰稿人</strong></div>
+            <div><small>03 / Planning</small><strong>品牌活动策划执行</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- 页脚 -->
-  <footer class="footer">
-    <div class="container">
-      <p>©about编辑部</p>
-      <p style="margin-top:6px;">
-        <a href="my-applications.html" style="color:var(--color-text-muted)">查询我的投递状态</a>
-      </p>
-    </div>
+  <footer class="home-footer">
+    <strong>about<br>Open Call</strong>
+    <span>每一次合作，都从一个具体的 brief 开始。</span>
   </footer>
 
   <script src="assets/js/store.js"></script>
