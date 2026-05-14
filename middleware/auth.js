@@ -15,7 +15,13 @@ function requireAdmin(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const decoded = jwt.verify(token, getSecret());
-    req.adminUser = { id: decoded.sub, username: decoded.username, displayName: decoded.displayName || decoded.username, role: decoded.role };
+    req.adminUser = {
+      id: decoded.sub,
+      username: decoded.username,
+      displayName: decoded.displayName || decoded.username,
+      notificationEmail: decoded.notificationEmail || '',
+      role: decoded.role,
+    };
     next();
   } catch {
     return res.status(401).json({ error: 'Unauthorized' });

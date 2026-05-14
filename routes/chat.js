@@ -5,8 +5,9 @@ const router = express.Router();
 const Anthropic = require('@anthropic-ai/sdk');
 const { pool, createChatSession, getChatSession, listChatSessions,
   updateChatSessionStatus, setChatSessionHumanPending, assignChatSession,
-  markChatSessionRead, addChatMessage, getChatMessages } = require('../db');
+  markChatSessionRead, addChatMessage, getChatMessages, genId, now } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
+const { sendHumanChatNotificationEmail } = require('../lib/mailer');
 
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
@@ -62,6 +63,24 @@ async function getFallbackAdmin() {
      LIMIT 1`
   );
   return rows[0] ? { id: rows[0].id, name: adminName(rows[0]) } : { id: '', name: '' };
+}
+
+async function getAdminForNotification(adminUserId) {
+  if (adminUserId) {
+    const { rows } = await pool.query(
+      'SELECT id, username, display_name, notification_email FROM admin_users WHERE id = $1',
+      [adminUserId]
+    );
+    if (rows[0]) return rows[0];
+  }
+  const { rows } = await pool.query(
+    `SELECT id, username, display_name, notification_email
+     FROM admin_users
+     WHERE COALESCE(notification_email, '') <> ''
+     ORDER BY CASE WHEN role = 'superadmin' THEN 0 ELSE 1 END, created_at ASC
+     LIMIT 1`
+  );
+  return rows[0] || null;
 }
 
 async function getJobForChat(jobId) {
@@ -129,6 +148,47 @@ function publicSession(session) {
     jobId: session.jobId,
     jobTitle: session.jobTitle,
   };
+}
+
+function getBaseUrl(req) {
+  if (process.env.PUBLIC_BASE_URL) return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  if (!host) return '';
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  return `${proto}://${host}`;
+}
+
+async function notifyHumanAssignee(req, sessionId, assignee, { reason = '', lastQuestion = '' } = {}) {
+  const recipient = await getAdminForNotification(assignee.id);
+  const session = await getChatSession(sessionId);
+  const recipientEmail = recipient?.notification_email || '';
+  const recipientName = adminName(recipient) || assignee.name || '';
+  const baseUrl = getBaseUrl(req);
+  const chatUrl = baseUrl ? `${baseUrl}/admin/chat.html?session=${encodeURIComponent(sessionId)}` : '';
+
+  await pool.query(
+    `INSERT INTO notifications
+       (id, type, recipient_email, recipient_name, subject, body, related_job_id, status, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'unread',$8)`,
+    [
+      genId('ntf'),
+      'chat_human',
+      recipientEmail,
+      recipientName,
+      `有新的人工咨询需要处理｜${session?.jobTitle || '通用咨询'}`,
+      JSON.stringify({ sessionId, reason, lastQuestion, chatUrl }),
+      session?.jobId || null,
+      now(),
+    ]
+  );
+
+  await sendHumanChatNotificationEmail(recipientEmail, {
+    jobTitle: session?.jobTitle || '通用咨询',
+    assigneeName: recipientName,
+    reason,
+    lastQuestion,
+    chatUrl,
+  });
 }
 
 /* ─── 公开接口 ─────────────────────────────────── */
@@ -219,6 +279,10 @@ router.post('/message', async (req, res) => {
         assignedAdminName: assignee.name,
         reason: '用户追加消息，等待人工回复',
       });
+      await notifyHumanAssignee(req, sessionId, assignee, {
+        reason: '用户追加消息，等待人工回复',
+        lastQuestion: content.trim(),
+      });
       const reply = assignee.name
         ? `收到，我已把新消息同步给负责同事${assignee.name}，请稍等人工回复。`
         : '收到，我已把新消息同步给编辑部，请稍等人工回复。';
@@ -275,10 +339,15 @@ router.post('/message', async (req, res) => {
 
     if (needHuman) {
       const assignee = await resolveAssignee(session);
+      const reason = aiUnavailable ? 'AI 暂不可用，转人工处理' : inferred.reason;
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
         assignedAdminName: assignee.name,
-        reason: aiUnavailable ? 'AI 暂不可用，转人工处理' : inferred.reason,
+        reason,
+      });
+      await notifyHumanAssignee(req, sessionId, assignee, {
+        reason,
+        lastQuestion: content.trim(),
       });
       cleanReply = withHumanNotice(cleanReply, assignee.name);
     }

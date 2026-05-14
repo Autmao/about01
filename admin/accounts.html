@@ -64,9 +64,15 @@
           </div>
           <div class="form-row" style="margin-bottom:var(--space-4);">
             <div>
+              <label class="form-label">通知邮箱</label>
+              <input type="email" class="form-input" id="f-email" placeholder="用于接收人工咨询提醒">
+            </div>
+            <div>
               <label class="form-label">初始密码</label>
               <input type="password" class="form-input" id="f-password" placeholder="至少6位">
             </div>
+          </div>
+          <div class="form-row" style="margin-bottom:var(--space-4);">
             <div>
               <label class="form-label">角色</label>
               <select class="form-input" id="f-role">
@@ -85,6 +91,7 @@
               <tr>
                 <th>登录账号</th>
                 <th>用户名</th>
+                <th>通知邮箱</th>
                 <th>角色</th>
                 <th>创建时间</th>
                 <th>操作</th>
@@ -93,6 +100,19 @@
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- 我的通知邮箱（所有人可见） -->
+      <div style="background:white;border-radius:var(--radius-xl);padding:var(--space-6);
+                  border:1px solid var(--color-border-light);box-shadow:var(--shadow-sm);
+                  max-width:400px;margin-bottom:var(--space-6);">
+        <h2 style="font-size:var(--text-base);font-weight:var(--weight-semibold);margin-bottom:var(--space-4);">我的通知邮箱</h2>
+        <div class="form-field" style="margin-bottom:var(--space-4);">
+          <label class="form-label">人工咨询提醒邮箱</label>
+          <input type="email" class="form-input" id="my-email" placeholder="name@example.com">
+        </div>
+        <button class="btn btn--primary" onclick="saveMyEmail()">保存邮箱</button>
+        <div id="email-error" style="color:var(--color-rejected);font-size:var(--text-sm);margin-top:8px;display:none;"></div>
       </div>
 
       <!-- 修改我的密码（所有人可见） -->

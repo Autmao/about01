@@ -127,6 +127,7 @@ async function initDB() {
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
       display_name TEXT,
+      notification_email TEXT DEFAULT '',
       role TEXT NOT NULL DEFAULT 'member',
       password_hash TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -210,6 +211,7 @@ async function initDB() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT DEFAULT '';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);
+    ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS notification_email TEXT DEFAULT '';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS owner_admin_id TEXT DEFAULT '';
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_id TEXT DEFAULT '';
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_name TEXT DEFAULT '';
@@ -222,18 +224,29 @@ async function initDB() {
     ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS author_admin_name TEXT DEFAULT '';
   `);
 
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS admin_users_notification_email_unique
+    ON admin_users (LOWER(notification_email))
+    WHERE COALESCE(notification_email, '') <> '';
+  `);
+
   // 确保超级管理员账号始终存在且密码正确（每次冷启动同步）
   if (process.env.ADMIN_PASSWORD) {
     try {
       const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+      const notificationEmail = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
       const id = genId('usr');
       const ts = now();
       await pool.query(
-        `INSERT INTO admin_users (id, username, display_name, role, password_hash, created_at, updated_at)
-         VALUES ($1, '18610292109', '江舟', 'superadmin', $2, $3, $3)
+        `INSERT INTO admin_users (id, username, display_name, notification_email, role, password_hash, created_at, updated_at)
+         VALUES ($1, '18610292109', '江舟', $2, 'superadmin', $3, $4, $4)
          ON CONFLICT (username) DO UPDATE
-           SET password_hash = $2, display_name = '江舟', role = 'superadmin', updated_at = $3`,
-        [id, hash, ts]
+           SET password_hash = $3,
+               display_name = '江舟',
+               notification_email = CASE WHEN $2 <> '' THEN $2 ELSE admin_users.notification_email END,
+               role = 'superadmin',
+               updated_at = $4`,
+        [id, notificationEmail, hash, ts]
       );
       console.log('[db] superadmin account synced');
     } catch (e) {
@@ -437,6 +450,7 @@ function mapAdminUser(r) {
   if (!r) return null;
   return {
     id: r.id, username: r.username, displayName: r.display_name,
+    notificationEmail: r.notification_email || '',
     role: r.role, createdAt: r.created_at, updatedAt: r.updated_at,
     // password_hash 不对外暴露
   };
@@ -455,13 +469,13 @@ async function listAdminUsers() {
   const { rows } = await pool.query('SELECT * FROM admin_users ORDER BY created_at ASC');
   return rows.map(mapAdminUser);
 }
-async function createAdminUser({ username, displayName, role = 'member', passwordHash }) {
+async function createAdminUser({ username, displayName, notificationEmail = '', role = 'member', passwordHash }) {
   const id = genId('usr');
   const ts = now();
   const { rows } = await pool.query(
-    `INSERT INTO admin_users (id, username, display_name, role, password_hash, created_at, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [id, username, displayName || username, role, passwordHash, ts, ts]
+    `INSERT INTO admin_users (id, username, display_name, notification_email, role, password_hash, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [id, username, displayName || username, notificationEmail.toLowerCase().trim(), role, passwordHash, ts, ts]
   );
   return mapAdminUser(rows[0]);
 }
@@ -475,6 +489,17 @@ async function updateAdminUserPassword(id, passwordHash) {
     'UPDATE admin_users SET password_hash = $1, updated_at = $2 WHERE id = $3',
     [passwordHash, ts, id]
   );
+}
+async function updateAdminUserNotificationEmail(id, notificationEmail) {
+  const ts = now();
+  const { rows } = await pool.query(
+    `UPDATE admin_users
+     SET notification_email = $1, updated_at = $2
+     WHERE id = $3
+     RETURNING *`,
+    [notificationEmail.toLowerCase().trim(), ts, id]
+  );
+  return rows[0] ? mapAdminUser(rows[0]) : null;
 }
 
 /* ===== member_notes CRUD ===== */
@@ -771,7 +796,7 @@ module.exports = {
   todayInShanghai, isPastDeadline, closeExpiredJobs,
   mapJob, mapApp, mapCollab, mapAdminUser,
   getAdminUserByUsername, getAdminUserById, listAdminUsers,
-  createAdminUser, deleteAdminUser, updateAdminUserPassword,
+  createAdminUser, deleteAdminUser, updateAdminUserPassword, updateAdminUserNotificationEmail,
   getMemberNote, upsertMemberNote,
   getMemberPreferences, upsertMemberPreferences,
   createOtp, verifyOtp,

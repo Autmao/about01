@@ -24,20 +24,32 @@ function initSidebar() {
 
 const ROLE_LABELS = { superadmin: '管理员', member: '成员' };
 
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
+
 async function renderUsers() {
   const users = await Store.listAdminUsers();
   const currentUser = Store.getCurrentUser();
   document.getElementById('users-tbody').innerHTML = users.map(u => `
     <tr>
-      <td>${u.username}</td>
-      <td>${u.displayName || '—'}</td>
+      <td>${esc(u.username)}</td>
+      <td>${esc(u.displayName || '—')}</td>
+      <td>
+        <div style="display:flex;gap:var(--space-2);align-items:center;min-width:260px;">
+          <input type="email" class="form-input" id="email-${esc(u.id)}" value="${esc(u.notificationEmail || '')}" placeholder="通知邮箱">
+          <button class="action-btn action-btn--edit" onclick="saveMemberEmail('${esc(u.id)}')">保存</button>
+        </div>
+      </td>
       <td><span class="tag ${u.role === 'superadmin' ? 'tag--hired' : 'tag--read'}">${ROLE_LABELS[u.role] || u.role}</span></td>
       <td>${Utils.formatDate(u.createdAt)}</td>
       <td>
         <div class="table-actions">
-          <button class="action-btn action-btn--edit" onclick="openResetModal('${u.id}')">重置密码</button>
+          <button class="action-btn action-btn--edit" onclick="openResetModal('${esc(u.id)}')">重置密码</button>
           ${u.id !== currentUser?.id
-            ? `<button class="action-btn action-btn--delete" onclick="removeMember('${u.id}','${u.username}')">删除</button>`
+            ? `<button class="action-btn action-btn--delete" onclick="removeMember('${esc(u.id)}','${esc(u.username)}')">删除</button>`
             : `<span style="font-size:var(--text-xs);color:var(--color-text-muted);">（当前账号）</span>`}
         </div>
       </td>
@@ -47,6 +59,7 @@ async function renderUsers() {
 async function createMember() {
   const username    = document.getElementById('f-username').value.trim();
   const displayName = document.getElementById('f-displayname').value.trim();
+  const notificationEmail = document.getElementById('f-email').value.trim().toLowerCase();
   const password    = document.getElementById('f-password').value;
   const role        = document.getElementById('f-role').value;
   const errEl = document.getElementById('create-error');
@@ -60,10 +73,14 @@ async function createMember() {
   if (!displayName) {
     errEl.textContent = '请填写用户名（后台显示名字）'; errEl.style.display = 'block'; return;
   }
+  if (!notificationEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notificationEmail)) {
+    errEl.textContent = '请填写有效的通知邮箱'; errEl.style.display = 'block'; return;
+  }
   try {
-    await Store.createAdminUser({ username, displayName, password, role });
+    await Store.createAdminUser({ username, displayName, notificationEmail, password, role });
     document.getElementById('f-username').value = '';
     document.getElementById('f-displayname').value = '';
+    document.getElementById('f-email').value = '';
     document.getElementById('f-password').value = '';
     Utils.showToast(`账号「${username}」已创建`, 'success');
     await renderUsers();
@@ -73,6 +90,23 @@ async function createMember() {
   }
 }
 window.createMember = createMember;
+
+async function saveMemberEmail(id) {
+  const input = document.getElementById(`email-${id}`);
+  const notificationEmail = input?.value.trim().toLowerCase();
+  if (!notificationEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notificationEmail)) {
+    Utils.showToast('请填写有效的通知邮箱', 'error');
+    return;
+  }
+  try {
+    await Store.updateAdminUserNotificationEmail(id, notificationEmail);
+    Utils.showToast('通知邮箱已保存', 'success');
+    await renderUsers();
+  } catch (err) {
+    Utils.showToast(err.message || '保存失败', 'error');
+  }
+}
+window.saveMemberEmail = saveMemberEmail;
 
 async function removeMember(id, username) {
   Utils.showConfirm(`确定删除账号「${username}」？此操作不可恢复。`, async () => {
@@ -139,9 +173,40 @@ async function changeMyPwd() {
 }
 window.changeMyPwd = changeMyPwd;
 
+async function loadMyEmail() {
+  try {
+    const me = await Store.getAdminMe();
+    document.getElementById('my-email').value = me.notificationEmail || '';
+  } catch {
+    const current = Store.getCurrentUser();
+    document.getElementById('my-email').value = current?.notificationEmail || '';
+  }
+}
+
+async function saveMyEmail() {
+  const notificationEmail = document.getElementById('my-email').value.trim().toLowerCase();
+  const errEl = document.getElementById('email-error');
+  errEl.style.display = 'none';
+  if (!notificationEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notificationEmail)) {
+    errEl.textContent = '请填写有效的通知邮箱';
+    errEl.style.display = 'block';
+    return;
+  }
+  try {
+    await Store.updateMyNotificationEmail(notificationEmail);
+    Utils.showToast('通知邮箱已保存，重新登录后会同步到会话信息', 'success');
+    if (Store.isSuperAdmin()) await renderUsers();
+  } catch (err) {
+    errEl.textContent = err.message || '保存失败';
+    errEl.style.display = 'block';
+  }
+}
+window.saveMyEmail = saveMyEmail;
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (!checkAuth()) return;
   initSidebar();
+  await loadMyEmail();
   if (Store.isSuperAdmin()) {
     await renderUsers();
   }

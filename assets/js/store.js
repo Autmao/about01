@@ -99,7 +99,13 @@ const Store = {
     try {
       const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
       const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')));
-      return { id: payload.sub, username: payload.username, displayName: payload.displayName, role: payload.role };
+      return {
+        id: payload.sub,
+        username: payload.username,
+        displayName: payload.displayName,
+        notificationEmail: payload.notificationEmail || '',
+        role: payload.role,
+      };
     } catch { return null; }
   },
   isSuperAdmin() {
@@ -333,6 +339,9 @@ const Store = {
   async listAdminUsers() {
     return _get(`${API}/admin-users`);
   },
+  async getAdminMe() {
+    return _get(`${API}/admin/me`);
+  },
   async listAdminTeam() {
     return _get(`${API}/admin/team`);
   },
@@ -344,6 +353,12 @@ const Store = {
   },
   async resetAdminUserPassword(id, newPassword) {
     return _patch(`${API}/admin-users/${id}/password`, { newPassword });
+  },
+  async updateAdminUserNotificationEmail(id, notificationEmail) {
+    return _patch(`${API}/admin-users/${id}/notification-email`, { notificationEmail });
+  },
+  async updateMyNotificationEmail(notificationEmail) {
+    return _patch(`${API}/admin/me/notification-email`, { notificationEmail });
   },
   async changeMyPassword(currentPassword, newPassword) {
     return _patch(`${API}/admin/me/password`, { currentPassword, newPassword });

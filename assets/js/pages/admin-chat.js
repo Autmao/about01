@@ -2,7 +2,8 @@
 
 function checkAuth() {
   if (Store.isAdminLoggedIn()) return true;
-  window.location.href = 'login.html';
+  const from = `chat.html${window.location.search || ''}`;
+  window.location.href = `login.html?from=${encodeURIComponent(from)}`;
   return false;
 }
 function logout() { Store.adminLogout(); window.location.href = 'login.html'; }
@@ -313,4 +314,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await loadSessions('all');
+  const targetSessionId = new URLSearchParams(window.location.search).get('session');
+  if (targetSessionId) openSession(targetSessionId);
 });

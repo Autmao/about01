@@ -5,7 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const {
   listAdminUsers, createAdminUser, deleteAdminUser,
-  updateAdminUserPassword, getAdminUserById,
+  updateAdminUserPassword, updateAdminUserNotificationEmail, getAdminUserById,
 } = require('../db');
 
 /* 所有路由由 server.js 挂载时的 requireSuperAdmin 保护 */
@@ -22,7 +22,8 @@ router.get('/', async (req, res) => {
 
 /* POST /api/admin-users */
 router.post('/', async (req, res) => {
-  const { username, displayName, password, role = 'member' } = req.body;
+  const { username, displayName, notificationEmail = '', password, role = 'member' } = req.body;
+  const normalizedEmail = String(notificationEmail).toLowerCase().trim();
   if (!username || !password) {
     return res.status(400).json({ error: '登录账号和密码不能为空' });
   }
@@ -32,6 +33,9 @@ router.post('/', async (req, res) => {
   if (!displayName) {
     return res.status(400).json({ error: '用户名不能为空' });
   }
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return res.status(400).json({ error: '请填写有效的通知邮箱' });
+  }
   if (!['member', 'superadmin'].includes(role)) {
     return res.status(400).json({ error: 'Invalid role' });
   }
@@ -40,12 +44,30 @@ router.post('/', async (req, res) => {
   }
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await createAdminUser({ username, displayName, role, passwordHash });
+    const user = await createAdminUser({ username, displayName, notificationEmail: normalizedEmail, role, passwordHash });
     res.status(201).json(user);
   } catch (e) {
     if (e.code === '23505') {
-      return res.status(409).json({ error: '用户名已存在' });
+      return res.status(409).json({ error: '登录账号或通知邮箱已存在' });
     }
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* PATCH /api/admin-users/:id/notification-email */
+router.patch('/:id/notification-email', async (req, res) => {
+  const notificationEmail = String(req.body.notificationEmail || '').toLowerCase().trim();
+  if (!notificationEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notificationEmail)) {
+    return res.status(400).json({ error: '请填写有效的通知邮箱' });
+  }
+  try {
+    const user = await getAdminUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const updated = await updateAdminUserNotificationEmail(req.params.id, notificationEmail);
+    res.json(updated);
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: '该邮箱已绑定其他账号' });
     console.error(e);
     res.status(500).json({ error: 'Server error' });
   }
