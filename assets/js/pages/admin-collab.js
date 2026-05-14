@@ -89,7 +89,7 @@ async function openModal(collabId) {
   }).join(' ');
 
   const links = (collab.portfolioLinks || []).map(l =>
-    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener" style="display:block;color:var(--color-brand-light);font-size:var(--text-sm);margin-bottom:var(--space-2);">🔗 ${esc(l.label || '作品链接')}</a>`
+    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener" style="display:block;color:var(--color-brand-light);font-size:var(--text-sm);margin-bottom:var(--space-2);">作品链接 · ${esc(l.label || '未命名')}</a>`
   ).join('');
 
   const history = (collab.cooperationHistory || []).map(h => `
@@ -146,7 +146,7 @@ async function openModal(collabId) {
     <div class="modal-section">
       <div class="modal-section-title">联系方式</div>
       <div style="font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-loose);">
-        📧 ${esc(collab.email)}<br>📱 ${esc(collab.phone || '—')}${collab.wechat ? `<br>💬 ${esc(collab.wechat)}` : ''}
+        邮箱：${esc(collab.email)}<br>手机：${esc(collab.phone || '—')}${collab.wechat ? `<br>微信：${esc(collab.wechat)}` : ''}
       </div>
     </div>
 

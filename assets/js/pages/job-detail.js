@@ -12,7 +12,7 @@ function renderDetail(job) {
   const feeDisplay = job.fee ? `¥${job.fee}` : '面议';
   const applyUrl = `apply.html?jobId=${job.id}`;
 
-  document.title = `${job.title} | 杂志书工作室`;
+  document.title = `${job.title} | about编辑部`;
   document.getElementById('bc-title').textContent = job.title;
 
   const reqs = (job.requirements || []).map(r =>
@@ -68,14 +68,14 @@ function renderDetail(job) {
             ? `<button class="btn btn--ghost btn--full" disabled style="cursor:not-allowed;">招募已截止</button>`
             : `<a href="${applyUrl}" class="btn btn--primary btn--full btn--lg">立即投递</a>`}
           <button class="btn btn--ghost btn--full" style="margin-top:var(--space-2);"
-            onclick="if(window.openChatWidget)openChatWidget();">💬 咨询岗位问题</button>
+            onclick="if(window.openChatWidget)openChatWidget();">咨询岗位问题</button>
         </div>
         <div class="sidebar-share-row">
           <div class="sidebar-share" onclick="copyLink()">
-            <span>🔗</span> 复制链接
+            <span>LINK</span> 复制链接
           </div>
           <div class="sidebar-share" onclick="openPoster()">
-            <span>🪄</span> 生成海报
+            <span>POSTER</span> 生成海报
           </div>
         </div>
       </div>
@@ -227,7 +227,7 @@ async function drawPoster(job) {
   // ── 品牌名 ──
   ctx.font = 'bold 22px "PingFang SC", "Noto Sans SC", sans-serif';
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillText('about 编辑部', W / 2, 240);
+  ctx.fillText('about编辑部', W / 2, 240);
 
   // ── 类型标签 ──
   const tagText = cat.label;
@@ -285,7 +285,7 @@ async function drawPoster(job) {
   ctx.fillText('扫码查看岗位详情', 250, H - 145);
   ctx.font = '22px "PingFang SC", "Noto Sans SC", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText('about 编辑部', 250, H - 105);
+  ctx.fillText('about编辑部', 250, H - 105);
 }
 
 function roundRect(ctx, x, y, w, h, r) {

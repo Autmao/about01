@@ -1,7 +1,7 @@
 {
   "name": "magazine-studio",
   "version": "1.0.0",
-  "description": "杂志书工作室在线派单平台",
+  "description": "about编辑部 Open Call 招募平台",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

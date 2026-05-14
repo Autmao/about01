@@ -70,13 +70,13 @@ function renderAppCard(app) {
   const statusInfo = Utils.getStatusInfo(app.status);
   const archived = isArchived(app);
   const resumeLink = app.resumeUrl
-    ? `<a href="${safeUrl(app.resumeUrl)}" target="_blank" rel="noopener">📄 下载简历</a>`
+    ? `<a href="${safeUrl(app.resumeUrl)}" target="_blank" rel="noopener">下载简历</a>`
     : '';
   const portfolioFileLinks = (app.portfolioFiles || []).map(f =>
-    `<a href="${safeUrl(f.url)}" target="_blank" rel="noopener">🗂️ ${esc(f.name || '作品集文件')}</a>`
+    `<a href="${safeUrl(f.url)}" target="_blank" rel="noopener">作品集文件 · ${esc(f.name || '未命名')}</a>`
   ).join('');
   const links = (app.portfolioLinks || []).map(l =>
-    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">🔗 ${esc(l.label || '作品链接')}</a>`
+    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">作品链接 · ${esc(l.label || '未命名')}</a>`
   ).join('');
   const allLinks = resumeLink + portfolioFileLinks + links;
 
@@ -93,7 +93,7 @@ function renderAppCard(app) {
     : `<button class="btn btn--ghost btn--sm" style="color:var(--color-rejected);border-color:var(--color-rejected);" onclick="changeStatus('${app.id}','rejected')">婉拒</button>`;
 
   const archiveBtn = archived
-    ? `<button class="btn btn--ghost btn--sm action-btn--archived" disabled title="已在合作档案">📁 已入档</button>`
+    ? `<button class="btn btn--ghost btn--sm action-btn--archived" disabled title="已在合作档案">已入档</button>`
     : `<button class="btn btn--ghost btn--sm" onclick="archiveApp('${app.id}')">加入合作档案</button>`;
 
   return `
@@ -103,15 +103,15 @@ function renderAppCard(app) {
         <div class="app-card__info">
           <div class="app-card__name">${esc(app.name)}</div>
           <div class="app-card__meta">
-            <span>📧 ${esc(app.email)}</span>
-            <span>📱 ${esc(app.phone)}</span>
-            ${app.wechat ? `<span>💬 ${esc(app.wechat)}</span>` : ''}
+            <span>邮箱：${esc(app.email)}</span>
+            <span>手机：${esc(app.phone)}</span>
+            ${app.wechat ? `<span>微信：${esc(app.wechat)}</span>` : ''}
             ${app.jobTitle ? `<span>岗位：${esc(app.jobTitle)}</span>` : ''}
           </div>
         </div>
         <div class="app-card__right">
           <span class="tag ${statusInfo.cls}">${statusInfo.label}</span>
-          ${archived ? `<span class="tag tag--archived">📁 已入档</span>` : ''}
+          ${archived ? `<span class="tag tag--archived">已入档</span>` : ''}
           <span class="app-card__time">${Utils.relativeTime(app.submittedAt)}</span>
           <span class="app-card__toggle">▼</span>
         </div>

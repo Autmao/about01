@@ -19,7 +19,7 @@ function initSidebar() {
 }
 
 const STATUS_LABELS = {
-  bot: 'AI 对话中',
+  bot: 'AI 回复中',
   pending_human: '待介入',
   human_active: '人工跟进中',
   resolved: '已解决',
@@ -178,7 +178,7 @@ async function openSession(id) {
         ? '访客'
         : m.role === 'human_agent'
           ? `编辑部${m.authorAdminName ? ` · ${escHtml(m.authorAdminName)}` : ''}`
-          : 'AI';
+          : 'about 招募助手';
       const [bg, color] = m.role === 'user'
         ? ['var(--color-brand)', 'white']
         : m.role === 'human_agent'

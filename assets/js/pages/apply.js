@@ -49,7 +49,7 @@ async function handleResumeChange(e) {
     uploadedResumeUrl = await uploadFile(file);
     preview.style.display = 'flex';
     preview.innerHTML = `
-      <span class="upload-file-item__name">📄 ${file.name}</span>
+      <span class="upload-file-item__name">简历 · ${file.name}</span>
       <span class="upload-file-item__size">${formatSize(file.size)}</span>
       <button type="button" class="upload-file-item__remove" onclick="removeResume()">×</button>`;
     clearUploading('resume-zone');
@@ -105,7 +105,7 @@ function renderPortfolioFilePreviews() {
   const container = document.getElementById('portfolio-files-preview');
   container.innerHTML = uploadedPortfolioFiles.map((f, i) => `
     <div class="upload-file-item">
-      <span class="upload-file-item__name">🗂️ ${f.name}</span>
+      <span class="upload-file-item__name">作品集 · ${f.name}</span>
       <span class="upload-file-item__size">${formatSize(f.size)}</span>
       <button type="button" class="upload-file-item__remove" onclick="removePortfolioFile(${i})">×</button>
     </div>`).join('');

@@ -23,7 +23,7 @@ function getClient() {
 function buildSystemPrompt(job) {
   const reqs = (job.requirements || []).join('\n- ');
   const feeType = FEE_TYPE_LABELS[job.fee_type] || job.fee_type || '';
-  return `你是 about编辑部的招募助手。用户正在咨询岗位相关问题，请保持简洁、友好，用中文回答。
+  return `你是 about 招募助手。用户正在咨询 about编辑部的岗位相关问题，请保持简洁、友好，用中文回答。
 
 当前咨询的岗位：「${job.title}」
 岗位描述：${job.description || '暂无'}
@@ -42,7 +42,7 @@ function buildSystemPrompt(job) {
 }
 
 function buildSystemPromptGeneral() {
-  return `你是 about编辑部的招募助手。用户正在招募页咨询问题，请保持简洁、友好，用中文回答。
+  return `你是 about 招募助手。用户正在 about编辑部招募页咨询问题，请保持简洁、友好，用中文回答。
 
 about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Lives" 理念，关注人们生活的方式。编辑部通过纸质出版物、播客、线下活动、联合创意项目等形式展开创作，长期寻找各领域创作者合作。
 

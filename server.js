@@ -75,7 +75,7 @@ if (require.main === module) {
     .then(() => {
       if (!isProd) seedDemoData().catch(() => {});
       app.listen(PORT, () => {
-        console.log(`\n  杂志书工作室派单平台`);
+        console.log(`\n  about编辑部 Open Call 招募平台`);
         console.log(`  前台: http://localhost:${PORT}`);
         console.log(`  后台: http://localhost:${PORT}/admin/`);
         console.log(`  API:  http://localhost:${PORT}/api/stats\n`);

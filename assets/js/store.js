@@ -1,6 +1,19 @@
 /* ===== STORE.JS — API 客户端（fetch 版）===== */
 
-const API = '/api';
+const PRODUCTION_ORIGIN = 'https://about01.vercel.app';
+
+function _redirectFilePreviewToProduction() {
+  if (window.location.protocol !== 'file:') return;
+  const rawPath = decodeURIComponent(window.location.pathname || '');
+  const marker = '/about01/';
+  const idx = rawPath.lastIndexOf(marker);
+  const appPath = idx >= 0 ? rawPath.slice(idx + marker.length) : 'index.html';
+  window.location.replace(`${PRODUCTION_ORIGIN}/${appPath}${window.location.search}${window.location.hash}`);
+}
+
+_redirectFilePreviewToProduction();
+
+const API = window.location.origin === 'null' ? `${PRODUCTION_ORIGIN}/api` : '/api';
 
 function _adminHeaders(extra = {}) {
   const token = sessionStorage.getItem('mgs_admin_token');

@@ -18,15 +18,15 @@
   /* ── 注入 HTML ── */
   const container = document.createElement('div');
   container.innerHTML = `
-    <button class="chat-fab" id="chat-fab" aria-label="在线咨询" onclick="window.__openChatWidget()">
-      💬
+    <button class="chat-fab" id="chat-fab" aria-label="岗位咨询" onclick="window.__openChatWidget()">
+      <span class="chat-fab__mark">?</span>
       <span class="chat-fab__badge" id="chat-fab-badge"></span>
     </button>
     <div class="chat-panel" id="chat-panel">
       <div class="chat-header">
         <div>
-          <div class="chat-header__title">about编辑部 · 在线咨询</div>
-          <div class="chat-header__sub" id="chat-header-sub">AI 助手为你解答岗位问题</div>
+          <div class="chat-header__title">about 招募助手</div>
+          <div class="chat-header__sub" id="chat-header-sub">AI 先答，复杂问题转给编辑部</div>
         </div>
         <button class="chat-header__close" onclick="window.__closeChatWidget()">×</button>
       </div>
@@ -98,8 +98,8 @@
       } else {
         // 欢迎语
         const welcome = jobId
-          ? '你好！我是 about编辑部的 AI 助手，有关这个岗位的问题都可以问我。'
-          : '你好！我是 about编辑部的 AI 助手，有任何招募相关的问题欢迎咨询。';
+          ? '你好，我是 about 招募助手。关于这个岗位的职责、要求和投递方式，可以直接问我。'
+          : '你好，我是 about 招募助手。关于正在招募的岗位和投递流程，可以直接问我。';
         renderMessage('assistant', welcome);
       }
       scrollToBottom();
@@ -192,10 +192,10 @@
   }
 
   function updateHeader(status) {
-    if (status === 'pending_human') headerSub.textContent = '等待编辑部人工回复中…';
-    else if (status === 'human_active') headerSub.textContent = '编辑部已介入，可继续沟通';
-    else if (status === 'resolved') headerSub.textContent = '对话已解决，可继续提问';
-    else headerSub.textContent = 'AI 助手为你解答岗位问题';
+    if (status === 'pending_human') headerSub.textContent = '已转给编辑部同事，等待人工回复';
+    else if (status === 'human_active') headerSub.textContent = '编辑部同事已介入，可继续沟通';
+    else if (status === 'resolved') headerSub.textContent = '对话已解决，可以继续提问';
+    else headerSub.textContent = 'AI 先答，复杂问题转给编辑部';
   }
 
   function rememberEcho(role, content) {
