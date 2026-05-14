@@ -290,8 +290,7 @@
   letter-spacing: 0;
   font-weight: 720;
 }
-.home-section__head p,
-.home-mobile-preview p {
+.home-section__head p {
   color: var(--home-muted);
   font-size: 18px;
   line-height: 1.72;
@@ -515,131 +514,25 @@
   border-top: 1px solid var(--home-line-strong);
   border-bottom: 1px solid var(--home-line-strong);
 }
-
-.home-system {
-  background:
-    linear-gradient(90deg, rgba(17,17,17,0.035) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(17,17,17,0.035) 1px, transparent 1px),
-    var(--home-paper-soft);
-  background-size: 44px 44px;
-}
-.home-system-grid {
+.home-application-note {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--home-line-strong);
-  background: rgba(245,241,232,0.8);
+  border-top: 0;
+  background: rgba(255,255,255,0.26);
 }
-.home-system-card {
-  min-height: 270px;
-  padding: 28px;
-  border-right: 1px solid var(--home-line-strong);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: background 180ms ease;
-}
-.home-system-card:hover { background: rgba(255,255,255,0.46); }
-.home-system-card:last-child { border-right: 0; }
-.home-system-card small {
-  color: var(--home-accent);
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 680;
-}
-.home-system-card strong {
-  display: block;
-  margin-top: 18px;
-  color: var(--home-ink);
-  font-size: clamp(26px, 3vw, 42px);
-  line-height: 1;
-  font-weight: 700;
-}
-.home-system-card p {
-  margin: 20px 0 0;
-  color: var(--home-muted);
-  line-height: 1.62;
-  font-size: 15px;
-}
-.home-system-mark {
-  width: 54px;
-  height: 54px;
-  border: 1px solid var(--home-line-strong);
-  display: grid;
-  place-items: center;
-  font-weight: 680;
-  border-radius: 50%;
-  background: var(--home-paper);
-}
-.home-mobile-preview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: clamp(28px, 5vw, 72px);
-  align-items: center;
-  margin-top: 72px;
-}
-.home-mobile-preview h2 {
-  max-width: 740px;
-}
-.home-phone {
-  border: 9px solid var(--home-ink);
-  border-radius: 40px;
-  background: var(--home-paper);
-  min-height: 650px;
-  overflow: hidden;
-  box-shadow: 0 26px 70px rgba(0,0,0,0.18);
-  transition: transform 300ms ease;
-}
-.home-phone:hover { transform: translateY(-6px); }
-.home-phone__top {
-  background:
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255,255,255,0.04) 1px, transparent 1px),
-    var(--home-coal);
-  background-size: 36px 36px;
-  color: #fff;
-  min-height: 226px;
-  padding: 26px 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.home-phone__top small { color: rgba(255,255,255,0.62); }
-.home-phone__top strong {
-  font-size: 42px;
-  line-height: 0.9;
-  font-weight: 720;
-}
-.home-phone__top span {
-  width: fit-content;
-  border-radius: 999px;
-  background: var(--home-paper-soft);
-  color: var(--home-ink);
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 650;
-}
-.home-phone__list {
+.home-application-note span {
+  min-height: 72px;
   padding: 18px;
-  display: grid;
-  gap: 12px;
-}
-.home-phone__list div {
-  border: 1px solid var(--home-line-strong);
-  background: var(--home-paper-soft);
-  padding: 16px;
-  min-height: 118px;
+  border-right: 1px solid var(--home-line-strong);
+  color: var(--home-muted);
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.5;
 }
-.home-phone__list small {
-  color: var(--home-blue);
-  font-weight: 680;
-}
-.home-phone__list strong {
-  font-size: 20px;
-  line-height: 1.1;
+.home-application-note span:last-child {
+  border-right: 0;
 }
 .home-footer {
   background: var(--home-ink);
@@ -682,8 +575,7 @@
   .home-section__head,
   .home-call-sheet,
   .home-filter-bar,
-  .home-system-grid,
-  .home-mobile-preview,
+  .home-application-note,
   .home-footer {
     grid-template-columns: 1fr;
   }
@@ -700,15 +592,13 @@
     grid-column: 2;
     text-align: left;
   }
-  .home-system-card {
+  .home-application-note span {
+    min-height: 56px;
     border-right: 0;
     border-bottom: 1px solid var(--home-line-strong);
-    min-height: 220px;
   }
-  .home-system-card:last-child { border-bottom: 0; }
-  .home-phone {
-    max-width: 330px;
-    margin: 0 auto;
+  .home-application-note span:last-child {
+    border-bottom: 0;
   }
 }
 
@@ -733,7 +623,6 @@
     padding-left: 18px;
     padding-right: 18px;
   }
-  .home-system-card,
   .home-feature-card {
     padding: 22px;
   }
