@@ -2,10 +2,9 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, genId, now, mapApp, mapCollab, getUserById,
+const { pool, genId, now, mapApp, mapCollab,
   isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
-const { requireUser } = require('./users');
 const { sendStatusEmail } = require('../lib/mailer');
 
 /* GET /api/applications */
@@ -70,11 +69,23 @@ router.get('/my', async (req, res) => {
   try {
     const { email } = req.query;
     if (!email) return res.status(400).json({ error: 'email required' });
+    const normalizedEmail = email.toLowerCase().trim();
     const { rows } = await pool.query(
-      `SELECT job_title, status FROM applications WHERE email = $1 ORDER BY submitted_at DESC`,
-      [email.toLowerCase().trim()]
+      `SELECT id, job_id, job_title, job_category, status, submitted_at, updated_at
+       FROM applications
+       WHERE LOWER(email) = $1
+       ORDER BY submitted_at DESC`,
+      [normalizedEmail]
     );
-    res.json(rows.map(r => ({ jobTitle: r.job_title, status: r.status })));
+    res.json(rows.map(r => ({
+      id: r.id,
+      jobId: r.job_id,
+      jobTitle: r.job_title,
+      jobCategory: r.job_category,
+      status: r.status,
+      submittedAt: r.submitted_at,
+      updatedAt: r.updated_at,
+    })));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -93,28 +104,33 @@ router.get('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-/* POST /api/applications — 需登录 */
-router.post('/', requireUser, async (req, res) => {
+/* POST /api/applications — 短期运营模式：免短信登录，直接提交 */
+router.post('/', async (req, res) => {
   try {
     await closeExpiredJobs();
-    const { jobId, wechat = '', bio = '',
+    const { jobId, name = '', email = '', phone = '', wechat = '', bio = '',
       portfolioNote = '', portfolioLinks = [],
       resumeUrl = '', portfolioFiles = [] } = req.body;
 
     if (!jobId) return res.status(400).json({ error: 'jobId required' });
 
-    // 从已登录用户资料获取姓名/手机
-    const user = await getUserById(req.userId);
-    if (!user) return res.status(401).json({ error: 'User not found' });
+    const normalizedName = String(name).trim();
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const normalizedPhone = String(phone).trim();
+    if (!normalizedName) return res.status(400).json({ error: 'name required' });
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'valid email required' });
+    }
+    if (!/^1[3-9]\d{9}$/.test(normalizedPhone)) {
+      return res.status(400).json({ error: 'valid phone required' });
+    }
 
-    const name = req.body.name || user.name || '';
-    const phone = user.phone;
-    const email = req.body.email || user.email || '';
-
-    // 防重复投递（按 user_id）
+    // 防重复投递（短期免登录模式下按邮箱或手机号）
     const { rows: dupRows } = await pool.query(
-      'SELECT id FROM applications WHERE job_id = $1 AND user_id = $2',
-      [jobId, req.userId]
+      `SELECT id FROM applications
+       WHERE job_id = $1
+         AND (LOWER(email) = $2 OR phone = $3)`,
+      [jobId, normalizedEmail, normalizedPhone]
     );
     if (dupRows[0]) return res.status(409).json({ error: 'Already applied', appId: dupRows[0].id });
 
@@ -135,9 +151,9 @@ router.post('/', requireUser, async (req, res) => {
         status,status_history,admin_note,user_id,submitted_at,updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [id, jobId, jobRows[0].title, jobRows[0].category,
-       name, email, phone, wechat, bio, portfolioNote, JSON.stringify(portfolioLinks),
+       normalizedName, normalizedEmail, normalizedPhone, wechat, bio, portfolioNote, JSON.stringify(portfolioLinks),
        resumeUrl, JSON.stringify(portfolioFiles),
-       'pending', history, '', req.userId, ts, ts]
+       'pending', history, '', null, ts, ts]
     );
 
     await pool.query(

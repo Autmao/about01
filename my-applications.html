@@ -62,36 +62,18 @@
     <div id="login-section">
       <div class="otp-card">
         <div class="otp-card__logo">about编辑部</div>
-        <div class="otp-card__subtitle">手机号登录，查看投递状态</div>
+        <div class="otp-card__subtitle">输入投递邮箱，查看投递状态</div>
 
-        <!-- Step 1: 输入手机号 -->
-        <div class="otp-step active" id="step-phone">
+        <!-- 输入邮箱 -->
+        <div class="otp-step active" id="step-email">
           <div class="form-field" style="text-align:left;">
-            <label class="form-label">手机号</label>
-            <input type="tel" class="form-input" id="input-phone" maxlength="11"
-              placeholder="请输入11位手机号" autocomplete="tel">
+            <label class="form-label">投递邮箱</label>
+            <input type="email" class="form-input" id="input-email"
+              placeholder="请输入投递时填写的邮箱" autocomplete="email">
           </div>
-          <div class="otp-error" id="err-phone"></div>
+          <div class="otp-error" id="err-email"></div>
           <button class="btn btn--primary" style="width:100%;margin-top:var(--space-4);"
-            id="btn-send" onclick="sendOtp()">获取验证码</button>
-        </div>
-
-        <!-- Step 2: 输入验证码 -->
-        <div class="otp-step" id="step-code">
-          <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">
-            验证码已发送至 <strong id="display-phone"></strong>
-          </p>
-          <div class="form-field">
-            <input type="text" class="form-input otp-code-input" id="input-code"
-              placeholder="000000" maxlength="6" autocomplete="one-time-code"
-              inputmode="numeric" pattern="\d{6}">
-          </div>
-          <div class="otp-error" id="err-code"></div>
-          <button class="btn btn--primary" style="width:100%;margin-top:var(--space-4);"
-            id="btn-verify" onclick="verifyOtp()">登录</button>
-          <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-4);">
-            没收到？<a href="#" onclick="backToPhone(event)" style="color:var(--color-brand);">重新发送</a>
-          </p>
+            id="btn-query" onclick="queryApps()">查询投递</button>
         </div>
       </div>
     </div>
@@ -103,8 +85,8 @@
           我的投递
         </h1>
         <div style="display:flex;align-items:center;gap:var(--space-4);">
-          <span class="apps-header__info" id="logged-phone"></span>
-          <button class="btn btn--ghost btn--sm" onclick="logout()">退出</button>
+          <span class="apps-header__info" id="queried-email"></span>
+          <button class="btn btn--ghost btn--sm" onclick="resetQuery()">重新查询</button>
         </div>
       </div>
       <div id="apps-list"></div>
@@ -120,91 +102,39 @@
   <script>
     const STATUS_LABELS = { pending: '审核中', read: '已读取', hired: '已录用', rejected: '未通过' };
 
-    let currentPhone = '';
+    let currentEmail = '';
 
     function escHtml(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      if (Store.isUserLoggedIn()) {
-        showApps();
-        return;
-      }
-      document.getElementById('input-phone').addEventListener('keydown', e => {
-        if (e.key === 'Enter') sendOtp();
-      });
-      document.getElementById('input-code').addEventListener('keydown', e => {
-        if (e.key === 'Enter') verifyOtp();
+      document.getElementById('input-email').addEventListener('keydown', e => {
+        if (e.key === 'Enter') queryApps();
       });
     });
 
-    async function sendOtp() {
-      const phone = document.getElementById('input-phone').value.trim();
-      const errEl = document.getElementById('err-phone');
+    async function queryApps() {
+      const email = document.getElementById('input-email').value.trim().toLowerCase();
+      const errEl = document.getElementById('err-email');
       errEl.textContent = '';
-      if (!/^1[3-9]\d{9}$/.test(phone)) {
-        errEl.textContent = '请输入有效的11位手机号';
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errEl.textContent = '请输入有效的邮箱地址';
         return;
       }
-      const btn = document.getElementById('btn-send');
-      btn.disabled = true; btn.textContent = '发送中…';
+      const btn = document.getElementById('btn-query');
+      btn.disabled = true; btn.textContent = '查询中…';
       try {
-        await Store.sendUserOtp(phone);
-        currentPhone = phone;
-        document.getElementById('display-phone').textContent = phone;
-        document.getElementById('step-phone').classList.remove('active');
-        document.getElementById('step-code').classList.add('active');
-        setTimeout(() => document.getElementById('input-code').focus(), 100);
-      } catch (e) {
-        errEl.textContent = '验证码发送失败，请稍后重试';
-      } finally {
-        btn.disabled = false; btn.textContent = '获取验证码';
-      }
-    }
-
-    async function verifyOtp() {
-      const code = document.getElementById('input-code').value.trim();
-      const errEl = document.getElementById('err-code');
-      errEl.textContent = '';
-      if (!code || !/^\d{6}$/.test(code)) {
-        errEl.textContent = '请输入6位数字验证码';
-        return;
-      }
-      const btn = document.getElementById('btn-verify');
-      btn.disabled = true; btn.textContent = '验证中…';
-      try {
-        await Store.verifyUserOtp(currentPhone, code, '', '');
-        showApps();
-      } catch (e) {
-        errEl.textContent = e.status === 401 ? '验证码错误或已过期' : '验证失败，请重试';
-        btn.disabled = false; btn.textContent = '登录';
-      }
-    }
-
-    function backToPhone(e) {
-      e.preventDefault();
-      document.getElementById('step-code').classList.remove('active');
-      document.getElementById('step-phone').classList.add('active');
-      document.getElementById('input-code').value = '';
-      document.getElementById('err-code').textContent = '';
-      document.getElementById('input-phone').value = currentPhone;
-    }
-
-    async function showApps() {
-      document.getElementById('login-section').style.display = 'none';
-      document.getElementById('apps-section').style.display = 'block';
-      const user = Store.getCurrentApplicant();
-      document.getElementById('logged-phone').textContent = user?.phone || '';
-      try {
-        const apps = await Store.getUserApplications();
+        const apps = await Store.getMyApplications(email);
+        currentEmail = email;
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('apps-section').style.display = 'block';
+        document.getElementById('queried-email').textContent = email;
         renderApps(apps);
       } catch (e) {
-        if (e.message === 'Session expired') {
-          Utils.showToast('登录已过期，请重新登录', 'warning');
-          document.getElementById('apps-section').style.display = 'none';
-          document.getElementById('login-section').style.display = 'block';
-        }
+        errEl.textContent = '查询失败，请稍后重试';
+      } finally {
+        btn.disabled = false; btn.textContent = '查询投递';
       }
     }
 
@@ -230,14 +160,12 @@
       }).join('');
     }
 
-    function logout() {
-      Store.userLogout();
+    function resetQuery() {
       document.getElementById('apps-section').style.display = 'none';
       document.getElementById('login-section').style.display = 'block';
-      document.getElementById('step-code').classList.remove('active');
-      document.getElementById('step-phone').classList.add('active');
-      document.getElementById('input-phone').value = '';
-      currentPhone = '';
+      document.getElementById('input-email').value = currentEmail;
+      document.getElementById('err-email').textContent = '';
+      setTimeout(() => document.getElementById('input-email').focus(), 50);
     }
   </script>
 </body>
