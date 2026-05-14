@@ -2,12 +2,13 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, seedDemoData } = require('../db');
+const { pool, seedDemoData, closeExpiredJobs } = require('../db');
 // Note: requireAdmin is applied at server.js mount level for this router
 
 /* GET /api/stats */
 router.get('/stats', async (req, res) => {
   try {
+    await closeExpiredJobs();
     const thisMonth = new Date().toISOString().slice(0, 7);
 
     const [jobs, apps, collabs] = await Promise.all([

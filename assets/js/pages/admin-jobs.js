@@ -51,6 +51,7 @@ async function renderJobsTable() {
     const cat = Utils.getCategoryInfo(job.category);
     const statusInfo = Utils.jobStatusMap[job.status] || { label: job.status, cls: '' };
     const dl = Utils.deadlineText(job.deadline);
+    const canOpen = !Utils.isPastDeadline(job.deadline);
     return `
       <tr>
         <td>
@@ -68,7 +69,9 @@ async function renderJobsTable() {
             <button class="action-btn action-btn--edit" onclick="editJob('${job.id}')">编辑</button>
             ${job.status === 'open'
               ? `<button class="action-btn action-btn--close" onclick="toggleStatus('${job.id}','closed')">关闭</button>`
-              : `<button class="action-btn action-btn--view" onclick="toggleStatus('${job.id}','open')">开启</button>`}
+              : canOpen
+                ? `<button class="action-btn action-btn--view" onclick="toggleStatus('${job.id}','open')">开启</button>`
+                : `<button class="action-btn action-btn--view" disabled title="请先编辑截止日期">改日期后开启</button>`}
             <button class="action-btn action-btn--delete" onclick="deleteJob('${job.id}')">删除</button>
           </div>
         </td>
@@ -82,9 +85,13 @@ window.viewApps = viewApps;
 window.editJob = editJob;
 
 async function toggleStatus(jobId, newStatus) {
-  await Store.updateJob(jobId, { status: newStatus });
-  await Promise.all([renderStats(), renderJobsTable()]);
-  Utils.showToast(`岗位已${newStatus === 'open' ? '开启招募' : '关闭招募'}`, 'success');
+  try {
+    await Store.updateJob(jobId, { status: newStatus });
+    await Promise.all([renderStats(), renderJobsTable()]);
+    Utils.showToast(`岗位已${newStatus === 'open' ? '开启招募' : '关闭招募'}`, 'success');
+  } catch (e) {
+    Utils.showToast(e.message || '操作失败，请稍后重试', 'error');
+  }
 }
 window.toggleStatus = toggleStatus;
 

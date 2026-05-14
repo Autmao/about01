@@ -26,6 +26,19 @@ const Utils = {
   },
 
   /* 截止日期文案 */
+  todayDateString() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  isPastDeadline(dateString) {
+    if (!dateString) return false;
+    return String(dateString).slice(0, 10) < this.todayDateString();
+  },
+
   deadlineText(dateString) {
     if (!dateString) return { text: '—', cls: '' };
     // 纯日期字符串（YYYY-MM-DD）加 T00:00 按本地时区解析，避免 UTC 时差导致日期偏移
@@ -54,6 +67,26 @@ const Utils = {
 
   getCategoryInfo(category) {
     return this.categoryMap[category] || { label: category, icon: '✦', color: '#F0EDE6' };
+  },
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  safeUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '#';
+    try {
+      const url = new URL(raw, window.location.origin);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '#';
+    } catch {
+      return '#';
+    }
   },
 
   /* 投递状态映射 */

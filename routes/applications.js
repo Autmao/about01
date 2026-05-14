@@ -2,7 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, genId, now, mapApp, mapCollab, getUserById } = require('../db');
+const { pool, genId, now, mapApp, mapCollab, getUserById,
+  isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { requireUser } = require('./users');
 const { sendStatusEmail } = require('../lib/mailer');
@@ -95,6 +96,7 @@ router.get('/:id', requireAdmin, async (req, res) => {
 /* POST /api/applications — 需登录 */
 router.post('/', requireUser, async (req, res) => {
   try {
+    await closeExpiredJobs();
     const { jobId, wechat = '', bio = '',
       portfolioNote = '', portfolioLinks = [],
       resumeUrl = '', portfolioFiles = [] } = req.body;
@@ -116,9 +118,12 @@ router.post('/', requireUser, async (req, res) => {
     );
     if (dupRows[0]) return res.status(409).json({ error: 'Already applied', appId: dupRows[0].id });
 
-    // 检查职位存在
-    const { rows: jobRows } = await pool.query('SELECT title, category FROM jobs WHERE id = $1', [jobId]);
+    // 检查职位存在且仍可投递
+    const { rows: jobRows } = await pool.query('SELECT title, category, status, deadline FROM jobs WHERE id = $1', [jobId]);
     if (!jobRows[0]) return res.status(404).json({ error: 'Job not found' });
+    if (jobRows[0].status !== 'open' || isPastDeadline(jobRows[0].deadline)) {
+      return res.status(400).json({ error: '该岗位已截止，暂不接受新的投递' });
+    }
 
     const ts = now();
     const id = genId('app');

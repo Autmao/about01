@@ -19,6 +19,8 @@ function initSidebar() {
 
 let currentSort = 'recent';
 let currentKeyword = '';
+const esc = value => Utils.escapeHtml(value);
+const safeUrl = value => Utils.safeUrl(value);
 
 function renderStars(rating, collabId) {
   return [1,2,3,4,5].map(n => `
@@ -33,21 +35,21 @@ function renderCollabCard(collab) {
     const info = Utils.getCategoryInfo(c);
     return `<span class="tag tag--category">${info.label}</span>`;
   }).join('');
-  const tags = (collab.internalTags || []).map(t => `<span class="internal-tag">${t}</span>`).join('');
+  const tags = (collab.internalTags || []).map(t => `<span class="internal-tag">${esc(t)}</span>`).join('');
 
   return `
     <div class="collab-card" onclick="openModal('${collab.id}')">
       <div class="collab-card__header">
-        <div class="avatar avatar--lg" style="background:${avatar.bg}">${avatar.char}</div>
+        <div class="avatar avatar--lg" style="background:${avatar.bg}">${esc(avatar.char)}</div>
         <div>
-          <div class="collab-card__name">${collab.name}</div>
+          <div class="collab-card__name">${esc(collab.name)}</div>
           <div class="star-rating" onclick="event.stopPropagation()">
             ${renderStars(collab.rating || 0, collab.id)}
           </div>
         </div>
       </div>
       <div class="collab-card__cats">${cats}</div>
-      <div class="collab-card__history">合作 ${(collab.cooperationHistory || []).length} 次 · 加入于 ${Utils.formatDate(collab.addedAt)}</div>
+      <div class="collab-card__history">合作 ${(collab.cooperationHistory || []).length} 次 · 加入于 ${esc(Utils.formatDate(collab.addedAt))}</div>
       ${tags ? `<div class="collab-card__tags">${tags}</div>` : ''}
     </div>`;
 }
@@ -87,15 +89,15 @@ async function openModal(collabId) {
   }).join(' ');
 
   const links = (collab.portfolioLinks || []).map(l =>
-    `<a href="${l.url}" target="_blank" rel="noopener" style="display:block;color:var(--color-brand-light);font-size:var(--text-sm);margin-bottom:var(--space-2);">🔗 ${l.label || '作品链接'}</a>`
+    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener" style="display:block;color:var(--color-brand-light);font-size:var(--text-sm);margin-bottom:var(--space-2);">🔗 ${esc(l.label || '作品链接')}</a>`
   ).join('');
 
   const history = (collab.cooperationHistory || []).map(h => `
     <div class="timeline-item">
       <div class="timeline-dot"></div>
       <div class="timeline-content">
-        ${h.jobTitle || '未知岗位'}
-        <div class="timeline-date">${h.date || ''}</div>
+        ${esc(h.jobTitle || '未知岗位')}
+        <div class="timeline-date">${esc(h.date || '')}</div>
       </div>
     </div>`).join('');
 
@@ -103,12 +105,12 @@ async function openModal(collabId) {
   const memberNotesHtml = (activity.memberNotes || []).length
     ? (activity.memberNotes || []).map(m => `
         <div class="collab-member-notes">
-          <div class="collab-member-notes__name">${m.displayName}</div>
+          <div class="collab-member-notes__name">${esc(m.displayName)}</div>
           ${m.notes.map(n => `
             <div class="collab-member-note-item">
-              <span class="collab-member-note-item__job">${n.jobTitle || ''}</span>
-              <span class="collab-member-note-item__text">${n.note}</span>
-              <span class="collab-member-note-item__time">${n.updatedAt ? n.updatedAt.slice(0,10) : ''}</span>
+              <span class="collab-member-note-item__job">${esc(n.jobTitle || '')}</span>
+              <span class="collab-member-note-item__text">${esc(n.note)}</span>
+              <span class="collab-member-note-item__time">${esc(n.updatedAt ? n.updatedAt.slice(0,10) : '')}</span>
             </div>`).join('')}
         </div>`).join('')
     : `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无成员备注</p>`;
@@ -120,13 +122,13 @@ async function openModal(collabId) {
         const time = h.at ? h.at.slice(0,16).replace('T',' ') : '';
         if (h.action === 'archived') {
           return `<div class="action-log-item">
-            <span class="action-log__actor">${h.actor}</span> 将「${h.jobTitle || ''}」加入了合作档案
-            <span class="action-log__time">${time}</span>
+            <span class="action-log__actor">${esc(h.actor)}</span> 将「${esc(h.jobTitle || '')}」加入了合作档案
+            <span class="action-log__time">${esc(time)}</span>
           </div>`;
         }
         return `<div class="action-log-item">
-          <span class="action-log__actor">${h.actor}</span> 将「${h.jobTitle || ''}」标记为「${ACTION_LABELS[h.to] || h.to}」
-          <span class="action-log__time">${time}</span>
+          <span class="action-log__actor">${esc(h.actor)}</span> 将「${esc(h.jobTitle || '')}」标记为「${esc(ACTION_LABELS[h.to] || h.to)}」
+          <span class="action-log__time">${esc(time)}</span>
         </div>`;
       }).join('')
     : `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无操作记录</p>`;
@@ -134,9 +136,9 @@ async function openModal(collabId) {
   document.getElementById('modal-name').textContent = collab.name;
   document.getElementById('modal-body').innerHTML = `
     <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-6);">
-      <div class="avatar avatar--lg" style="background:${avatar.bg}">${avatar.char}</div>
+      <div class="avatar avatar--lg" style="background:${avatar.bg}">${esc(avatar.char)}</div>
       <div>
-        <div style="font-size:var(--text-lg);font-weight:var(--weight-semibold);">${collab.name}</div>
+        <div style="font-size:var(--text-lg);font-weight:var(--weight-semibold);">${esc(collab.name)}</div>
         <div style="margin-top:var(--space-2);">${cats}</div>
       </div>
     </div>
@@ -144,13 +146,13 @@ async function openModal(collabId) {
     <div class="modal-section">
       <div class="modal-section-title">联系方式</div>
       <div style="font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-loose);">
-        📧 ${collab.email}<br>📱 ${collab.phone || '—'}${collab.wechat ? `<br>💬 ${collab.wechat}` : ''}
+        📧 ${esc(collab.email)}<br>📱 ${esc(collab.phone || '—')}${collab.wechat ? `<br>💬 ${esc(collab.wechat)}` : ''}
       </div>
     </div>
 
     ${collab.bio ? `<div class="modal-section">
       <div class="modal-section-title">个人介绍</div>
-      <p style="font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-loose);">${collab.bio}</p>
+      <p style="font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-loose);">${esc(collab.bio)}</p>
     </div>` : ''}
 
     ${links ? `<div class="modal-section">
@@ -181,8 +183,8 @@ async function openModal(collabId) {
       <div class="modal-section-title">内部标签</div>
       <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-3);" id="modal-tags">
         ${(collab.internalTags || []).map(t => `
-          <span class="internal-tag" style="cursor:pointer;" onclick="removeTag('${collab.id}','${t}')">
-            ${t} ×
+          <span class="internal-tag" style="cursor:pointer;" onclick="removeTag('${collab.id}',decodeURIComponent('${encodeURIComponent(t)}'))">
+            ${esc(t)} ×
           </span>`).join('')}
       </div>
       <div style="display:flex;gap:var(--space-2);">
@@ -197,7 +199,7 @@ async function openModal(collabId) {
       <div class="modal-section-title">内部备注</div>
       <textarea class="form-input" id="collab-note" rows="3"
         placeholder="仅内部可见的合作评价..."
-        onblur="saveCollabNote('${collab.id}', this.value)">${collab.internalNote || ''}</textarea>
+        onblur="saveCollabNote('${collab.id}', this.value)">${esc(collab.internalNote || '')}</textarea>
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:var(--space-3);padding-top:var(--space-4);">
@@ -248,7 +250,7 @@ window.saveCollabNote = saveCollabNote;
 
 async function deleteCollab(collabId) {
   const collab = await Store.getCollaboratorById(collabId);
-  Utils.showConfirm(`确定删除「${collab?.name}」的档案？`, async () => {
+  Utils.showConfirm(`确定删除「${esc(collab?.name)}」的档案？`, async () => {
     await Store.deleteCollaborator(collabId);
     closeModal();
     await renderGrid();

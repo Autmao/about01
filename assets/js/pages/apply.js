@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const job = await Store.getJobById(jobId);
-  if (!job || job.status !== 'open') {
+  if (!job || job.status !== 'open' || Utils.isPastDeadline(job.deadline)) {
     document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该岗位不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
     return;
   }

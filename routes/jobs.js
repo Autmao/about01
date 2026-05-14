@@ -2,12 +2,13 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, genId, now, mapJob } = require('../db');
+const { pool, genId, now, mapJob, isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 
 /* GET /api/jobs — 前台列表（排除 draft） */
 router.get('/', async (req, res) => {
   try {
+    await closeExpiredJobs();
     const { category, keyword, status } = req.query;
     let q = `SELECT * FROM jobs WHERE status != 'draft'`;
     const params = [];
@@ -15,6 +16,8 @@ router.get('/', async (req, res) => {
     if (status && status !== 'all') {
       params.push(status);
       q += ` AND status = $${params.length}`;
+    } else if (!status) {
+      q += ` AND status = 'open'`;
     }
     if (category && category !== 'all') {
       params.push(category);
@@ -37,6 +40,7 @@ router.get('/', async (req, res) => {
 /* GET /api/jobs/admin — 后台列表（含 draft） */
 router.get('/admin', requireAdmin, async (req, res) => {
   try {
+    await closeExpiredJobs();
     const { status, keyword } = req.query;
     let q = `SELECT * FROM jobs WHERE 1=1`;
     const params = [];
@@ -62,6 +66,7 @@ router.get('/admin', requireAdmin, async (req, res) => {
 /* GET /api/jobs/:id */
 router.get('/:id', async (req, res) => {
   try {
+    await closeExpiredJobs();
     const { rows } = await pool.query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(mapJob(rows[0]));
@@ -79,6 +84,9 @@ router.post('/', requireAdmin, async (req, res) => {
       slots = 1, tags = [], coverColor = '#E8DDD0' } = req.body;
 
     if (!title || !category) return res.status(400).json({ error: 'title and category required' });
+    if (status === 'open' && isPastDeadline(deadline)) {
+      return res.status(400).json({ error: '截止日期已过，请调整日期后再开启招募' });
+    }
 
     const id = genId('job');
     const ts = now();
@@ -105,6 +113,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { rows: existing } = await pool.query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
     if (!existing[0]) return res.status(404).json({ error: 'Not found' });
+    const nextStatus = req.body.status !== undefined ? req.body.status : existing[0].status;
+    const nextDeadline = req.body.deadline !== undefined ? req.body.deadline : existing[0].deadline;
+    if (nextStatus === 'open' && isPastDeadline(nextDeadline)) {
+      return res.status(400).json({ error: '截止日期已过，请调整日期后再开启招募' });
+    }
 
     const ts = now();
     let publishedAt = existing[0].published_at;

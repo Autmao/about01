@@ -6,8 +6,9 @@ const jobId = params.get('id');
 function renderDetail(job) {
   const cat = Utils.getCategoryInfo(job.category);
   const dl = Utils.deadlineText(job.deadline);
-  const statusInfo = Utils.jobStatusMap[job.status] || { label: job.status, cls: '' };
-  const isClosed = job.status !== 'open';
+  const effectiveStatus = Utils.isPastDeadline(job.deadline) ? 'closed' : job.status;
+  const statusInfo = Utils.jobStatusMap[effectiveStatus] || { label: effectiveStatus, cls: '' };
+  const isClosed = effectiveStatus !== 'open';
   const feeDisplay = job.fee ? `¥${job.fee}` : '面议';
   const applyUrl = `apply.html?jobId=${job.id}`;
 
@@ -84,6 +85,8 @@ function renderDetail(job) {
   if (!isClosed) {
     mobileBar.style.display = 'block';
     document.getElementById('apply-btn-mobile').onclick = () => { window.location.href = applyUrl; };
+  } else {
+    mobileBar.style.display = 'none';
   }
 }
 

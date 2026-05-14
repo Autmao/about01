@@ -32,7 +32,10 @@ async function _put(url, data) {
     method: 'PUT', headers: _adminHeaders(),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`PUT ${url} failed: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `PUT ${url} failed: ${res.status}`);
+  }
   return res.json();
 }
 async function _patch(url, data) {
@@ -40,7 +43,10 @@ async function _patch(url, data) {
     method: 'PATCH', headers: _adminHeaders(),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`PATCH ${url} failed: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `PATCH ${url} failed: ${res.status}`);
+  }
   return res.json();
 }
 async function _delete(url) {

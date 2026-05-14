@@ -19,6 +19,34 @@ function genId(prefix) {
 }
 function now() { return new Date().toISOString(); }
 
+function todayInShanghai() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const get = type => parts.find(p => p.type === type)?.value || '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function isPastDeadline(deadline) {
+  if (!deadline) return false;
+  return String(deadline).slice(0, 10) < todayInShanghai();
+}
+
+async function closeExpiredJobs() {
+  const ts = now();
+  await pool.query(
+    `UPDATE jobs
+     SET status = 'closed', updated_at = $1
+     WHERE status = 'open'
+       AND deadline IS NOT NULL
+       AND deadline < $2::date`,
+    [ts, todayInShanghai()]
+  );
+}
+
 /* ===== 建表 ===== */
 async function initDB() {
   await pool.query(`
@@ -609,6 +637,7 @@ async function ensureDB() {
 
 module.exports = {
   pool, genId, now, initDB, ensureDB, seedDemoData,
+  todayInShanghai, isPastDeadline, closeExpiredJobs,
   mapJob, mapApp, mapCollab, mapAdminUser,
   getAdminUserByUsername, getAdminUserById, listAdminUsers,
   createAdminUser, deleteAdminUser, updateAdminUserPassword,

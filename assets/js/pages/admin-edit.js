@@ -44,6 +44,9 @@ function validate(data) {
   if (!data.category) errors.category = '请选择岗位类型';
   if (!data.description) errors.desc = '请填写岗位描述';
   if (!data.deadline) errors.deadline = '请选择截止日期';
+  if (data.status === 'open' && Utils.isPastDeadline(data.deadline)) {
+    errors.deadline = '截止日期已过，请调整日期后再开启招募';
+  }
   return errors;
 }
 
@@ -103,7 +106,7 @@ async function handleSubmit(e) {
   } catch (err) {
     btn.classList.remove('btn--loading');
     btn.textContent = editId ? '保存修改' : '发布岗位';
-    Utils.showToast('操作失败，请重试', 'error');
+    Utils.showToast(err.message || '操作失败，请重试', 'error');
   }
 }
 

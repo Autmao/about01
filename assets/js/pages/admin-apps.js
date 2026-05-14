@@ -27,12 +27,14 @@ const STATUS_MSGS = {
   hired:    '恭喜！您已通过审核，我们会尽快联系您确认合作细节。',
   rejected: '感谢您的投递，本次暂未通过，欢迎关注我们后续的岗位发布。',
 };
+const esc = value => Utils.escapeHtml(value);
+const safeUrl = value => Utils.safeUrl(value);
 
 async function renderJobSelector() {
   const selector = document.getElementById('job-selector');
   const jobs = await Store.getAllJobsAdmin({});
   selector.innerHTML = `<option value="">全部岗位</option>` +
-    jobs.map(j => `<option value="${j.id}" ${j.id === currentJobId ? 'selected' : ''}>${j.title}</option>`).join('');
+    jobs.map(j => `<option value="${j.id}" ${j.id === currentJobId ? 'selected' : ''}>${esc(j.title)}</option>`).join('');
 }
 
 async function updateCounts() {
@@ -55,10 +57,10 @@ function renderActionHistory(history) {
   const items = relevant.map(h => {
     const time = h.at ? h.at.slice(0, 16).replace('T', ' ') : '';
     if (h.action === 'archived') {
-      return `<div class="action-log-item"><span class="action-log__actor">${h.actor}</span> 加入了合作档案 <span class="action-log__time">${time}</span></div>`;
+      return `<div class="action-log-item"><span class="action-log__actor">${esc(h.actor)}</span> 加入了合作档案 <span class="action-log__time">${esc(time)}</span></div>`;
     }
     const toLabel = { pending:'待查看', read:'已读', hired:'录用', rejected:'婉拒' }[h.to] || h.to;
-    return `<div class="action-log-item"><span class="action-log__actor">${h.actor}</span> 标记为「${toLabel}」<span class="action-log__time">${time}</span></div>`;
+    return `<div class="action-log-item"><span class="action-log__actor">${esc(h.actor)}</span> 标记为「${esc(toLabel)}」<span class="action-log__time">${esc(time)}</span></div>`;
   });
   return `<div class="action-log" id="action-log-appId">${items.join('')}</div>`;
 }
@@ -68,13 +70,13 @@ function renderAppCard(app) {
   const statusInfo = Utils.getStatusInfo(app.status);
   const archived = isArchived(app);
   const resumeLink = app.resumeUrl
-    ? `<a href="${app.resumeUrl}" target="_blank" rel="noopener">📄 下载简历</a>`
+    ? `<a href="${safeUrl(app.resumeUrl)}" target="_blank" rel="noopener">📄 下载简历</a>`
     : '';
   const portfolioFileLinks = (app.portfolioFiles || []).map(f =>
-    `<a href="${f.url}" target="_blank" rel="noopener">🗂️ ${f.name || '作品集文件'}</a>`
+    `<a href="${safeUrl(f.url)}" target="_blank" rel="noopener">🗂️ ${esc(f.name || '作品集文件')}</a>`
   ).join('');
   const links = (app.portfolioLinks || []).map(l =>
-    `<a href="${l.url}" target="_blank" rel="noopener">🔗 ${l.label || '作品链接'}</a>`
+    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">🔗 ${esc(l.label || '作品链接')}</a>`
   ).join('');
   const allLinks = resumeLink + portfolioFileLinks + links;
 
@@ -97,14 +99,14 @@ function renderAppCard(app) {
   return `
     <div class="app-card" id="app-card-${app.id}">
       <div class="app-card__header" onclick="toggleDetail('${app.id}')">
-        <div class="avatar" style="background:${avatar.bg}">${avatar.char}</div>
+        <div class="avatar" style="background:${avatar.bg}">${esc(avatar.char)}</div>
         <div class="app-card__info">
-          <div class="app-card__name">${app.name}</div>
+          <div class="app-card__name">${esc(app.name)}</div>
           <div class="app-card__meta">
-            <span>📧 ${app.email}</span>
-            <span>📱 ${app.phone}</span>
-            ${app.wechat ? `<span>💬 ${app.wechat}</span>` : ''}
-            ${app.jobTitle ? `<span>岗位：${app.jobTitle}</span>` : ''}
+            <span>📧 ${esc(app.email)}</span>
+            <span>📱 ${esc(app.phone)}</span>
+            ${app.wechat ? `<span>💬 ${esc(app.wechat)}</span>` : ''}
+            ${app.jobTitle ? `<span>岗位：${esc(app.jobTitle)}</span>` : ''}
           </div>
         </div>
         <div class="app-card__right">
@@ -115,9 +117,9 @@ function renderAppCard(app) {
         </div>
       </div>
       <div class="app-detail" id="detail-${app.id}">
-        ${app.bio ? `<div class="app-detail__bio">${app.bio}</div>` : ''}
+        ${app.bio ? `<div class="app-detail__bio">${esc(app.bio)}</div>` : ''}
         ${allLinks ? `<div class="app-detail__links">${allLinks}</div>` : ''}
-        ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${app.portfolioNote}</p>` : ''}
+        ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${esc(app.portfolioNote)}</p>` : ''}
         <div class="app-detail__actions">
           <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;">
             ${app.status !== 'read' ? `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','read')">标记已读</button>` : ''}
@@ -132,7 +134,7 @@ function renderAppCard(app) {
               <div>
                 <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">共享备注（所有成员可见）</div>
                 <input type="text" class="app-note-input" placeholder="添加共享备注..."
-                  value="${app.adminNote || ''}"
+                  value="${esc(app.adminNote || '')}"
                   onblur="saveNote('${app.id}', this.value)">
               </div>
               <div>
@@ -206,7 +208,7 @@ window.changeStatus = changeStatus;
 async function archiveApp(appId) {
   const app = await Store.getApplicationById(appId);
   Utils.showConfirm(
-    `将「${app?.name}」加入合作者档案？`,
+    `将「${esc(app?.name)}」加入合作者档案？`,
     async () => {
       await Store.archiveToCollaborator(appId);
       Utils.showToast('已加入合作者档案', 'success');
