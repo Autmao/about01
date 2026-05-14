@@ -11,6 +11,9 @@
   const jobId = new URLSearchParams(location.search).get('id') || null;
   let sessionId = null;
   let isSending = false;
+  let pollTimer = null;
+  const renderedMessageIds = new Set();
+  const pendingEchoes = [];
 
   /* ── 注入 HTML ── */
   const container = document.createElement('div');
@@ -65,11 +68,13 @@
     if (!sessionId) {
       await initSession();
     }
+    startPolling();
     setTimeout(() => inputEl.focus(), 150);
   };
 
   window.__closeChatWidget = function () {
     panel.classList.remove('open');
+    stopPolling();
   };
 
   // 供 job-detail 页内嵌按钮调用
@@ -85,10 +90,11 @@
       if (!res.ok) throw new Error('session init failed');
       const data = await res.json();
       sessionId = data.sessionId;
+      updateHeader(data.status);
 
       // 恢复历史消息
       if (data.messages && data.messages.length > 0) {
-        data.messages.forEach(m => renderMessage(m.role, m.content));
+        data.messages.forEach(m => renderStoredMessage(m));
       } else {
         // 欢迎语
         const welcome = jobId
@@ -114,6 +120,7 @@
     inputEl.style.height = 'auto';
 
     renderMessage('user', content);
+    rememberEcho('user', content);
     scrollToBottom();
 
     // 打字动画占位
@@ -133,10 +140,12 @@
       typingEl.textContent = data.reply;
       typingEl.classList.remove('chat-msg--typing');
       typingEl.classList.add('chat-msg--assistant');
+      rememberEcho('assistant', data.reply);
+      updateHeader(data.status);
 
       if (data.needHuman) {
         renderNotice('您的问题已通知编辑部，稍后会有团队成员回复。');
-        headerSub.textContent = '等待人工回复中…';
+        startPolling();
       }
       scrollToBottom();
     } catch {
@@ -150,6 +159,68 @@
       inputEl.focus();
     }
   };
+
+  async function pollMessages() {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`/api/chat/session/${sessionId}/messages?visitorId=${encodeURIComponent(visitorId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      updateHeader(data.session?.status);
+      let added = false;
+      (data.messages || []).forEach(m => {
+        if (renderStoredMessage(m)) added = true;
+      });
+      if (added && !panel.classList.contains('open')) {
+        document.getElementById('chat-fab-badge').classList.add('visible');
+      }
+      if (added) scrollToBottom();
+    } catch {
+      // 静默重试，避免打断咨询体验
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(pollMessages, 8000);
+  }
+
+  function stopPolling() {
+    if (!pollTimer) return;
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  function updateHeader(status) {
+    if (status === 'pending_human') headerSub.textContent = '等待编辑部人工回复中…';
+    else if (status === 'human_active') headerSub.textContent = '编辑部已介入，可继续沟通';
+    else if (status === 'resolved') headerSub.textContent = '对话已解决，可继续提问';
+    else headerSub.textContent = 'AI 助手为你解答岗位问题';
+  }
+
+  function rememberEcho(role, content) {
+    pendingEchoes.push({ role, content, at: Date.now() });
+    while (pendingEchoes.length > 12) pendingEchoes.shift();
+  }
+
+  function isPendingEcho(message) {
+    const idx = pendingEchoes.findIndex(item =>
+      item.role === message.role &&
+      item.content === message.content &&
+      Date.now() - item.at < 30000
+    );
+    if (idx === -1) return false;
+    pendingEchoes.splice(idx, 1);
+    return true;
+  }
+
+  function renderStoredMessage(message) {
+    if (!message?.id || renderedMessageIds.has(message.id)) return false;
+    renderedMessageIds.add(message.id);
+    if (isPendingEcho(message)) return false;
+    renderMessage(message.role, message.content);
+    return true;
+  }
 
   /* ── 渲染气泡 ── */
   function renderMessage(role, content, isTyping = false) {

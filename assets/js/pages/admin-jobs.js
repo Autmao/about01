@@ -20,6 +20,12 @@ function initSidebar() {
 let currentStatus = 'all';
 let currentKeyword = '';
 
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
+
 async function renderStats() {
   const s = await Store.getStats();
   document.getElementById('stat-open').textContent    = s.openJobs;
@@ -55,10 +61,11 @@ async function renderJobsTable() {
     return `
       <tr>
         <td>
-          <div class="table-job-title">${job.title}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${(job.tags || []).slice(0,3).join(' · ')}</div>
+          <div class="table-job-title">${esc(job.title)}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${esc((job.tags || []).slice(0,3).join(' · '))}</div>
         </td>
         <td><span class="tag tag--category">${cat.label}</span></td>
+        <td><span style="font-size:var(--text-sm);color:var(--color-text-secondary);">${esc(job.ownerAdminName || job.ownerAdminUsername || '未指定')}</span></td>
         <td><span class="tag ${statusInfo.cls}">${statusInfo.label}</span></td>
         <td>${job.applicationCount || 0}</td>
         <td><span class="${dl.cls}">${dl.text}</span></td>

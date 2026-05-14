@@ -5,7 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const {
   getAdminUserByUsername, getAdminUserById,
-  updateAdminUserPassword, mapAdminUser,
+  updateAdminUserPassword, mapAdminUser, listAdminUsers,
 } = require('../db');
 const { signToken, requireAdmin } = require('../middleware/auth');
 
@@ -39,6 +39,17 @@ router.get('/me', requireAdmin, async (req, res) => {
     const user = await getAdminUserById(req.adminUser.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(mapAdminUser(user));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* GET /api/admin/team */
+router.get('/team', requireAdmin, async (req, res) => {
+  try {
+    const users = await listAdminUsers();
+    res.json(users);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });

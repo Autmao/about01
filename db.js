@@ -64,6 +64,7 @@ async function initDB() {
       slots INTEGER DEFAULT 1,
       tags JSONB DEFAULT '[]',
       cover_color TEXT DEFAULT '#E8DDD0',
+      owner_admin_id TEXT DEFAULT '',
       application_count INTEGER DEFAULT 0,
       published_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -164,6 +165,13 @@ async function initDB() {
       visitor_id TEXT,
       email TEXT DEFAULT '',
       status TEXT NOT NULL DEFAULT 'bot',
+      assigned_admin_id TEXT DEFAULT '',
+      assigned_admin_name TEXT DEFAULT '',
+      human_reason TEXT DEFAULT '',
+      unread_admin BOOLEAN NOT NULL DEFAULT FALSE,
+      human_requested_at TIMESTAMPTZ,
+      last_user_at TIMESTAMPTZ,
+      last_human_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -173,6 +181,8 @@ async function initDB() {
       session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
       role TEXT NOT NULL,
       content TEXT NOT NULL,
+      author_admin_id TEXT DEFAULT '',
+      author_admin_name TEXT DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -200,6 +210,16 @@ async function initDB() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT DEFAULT '';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS owner_admin_id TEXT DEFAULT '';
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_id TEXT DEFAULT '';
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_name TEXT DEFAULT '';
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS human_reason TEXT DEFAULT '';
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS unread_admin BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS human_requested_at TIMESTAMPTZ;
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS last_user_at TIMESTAMPTZ;
+    ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS last_human_at TIMESTAMPTZ;
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS author_admin_id TEXT DEFAULT '';
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS author_admin_name TEXT DEFAULT '';
   `);
 
   // 确保超级管理员账号始终存在且密码正确（每次冷启动同步）
@@ -219,6 +239,35 @@ async function initDB() {
     } catch (e) {
       console.error('[db] superadmin sync error:', e.message);
     }
+  }
+
+  try {
+    const { rows: admins } = await pool.query(
+      `SELECT id, display_name, username
+       FROM admin_users
+       ORDER BY CASE WHEN role = 'superadmin' THEN 0 ELSE 1 END, created_at ASC
+       LIMIT 1`
+    );
+    const fallback = admins[0];
+    if (fallback) {
+      const fallbackName = fallback.display_name || fallback.username || '';
+      await pool.query(
+        `UPDATE jobs
+         SET owner_admin_id = $1
+         WHERE owner_admin_id IS NULL OR owner_admin_id = ''`,
+        [fallback.id]
+      );
+      await pool.query(
+        `UPDATE chat_sessions
+         SET assigned_admin_id = $1,
+             assigned_admin_name = $2
+         WHERE status IN ('pending_human', 'human_active')
+           AND (assigned_admin_id IS NULL OR assigned_admin_id = '')`,
+        [fallback.id, fallbackName]
+      );
+    }
+  } catch (e) {
+    console.error('[db] chat owner backfill error:', e.message);
   }
 }
 
@@ -486,19 +535,31 @@ async function upsertMemberPreferences(adminUserId, preferences) {
 function mapSession(r) {
   if (!r) return null;
   return { id: r.id, jobId: r.job_id, jobTitle: r.job_title, visitorId: r.visitor_id,
-    email: r.email, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at };
+    email: r.email, status: r.status,
+    assignedAdminId: r.assigned_admin_id || '',
+    assignedAdminName: r.assigned_admin_name || '',
+    humanReason: r.human_reason || '',
+    unreadAdmin: !!r.unread_admin,
+    humanRequestedAt: r.human_requested_at,
+    lastUserAt: r.last_user_at,
+    lastHumanAt: r.last_human_at,
+    createdAt: r.created_at, updatedAt: r.updated_at };
 }
 function mapMessage(r) {
   if (!r) return null;
-  return { id: r.id, sessionId: r.session_id, role: r.role, content: r.content, createdAt: r.created_at };
+  return { id: r.id, sessionId: r.session_id, role: r.role, content: r.content,
+    authorAdminId: r.author_admin_id || '',
+    authorAdminName: r.author_admin_name || '',
+    createdAt: r.created_at };
 }
-async function createChatSession({ jobId, jobTitle, visitorId, email = '' }) {
+async function createChatSession({ jobId, jobTitle, visitorId, email = '', assignedAdminId = '', assignedAdminName = '' }) {
   const id = genId('cs');
   const ts = now();
   const { rows } = await pool.query(
-    `INSERT INTO chat_sessions (id, job_id, job_title, visitor_id, email, status, created_at, updated_at)
-     VALUES ($1,$2,$3,$4,$5,'bot',$6,$6) RETURNING *`,
-    [id, jobId || null, jobTitle || '', visitorId || '', email, ts]
+    `INSERT INTO chat_sessions
+       (id, job_id, job_title, visitor_id, email, status, assigned_admin_id, assigned_admin_name, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,'bot',$6,$7,$8,$8) RETURNING *`,
+    [id, jobId || null, jobTitle || '', visitorId || '', email, assignedAdminId || '', assignedAdminName || '', ts]
   );
   return mapSession(rows[0]);
 }
@@ -506,26 +567,96 @@ async function getChatSession(id) {
   const { rows } = await pool.query('SELECT * FROM chat_sessions WHERE id = $1', [id]);
   return rows[0] ? mapSession(rows[0]) : null;
 }
-async function listChatSessions({ status } = {}) {
+async function listChatSessions({ status, assignedAdminId, unread } = {}) {
   let q = 'SELECT * FROM chat_sessions WHERE 1=1';
   const params = [];
   if (status && status !== 'all') { params.push(status); q += ` AND status = $${params.length}`; }
+  if (assignedAdminId) {
+    params.push(assignedAdminId);
+    q += ` AND assigned_admin_id = $${params.length}`;
+  }
+  if (unread) q += ' AND unread_admin = TRUE';
   q += ' ORDER BY updated_at DESC';
   const { rows } = await pool.query(q, params);
   return rows.map(mapSession);
 }
 async function updateChatSessionStatus(id, status) {
   const ts = now();
-  await pool.query('UPDATE chat_sessions SET status=$1, updated_at=$2 WHERE id=$3', [status, ts, id]);
+  const clearUnread = status === 'resolved';
+  await pool.query(
+    `UPDATE chat_sessions
+     SET status = $1,
+         unread_admin = CASE WHEN $4::boolean THEN FALSE ELSE unread_admin END,
+         updated_at = $2
+     WHERE id = $3`,
+    [status, ts, id, clearUnread]
+  );
 }
-async function addChatMessage({ sessionId, role, content }) {
+async function setChatSessionHumanPending(id, { assignedAdminId = '', assignedAdminName = '', reason = '' } = {}) {
+  const ts = now();
+  const { rows } = await pool.query(
+    `UPDATE chat_sessions
+     SET status = 'pending_human',
+         assigned_admin_id = COALESCE(NULLIF($2, ''), assigned_admin_id, ''),
+         assigned_admin_name = COALESCE(NULLIF($3, ''), assigned_admin_name, ''),
+         human_reason = COALESCE(NULLIF($4, ''), human_reason, ''),
+         unread_admin = TRUE,
+         human_requested_at = COALESCE(human_requested_at, $5),
+         updated_at = $5
+     WHERE id = $1
+     RETURNING *`,
+    [id, assignedAdminId || '', assignedAdminName || '', reason || '', ts]
+  );
+  return mapSession(rows[0]);
+}
+async function assignChatSession(id, { assignedAdminId = '', assignedAdminName = '' } = {}) {
+  const ts = now();
+  const { rows } = await pool.query(
+    `UPDATE chat_sessions
+     SET assigned_admin_id = $2,
+         assigned_admin_name = $3,
+         unread_admin = TRUE,
+         updated_at = $4
+     WHERE id = $1
+     RETURNING *`,
+    [id, assignedAdminId || '', assignedAdminName || '', ts]
+  );
+  return mapSession(rows[0]);
+}
+async function markChatSessionRead(id) {
+  await pool.query('UPDATE chat_sessions SET unread_admin = FALSE WHERE id = $1', [id]);
+}
+async function addChatMessage({ sessionId, role, content, authorAdminId = '', authorAdminName = '' }) {
   const id = genId('cm');
   const ts = now();
   const { rows } = await pool.query(
-    `INSERT INTO chat_messages (id, session_id, role, content, created_at) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-    [id, sessionId, role, content, ts]
+    `INSERT INTO chat_messages
+       (id, session_id, role, content, author_admin_id, author_admin_name, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [id, sessionId, role, content, authorAdminId || '', authorAdminName || '', ts]
   );
-  await pool.query('UPDATE chat_sessions SET updated_at=$1 WHERE id=$2', [ts, sessionId]);
+  if (role === 'user') {
+    await pool.query(
+      `UPDATE chat_sessions
+       SET last_user_at = $1,
+           unread_admin = CASE WHEN status IN ('pending_human', 'human_active') THEN TRUE ELSE unread_admin END,
+           updated_at = $1
+       WHERE id = $2`,
+      [ts, sessionId]
+    );
+  } else if (role === 'human_agent') {
+    await pool.query(
+      `UPDATE chat_sessions
+       SET status = 'human_active',
+           last_human_at = $1,
+           unread_admin = FALSE,
+           updated_at = $1
+       WHERE id = $2`,
+      [ts, sessionId]
+    );
+  } else {
+    await pool.query('UPDATE chat_sessions SET updated_at=$1 WHERE id=$2', [ts, sessionId]);
+  }
   return mapMessage(rows[0]);
 }
 async function getChatMessages(sessionId) {
@@ -646,7 +777,8 @@ module.exports = {
   createOtp, verifyOtp,
   mapSession, mapMessage,
   createChatSession, getChatSession, listChatSessions,
-  updateChatSessionStatus, addChatMessage, getChatMessages,
+  updateChatSessionStatus, setChatSessionHumanPending, assignChatSession,
+  markChatSessionRead, addChatMessage, getChatMessages,
   mapUser, getUserByPhone, getUserById, createUser, updateUser,
   createPhoneOtp, verifyPhoneOtp,
   getAllMemberNotesByAppId,

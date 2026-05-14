@@ -47,10 +47,18 @@
 
     <div class="admin-content">
       <div class="data-table-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) var(--space-5) var(--space-2);flex-wrap:wrap;">
+          <div class="status-tabs" id="scope-tabs">
+            <button class="status-tab active" data-scope="mine">指派给我</button>
+            <button class="status-tab" data-scope="all">全部对话</button>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="unread-toggle" data-active="0">只看未读</button>
+        </div>
         <!-- 状态 Tabs -->
         <div class="status-tabs" id="status-tabs" style="padding:0 var(--space-5);">
           <button class="status-tab active" data-status="all">全部 <span class="status-tab__count" id="cnt-all">0</span></button>
           <button class="status-tab" data-status="pending_human">待介入 <span class="status-tab__count" id="cnt-pending">0</span></button>
+          <button class="status-tab" data-status="human_active">人工跟进中 <span class="status-tab__count" id="cnt-human">0</span></button>
           <button class="status-tab" data-status="resolved">已解决 <span class="status-tab__count" id="cnt-resolved">0</span></button>
           <button class="status-tab" data-status="bot">AI 对话中 <span class="status-tab__count" id="cnt-bot">0</span></button>
         </div>
@@ -68,22 +76,32 @@
 
 <!-- 对话详情 Modal -->
 <div class="modal-overlay" id="chat-modal" style="display:none;" onclick="closeModal(event)">
-  <div class="modal-box" style="max-width:560px;" onclick="event.stopPropagation()">
+  <div class="modal-box" style="max-width:680px;" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div>
         <h2 class="modal-title" id="modal-job-title">对话详情</h2>
         <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;" id="modal-meta"></div>
+        <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2);flex-wrap:wrap;">
+          <span class="tag" id="modal-status"></span>
+          <span class="tag tag--pending" id="modal-reason" style="display:none;"></span>
+        </div>
       </div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap;">
+        <label class="form-label" style="margin:0;">负责人</label>
+        <select class="form-input" id="assign-select" style="max-width:220px;"></select>
+        <button class="btn btn--ghost btn--sm" id="assign-btn" onclick="assignCurrentSession()">更新负责人</button>
+      </div>
       <!-- 消息列表 -->
       <div id="modal-messages" style="display:flex;flex-direction:column;gap:var(--space-3);max-height:360px;overflow-y:auto;margin-bottom:var(--space-4);"></div>
-      <!-- 人工回复区（只在 pending_human 时显示） -->
+      <!-- 人工回复区 -->
       <div id="reply-area" style="display:none;">
         <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-2);">人工回复</div>
         <textarea class="form-input" id="reply-input" rows="3" placeholder="输入回复内容…"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:var(--space-3);">
+        <div style="display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-3);">
+          <button class="btn btn--ghost" id="resolve-btn" onclick="resolveSession()">标记已解决</button>
           <button class="btn btn--primary" id="reply-btn" onclick="sendReply()">发送回复</button>
         </div>
       </div>

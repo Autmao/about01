@@ -5,6 +5,15 @@ const router = express.Router();
 const { pool, genId, now, mapJob, isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 
+function mapAdminJob(row) {
+  return {
+    ...mapJob(row),
+    ownerAdminId: row.owner_admin_id || '',
+    ownerAdminName: row.owner_admin_name || '',
+    ownerAdminUsername: row.owner_admin_username || '',
+  };
+}
+
 /* GET /api/jobs — 前台列表（排除 draft） */
 router.get('/', async (req, res) => {
   try {
@@ -42,21 +51,43 @@ router.get('/admin', requireAdmin, async (req, res) => {
   try {
     await closeExpiredJobs();
     const { status, keyword } = req.query;
-    let q = `SELECT * FROM jobs WHERE 1=1`;
+    let q = `SELECT j.*, au.display_name AS owner_admin_name, au.username AS owner_admin_username
+             FROM jobs j
+             LEFT JOIN admin_users au ON au.id = j.owner_admin_id
+             WHERE 1=1`;
     const params = [];
 
     if (status && status !== 'all') {
       params.push(status);
-      q += ` AND status = $${params.length}`;
+      q += ` AND j.status = $${params.length}`;
     }
     if (keyword) {
       params.push(`%${keyword.toLowerCase()}%`);
-      q += ` AND LOWER(title) LIKE $${params.length}`;
+      q += ` AND LOWER(j.title) LIKE $${params.length}`;
     }
 
-    q += ` ORDER BY created_at DESC`;
+    q += ` ORDER BY j.created_at DESC`;
     const { rows } = await pool.query(q, params);
-    res.json(rows.map(mapJob));
+    res.json(rows.map(mapAdminJob));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* GET /api/jobs/admin/:id — 后台详情（含负责人） */
+router.get('/admin/:id', requireAdmin, async (req, res) => {
+  try {
+    await closeExpiredJobs();
+    const { rows } = await pool.query(
+      `SELECT j.*, au.display_name AS owner_admin_name, au.username AS owner_admin_username
+       FROM jobs j
+       LEFT JOIN admin_users au ON au.id = j.owner_admin_id
+       WHERE j.id = $1`,
+      [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(mapAdminJob(rows[0]));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -91,15 +122,18 @@ router.post('/', requireAdmin, async (req, res) => {
     const id = genId('job');
     const ts = now();
     const publishedAt = status === 'open' ? ts : null;
+    const ownerAdminId = req.adminUser.role === 'superadmin' && req.body.ownerAdminId
+      ? req.body.ownerAdminId
+      : req.adminUser.id;
 
     const { rows } = await pool.query(
       `INSERT INTO jobs (id,title,category,status,description,requirements,deliverables,
-        fee,fee_type,deadline,slots,tags,cover_color,application_count,published_at,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+        fee,fee_type,deadline,slots,tags,cover_color,owner_admin_id,application_count,published_at,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
       [id, title, category, status, description,
        JSON.stringify(requirements), deliverables,
        fee, feeType, deadline || null, slots, JSON.stringify(tags), coverColor,
-       0, publishedAt, ts, ts]
+       ownerAdminId, 0, publishedAt, ts, ts]
     );
     res.status(201).json(mapJob(rows[0]));
   } catch (e) {
@@ -125,6 +159,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
     const allowed = ['title','category','status','description','requirements','deliverables',
       'fee','feeType','deadline','slots','tags','coverColor'];
+    if (req.adminUser.role === 'superadmin') allowed.push('ownerAdminId');
     const setClauses = [];
     const params = [];
 
@@ -132,7 +167,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
       title: 'title', category: 'category', status: 'status', description: 'description',
       requirements: 'requirements', deliverables: 'deliverables', fee: 'fee',
       feeType: 'fee_type', deadline: 'deadline', slots: 'slots',
-      tags: 'tags', coverColor: 'cover_color',
+      tags: 'tags', coverColor: 'cover_color', ownerAdminId: 'owner_admin_id',
     };
     const jsonFields = new Set(['requirements', 'tags']);
 

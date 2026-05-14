@@ -20,9 +20,16 @@ function initSidebar() {
 const params = new URLSearchParams(window.location.search);
 const editId = params.get('id');
 let selectedColor = '#E8DDD0';
+let adminTeam = [];
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
 
 function collectData() {
-  return {
+  const data = {
     title:        document.getElementById('f-title').value.trim(),
     category:     document.getElementById('f-category').value,
     slots:        parseInt(document.getElementById('f-slots').value) || 1,
@@ -36,6 +43,9 @@ function collectData() {
     coverColor:   selectedColor,
     status:       document.querySelector('input[name=status]:checked').value,
   };
+  const ownerEl = document.getElementById('f-owner');
+  if (ownerEl && ownerEl.value) data.ownerAdminId = ownerEl.value;
+  return data;
 }
 
 function validate(data) {
@@ -68,6 +78,13 @@ function fillForm(job) {
   document.getElementById('f-fee-type').value     = job.feeType || 'per_project';
   document.getElementById('f-deadline').value     = job.deadline || '';
   document.getElementById('f-tags').value         = (job.tags || []).join(', ');
+  const ownerEl = document.getElementById('f-owner');
+  if (ownerEl && job.ownerAdminId) {
+    if (![...ownerEl.options].some(opt => opt.value === job.ownerAdminId)) {
+      ownerEl.insertAdjacentHTML('beforeend', `<option value="${esc(job.ownerAdminId)}">${esc(job.ownerAdminName || '原负责人')}</option>`);
+    }
+    ownerEl.value = job.ownerAdminId;
+  }
 
   if (job.coverColor) {
     selectedColor = job.coverColor;
@@ -80,6 +97,25 @@ function fillForm(job) {
 
   document.getElementById('page-title').textContent = '编辑岗位';
   document.getElementById('submit-btn').textContent = '保存修改';
+}
+
+async function loadOwnerOptions() {
+  if (!Store.isSuperAdmin()) return;
+  const field = document.getElementById('owner-field');
+  const select = document.getElementById('f-owner');
+  field.style.display = 'block';
+  try {
+    adminTeam = await Store.listAdminTeam();
+  } catch {
+    adminTeam = [];
+  }
+  const current = Store.getCurrentUser();
+  select.innerHTML = adminTeam.map(u => (
+    `<option value="${esc(u.id)}">${esc(u.displayName || u.username)}${u.role === 'superadmin' ? ' · 管理员' : ''}</option>`
+  )).join('');
+  if (current?.id && [...select.options].some(opt => opt.value === current.id)) {
+    select.value = current.id;
+  }
 }
 
 async function handleSubmit(e) {
@@ -113,6 +149,7 @@ async function handleSubmit(e) {
 document.addEventListener('DOMContentLoaded', async () => {
   if (!checkAuth()) return;
   initSidebar();
+  await loadOwnerOptions();
 
   if (editId) {
     const job = await Store.getJobById(editId);

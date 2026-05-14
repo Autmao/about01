@@ -112,6 +112,10 @@ const Store = {
     return _get(`${API}/jobs${_qs(filters)}`);
   },
   async getJobById(id) {
+    if (this.isAdminLoggedIn()) {
+      try { return await _get(`${API}/jobs/admin/${id}`); }
+      catch {}
+    }
     try { return await _get(`${API}/jobs/${id}`); }
     catch { return null; }
   },
@@ -328,6 +332,9 @@ const Store = {
   /* ====== ADMIN USERS ====== */
   async listAdminUsers() {
     return _get(`${API}/admin-users`);
+  },
+  async listAdminTeam() {
+    return _get(`${API}/admin/team`);
   },
   async createAdminUser(data) {
     return _post(`${API}/admin-users`, data);
