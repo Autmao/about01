@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/components.css">
 </head>
-<body class="page-enter">
+<body class="apply-page page-enter">
 
   <nav class="nav">
     <div class="nav__inner">
@@ -19,7 +19,7 @@
     </div>
   </nav>
 
-  <main class="container" style="max-width: 720px; padding-top: var(--space-8); padding-bottom: var(--space-16);">
+  <main class="container apply-shell">
 
     <nav class="breadcrumb">
       <a href="index.html">首页</a>
@@ -70,8 +70,7 @@
             <span class="char-count" id="bio-count">0/500</span>
           </label>
           <textarea class="form-input" id="field-bio" name="bio" rows="5"
-            placeholder="介绍你的背景、代表作品、工作风格——让我们更好地了解你"></textarea>
-          <span class="form-hint">简洁真实最好，不需要长篇大论</span>
+            placeholder="介绍你的背景、代表作品、工作风格——让我们更好地了解你。&#10;简洁真实最好，不需要长篇大论。"></textarea>
         </div>
       </div>
 
@@ -82,7 +81,6 @@
           <div class="upload-zone" id="resume-zone">
             <input type="file" id="resume-input" accept=".pdf,.doc,.docx" style="display:none">
             <div class="upload-zone__inner" onclick="document.getElementById('resume-input').click()">
-              <span class="upload-zone__icon">CV</span>
               <span class="upload-zone__text">点击上传简历</span>
               <span class="upload-zone__hint">支持 PDF、Word，不超过 10MB</span>
             </div>
@@ -94,11 +92,10 @@
       <div class="form-section">
         <h2 class="form-section__title">作品集</h2>
         <div class="form-field">
-          <label class="form-label">上传作品集文件 <span class="form-optional">选填，最多3个</span></label>
+          <label class="form-label">上传作品集 <span class="form-optional">选填，最多3个</span></label>
           <div class="upload-zone" id="portfolio-zone">
             <input type="file" id="portfolio-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" multiple>
             <div class="upload-zone__inner" onclick="document.getElementById('portfolio-input').click()">
-              <span class="upload-zone__icon">PF</span>
               <span class="upload-zone__text">点击上传作品集</span>
               <span class="upload-zone__hint">支持 PDF、图片，单个不超过 10MB</span>
             </div>
@@ -111,15 +108,10 @@
           <button type="button" class="btn btn--ghost btn--sm" id="add-link-btn" style="margin-top: var(--space-2);">+ 添加链接</button>
           <span class="form-hint">可以是 Behance、网盘分享、个人网站、公众号等任何链接</span>
         </div>
-        <div class="form-field">
-          <label class="form-label">补充说明 <span class="form-optional">选填</span></label>
-          <textarea class="form-input" id="field-note" name="portfolioNote" rows="3"
-            placeholder="如有特别说明（如作品集密码、特定代表作品等）可在此注明"></textarea>
-        </div>
       </div>
 
       <div style="font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-6); line-height: var(--leading-loose);">
-        提交即代表您同意我们将您的信息用于本次合作筛选，不会向第三方披露。
+        提交即代表您同意我们将您的信息用于本次合作筛选，上述所有信息我们不会向第三方披露。
       </div>
 
       <div class="form-actions" style="border-top:none; padding-top:0;">

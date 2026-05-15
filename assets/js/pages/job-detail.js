@@ -2,6 +2,7 @@
 
 const params = new URLSearchParams(window.location.search);
 const jobId = params.get('id');
+const esc = value => Utils.escapeHtml(value);
 
 function renderDetail(job) {
   const cat = Utils.getCategoryInfo(job.category);
@@ -16,20 +17,20 @@ function renderDetail(job) {
   document.getElementById('bc-title').textContent = job.title;
 
   const reqs = (job.requirements || []).map(r =>
-    `<li class="req-item"><span class="req-dot"></span>${r}</li>`
+    `<li class="req-item"><span class="req-dot"></span>${esc(r)}</li>`
   ).join('');
 
   document.getElementById('detail-layout').innerHTML = `
     <div class="detail-main">
       <div class="detail-tags">
-        <span class="tag tag--category">${cat.icon} ${cat.label}</span>
+        ${job.department ? `<span class="tag tag--category">${esc(job.department)}</span>` : ''}
+        <span class="tag tag--category">${esc(cat.label)}</span>
         <span class="tag ${statusInfo.cls}">${statusInfo.label}</span>
-        ${(job.tags || []).map(t => `<span class="tag tag--category">${t}</span>`).join('')}
       </div>
-      <h1 class="detail-title">${job.title}</h1>
+      <h1 class="detail-title">${esc(job.title)}</h1>
       <div class="detail-section">
         <p class="detail-section-title">岗位描述</p>
-        <p class="detail-desc">${job.description || ''}</p>
+        <p class="detail-desc">${esc(job.description || '')}</p>
       </div>
       ${reqs ? `<div class="detail-section">
         <p class="detail-section-title">具体要求</p>
@@ -37,7 +38,7 @@ function renderDetail(job) {
       </div>` : ''}
       ${job.deliverables ? `<div class="detail-section">
         <p class="detail-section-title">交付物</p>
-        <p class="detail-desc" style="margin-bottom:0;">${job.deliverables}</p>
+        <p class="detail-desc" style="margin-bottom:0;">${esc(job.deliverables)}</p>
       </div>` : ''}
     </div>
 
@@ -63,23 +64,17 @@ function renderDetail(job) {
           <span class="sidebar-label">已收到投递</span>
           <span class="sidebar-value">${job.applicationCount || 0} 份</span>
         </div>
-        <div class="apply-btn-wrap">
-          ${isClosed
-            ? `<button class="btn btn--ghost btn--full" disabled style="cursor:not-allowed;">招募已截止</button>`
-            : `<a href="${applyUrl}" class="btn btn--primary btn--full btn--lg">立即投递</a>`}
-          <button class="btn btn--ghost btn--full" style="margin-top:var(--space-2);"
-            onclick="if(window.openChatWidget)openChatWidget();">咨询岗位问题</button>
-        </div>
-        <div class="sidebar-share-row">
-          <div class="sidebar-share" onclick="copyLink()">
-            <span>LINK</span> 复制链接
-          </div>
-          <div class="sidebar-share" onclick="openPoster()">
-            <span>POSTER</span> 生成海报
-          </div>
-        </div>
       </div>
-    </aside>`;
+    </aside>
+
+    <div class="detail-cta-row">
+      ${isClosed
+        ? `<button class="btn btn--ghost btn--lg" disabled style="cursor:not-allowed;">招募已截止</button>`
+        : `<a href="${applyUrl}" class="btn btn--primary btn--lg">立即投递</a>`}
+      <button class="btn btn--ghost btn--lg" onclick="if(window.openChatWidget)openChatWidget();">咨询岗位问题</button>
+      <button class="btn btn--ghost btn--lg detail-share-btn" onclick="copyLink()">复制链接</button>
+      <button class="btn btn--ghost btn--lg detail-share-btn" onclick="openPoster()">生成海报</button>
+    </div>`;
 
   const mobileBar = document.getElementById('apply-bar-mobile');
   if (!isClosed) {
@@ -102,12 +97,12 @@ async function renderRelated(currentJob) {
     return `
       <article class="job-card" onclick="window.location.href='job-detail.html?id=${job.id}'">
         <div class="job-card__cover" style="background-color:${job.coverColor || cat.color}">
-          <span class="job-card__icon">${cat.icon}</span>
+          <span class="job-card__icon">${esc(cat.icon)}</span>
           <span class="tag tag--open">招募中</span>
         </div>
         <div class="job-card__body">
-          <div class="job-card__meta"><span class="tag tag--category">${cat.label}</span></div>
-          <h3 class="job-card__title">${job.title}</h3>
+          <div class="job-card__meta"><span class="tag tag--category">${esc(cat.label)}</span></div>
+          <h3 class="job-card__title">${esc(job.title)}</h3>
           <div class="job-card__footer">
             <span class="fee-value">${job.fee ? '¥' + job.fee : '面议'}</span>
             <span class="${dl.cls}">${dl.text}</span>

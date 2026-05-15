@@ -14,7 +14,7 @@ function initSidebar() {
   const el = document.getElementById('sidebar-user');
   if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
   const navLabel = document.getElementById('nav-accounts-label');
-  if (navLabel) navLabel.textContent = user.role === 'superadmin' ? '账号管理' : '账号设置';
+  if (navLabel) navLabel.textContent = '账号管理';
   // 非 superadmin 隐藏成员管理区，只留"修改密码"
   if (user.role !== 'superadmin') {
     const mgmt = document.getElementById('member-management-section');

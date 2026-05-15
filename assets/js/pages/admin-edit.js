@@ -14,13 +14,18 @@ function initSidebar() {
   const el = document.getElementById('sidebar-user');
   if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
   const navLabel = document.getElementById('nav-accounts-label');
-  if (navLabel) navLabel.textContent = user.role === 'superadmin' ? '账号管理' : '账号设置';
+  if (navLabel) navLabel.textContent = '账号管理';
 }
 
 const params = new URLSearchParams(window.location.search);
 const editId = params.get('id');
-let selectedColor = '#E8DDD0';
 let adminTeam = [];
+
+const DEPARTMENT_COLORS = {
+  'about出版物': '#C9D4BE',
+  'about热水频道': '#DDB37C',
+  'about/CCC': '#B8C9DD',
+};
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, ch => ({
@@ -29,8 +34,10 @@ function esc(s) {
 }
 
 function collectData() {
+  const department = document.getElementById('f-department').value;
   const data = {
     title:        document.getElementById('f-title').value.trim(),
+    department,
     category:     document.getElementById('f-category').value,
     slots:        parseInt(document.getElementById('f-slots').value) || 1,
     description:  document.getElementById('f-desc').value.trim(),
@@ -39,9 +46,9 @@ function collectData() {
     fee:          document.getElementById('f-fee').value.trim(),
     feeType:      document.getElementById('f-fee-type').value,
     deadline:     document.getElementById('f-deadline').value,
-    tags:         document.getElementById('f-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
-    coverColor:   selectedColor,
-    status:       document.querySelector('input[name=status]:checked').value,
+    tags:         [],
+    coverColor:   DEPARTMENT_COLORS[department] || '#E8DDD0',
+    status:       document.querySelector('input[name=status]:checked')?.value || 'open',
   };
   const ownerEl = document.getElementById('f-owner');
   if (ownerEl && ownerEl.value) data.ownerAdminId = ownerEl.value;
@@ -51,6 +58,7 @@ function collectData() {
 function validate(data) {
   const errors = {};
   if (!data.title) errors.title = '请填写岗位名称';
+  if (!data.department) errors.department = '请选择岗位所属';
   if (!data.category) errors.category = '请选择岗位类型';
   if (!data.description) errors.desc = '请填写岗位描述';
   if (!data.deadline) errors.deadline = '请选择截止日期';
@@ -61,7 +69,7 @@ function validate(data) {
 }
 
 function showErrors(errors) {
-  ['title','category','desc','deadline'].forEach(f => {
+  ['title','department','category','desc','deadline'].forEach(f => {
     const el = document.getElementById(`err-${f}`);
     if (el) el.textContent = errors[f] || '';
   });
@@ -69,6 +77,16 @@ function showErrors(errors) {
 
 function fillForm(job) {
   document.getElementById('f-title').value        = job.title || '';
+  const deptEl = document.getElementById('f-department');
+  if (job.department && ![...deptEl.options].some(opt => opt.value === job.department)) {
+    deptEl.insertAdjacentHTML('beforeend', `<option value="${esc(job.department)}">${esc(job.department)}</option>`);
+  }
+  deptEl.value = job.department || '';
+  const catEl = document.getElementById('f-category');
+  if (job.category && ![...catEl.options].some(opt => opt.value === job.category)) {
+    const info = Utils.getCategoryInfo(job.category);
+    catEl.insertAdjacentHTML('beforeend', `<option value="${esc(job.category)}">${esc(info.label || job.category)}</option>`);
+  }
   document.getElementById('f-category').value     = job.category || '';
   document.getElementById('f-slots').value        = job.slots || 1;
   document.getElementById('f-desc').value         = job.description || '';
@@ -77,20 +95,12 @@ function fillForm(job) {
   document.getElementById('f-fee').value          = job.fee || '';
   document.getElementById('f-fee-type').value     = job.feeType || 'per_project';
   document.getElementById('f-deadline').value     = job.deadline || '';
-  document.getElementById('f-tags').value         = (job.tags || []).join(', ');
   const ownerEl = document.getElementById('f-owner');
   if (ownerEl && job.ownerAdminId) {
     if (![...ownerEl.options].some(opt => opt.value === job.ownerAdminId)) {
       ownerEl.insertAdjacentHTML('beforeend', `<option value="${esc(job.ownerAdminId)}">${esc(job.ownerAdminName || '原负责人')}</option>`);
     }
     ownerEl.value = job.ownerAdminId;
-  }
-
-  if (job.coverColor) {
-    selectedColor = job.coverColor;
-    document.querySelectorAll('.color-swatch').forEach(s => {
-      s.classList.toggle('selected', s.dataset.color === job.coverColor);
-    });
   }
   const statusRadio = document.querySelector(`input[name=status][value="${job.status}"]`);
   if (statusRadio) statusRadio.checked = true;
@@ -120,14 +130,23 @@ async function loadOwnerOptions() {
 
 async function handleSubmit(e) {
   e.preventDefault();
+  const submitter = e.submitter;
+  if (submitter?.id === 'draft-btn') {
+    const draftRadio = document.querySelector('input[name=status][value="draft"]');
+    if (draftRadio) draftRadio.checked = true;
+  } else {
+    const openRadio = document.querySelector('input[name=status][value="open"]');
+    if (openRadio) openRadio.checked = true;
+  }
   const data = collectData();
   const errors = validate(data);
   showErrors(errors);
   if (Object.keys(errors).length > 0) return;
 
-  const btn = document.getElementById('submit-btn');
+  const btn = submitter?.id === 'draft-btn' ? submitter : document.getElementById('submit-btn');
+  const originalText = btn.textContent;
   btn.classList.add('btn--loading');
-  btn.innerHTML = '<span class="btn-spinner"></span> 保存中...';
+  btn.innerHTML = '<span class="btn-spinner"></span> 保存中......';
 
   try {
     if (editId) {
@@ -141,7 +160,7 @@ async function handleSubmit(e) {
     window.location.href = 'index.html';
   } catch (err) {
     btn.classList.remove('btn--loading');
-    btn.textContent = editId ? '保存修改' : '发布岗位';
+    btn.textContent = originalText;
     Utils.showToast(err.message || '操作失败，请重试', 'error');
   }
 }
@@ -155,14 +174,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const job = await Store.getJobById(editId);
     if (job) fillForm(job);
   }
-
-  document.getElementById('color-picker').addEventListener('click', e => {
-    const swatch = e.target.closest('.color-swatch');
-    if (!swatch) return;
-    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-    swatch.classList.add('selected');
-    selectedColor = swatch.dataset.color;
-  });
 
   document.getElementById('job-form').addEventListener('submit', handleSubmit);
 });

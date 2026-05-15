@@ -402,7 +402,8 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   font-size: 1.5rem; flex-shrink: 0;
 }
 .job-summary-title { font-weight: var(--weight-semibold); font-size: var(--text-base); margin-bottom: var(--space-1); }
-.job-summary-meta { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; gap: var(--space-4); }
+.job-summary-meta { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.job-summary-meta span { white-space: nowrap; }
 
 /* 手机端固定投递按钮 */
 .apply-bar-mobile {
@@ -494,6 +495,195 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   .form-row { grid-template-columns: 1fr; }
   .portfolio-link-row { flex-wrap: wrap; }
   .portfolio-link-row .form-input:first-child { flex: 1 1 100%; }
+}
+
+/* === 详情页新版 === */
+.detail-page {
+  background:
+    linear-gradient(90deg, rgba(17,17,17,0.026) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(17,17,17,0.026) 1px, transparent 1px),
+    #f7f3ea;
+  background-size: 56px 56px;
+}
+.detail-page .container {
+  max-width: 1180px;
+}
+.detail-page .detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: clamp(28px, 5vw, 72px);
+  padding: clamp(42px, 7vw, 86px) 0 0;
+}
+.detail-page .detail-main {
+  border-top: 1px solid rgba(17,17,17,0.78);
+  padding-top: 22px;
+}
+.detail-page .detail-title {
+  font-size: clamp(44px, 7vw, 92px);
+  line-height: 0.96;
+  letter-spacing: 0;
+  font-weight: 720;
+  margin: 26px 0 44px;
+}
+.detail-page .detail-section {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 42px);
+  padding: 30px 0;
+  margin: 0;
+  border-top: 1px solid rgba(17,17,17,0.18);
+}
+.detail-page .detail-section:last-child {
+  border-bottom: 1px solid rgba(17,17,17,0.78);
+}
+.detail-page .detail-section-title {
+  margin: 0;
+  color: #b84a36;
+  letter-spacing: 0.08em;
+}
+.detail-page .detail-desc,
+.detail-page .req-item {
+  font-size: 16px;
+  line-height: 1.9;
+  color: #3f3b34;
+}
+.detail-page .detail-desc {
+  margin: 0;
+}
+.detail-page .req-list {
+  margin: 0;
+}
+.detail-page .req-dot {
+  background: #111111;
+  margin-top: 10px;
+}
+.detail-page .detail-sidebar {
+  width: auto;
+}
+.detail-page .detail-card {
+  border-radius: 0;
+  border: 1px solid rgba(17,17,17,0.78);
+  background: rgba(251,248,241,0.72);
+  box-shadow: none;
+}
+.detail-page .sidebar-row {
+  border-bottom-color: rgba(17,17,17,0.18);
+}
+.detail-page .detail-cta-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 28px 0 8px;
+}
+.detail-page .detail-share-btn {
+  border-color: rgba(17,17,17,0.32);
+}
+.detail-page .related-section {
+  border-top-color: rgba(17,17,17,0.78);
+}
+.poster-overlay {
+  align-items: flex-start;
+  padding: 4vh 16px;
+}
+.poster-modal {
+  max-height: 92vh;
+  gap: 12px;
+  padding: 20px;
+}
+.poster-modal canvas {
+  width: auto;
+  max-width: 100%;
+  max-height: calc(92vh - 116px);
+}
+@media (max-width: 860px) {
+  .detail-page .detail-layout {
+    grid-template-columns: 1fr;
+  }
+  .detail-page .detail-sidebar {
+    order: 0;
+  }
+  .detail-page .detail-section {
+    grid-template-columns: 1fr;
+  }
+  .detail-page .detail-cta-row {
+    padding-bottom: 82px;
+  }
+}
+
+/* === 投递页新版 === */
+.apply-page {
+  background:
+    linear-gradient(90deg, rgba(17,17,17,0.026) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(17,17,17,0.026) 1px, transparent 1px),
+    #f7f3ea;
+  background-size: 56px 56px;
+}
+.apply-shell {
+  max-width: 880px;
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-16);
+}
+.apply-page .job-summary-card {
+  border-radius: 0;
+  border: 1px solid rgba(17,17,17,0.78);
+  background: rgba(251,248,241,0.72);
+  box-shadow: none;
+}
+.apply-page #apply-form {
+  border-top: 1px solid rgba(17,17,17,0.78);
+}
+.apply-page .form-section {
+  margin: 0;
+  padding: 30px 0 12px;
+  border-bottom: 1px solid rgba(17,17,17,0.18);
+}
+.apply-page .form-section__title {
+  border: 0;
+  padding: 0;
+  color: #111111;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+.apply-page .form-label {
+  color: #514c43;
+}
+.apply-page .form-input {
+  border-radius: 0;
+  border-color: rgba(17,17,17,0.28);
+  background: rgba(251,248,241,0.66);
+}
+.apply-page .form-input:focus {
+  border-color: #111111;
+  box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
+}
+.apply-page .upload-zone {
+  border-radius: 0;
+  border-color: rgba(17,17,17,0.32);
+  background: rgba(251,248,241,0.56);
+}
+.apply-page .upload-zone__inner {
+  min-height: 116px;
+}
+.apply-page .upload-zone__text {
+  color: #111111;
+}
+.apply-page .form-actions {
+  border-top: 1px solid rgba(17,17,17,0.78);
+  margin-top: 10px;
+}
+.apply-page .success-state {
+  border-top: 1px solid rgba(17,17,17,0.78);
+  border-bottom: 1px solid rgba(17,17,17,0.78);
+  margin-top: 32px;
+}
+@media (max-width: 720px) {
+  .apply-shell {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
 }
 
 /* ===== 聊天组件 ===== */

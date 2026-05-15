@@ -23,7 +23,7 @@ function getClient() {
 function buildSystemPrompt(job) {
   const reqs = (job.requirements || []).join('\n- ');
   const feeType = FEE_TYPE_LABELS[job.fee_type] || job.fee_type || '';
-  return `你是 about 招募助手。用户正在咨询 about编辑部的岗位相关问题，请保持简洁、友好，用中文回答。
+  return `你是 about编辑部招募助手。用户正在咨询 about编辑部的岗位相关问题，请保持简洁、友好，用中文回答。
 
 当前咨询的岗位：「${job.title}」
 岗位描述：${job.description || '暂无'}
@@ -42,7 +42,7 @@ function buildSystemPrompt(job) {
 }
 
 function buildSystemPromptGeneral() {
-  return `你是 about 招募助手。用户正在 about编辑部招募页咨询问题，请保持简洁、友好，用中文回答。
+  return `你是 about编辑部招募助手。用户正在 about编辑部招募页咨询问题，请保持简洁、友好，用中文回答。
 
 about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Lives" 理念，关注人们生活的方式。编辑部通过纸质出版物、播客、线下活动、联合创意项目等形式展开创作，长期寻找各领域创作者合作。
 
@@ -133,9 +133,7 @@ function cleanHumanMarker(text) {
 }
 
 function withHumanNotice(reply, assigneeName) {
-  const notice = assigneeName
-    ? `我已把这个问题同步给负责同事${assigneeName}，稍后会由编辑部人工补充回复。`
-    : '我已把这个问题同步给编辑部，稍后会由团队成员人工补充回复。';
+  const notice = '您的问题已通知编辑部，请耐心等待，稍后会有回复。';
   if (!reply) return notice;
   if (/同步给|人工|编辑部.*回复|工作人员/.test(reply)) return reply;
   return `${reply}\n\n${notice}`;

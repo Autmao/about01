@@ -14,7 +14,7 @@ function initSidebar() {
   const el = document.getElementById('sidebar-user');
   if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
   const navLabel = document.getElementById('nav-accounts-label');
-  if (navLabel) navLabel.textContent = user.role === 'superadmin' ? '账号管理' : '账号设置';
+  if (navLabel) navLabel.textContent = '账号管理';
 }
 
 let currentStatus = 'all';
@@ -62,8 +62,8 @@ async function renderJobsTable() {
       <tr>
         <td>
           <div class="table-job-title">${esc(job.title)}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${esc((job.tags || []).slice(0,3).join(' · '))}</div>
         </td>
+        <td><span class="tag tag--category">${esc(job.department || '未设置')}</span></td>
         <td><span class="tag tag--category">${cat.label}</span></td>
         <td><span style="font-size:var(--text-sm);color:var(--color-text-secondary);">${esc(job.ownerAdminName || job.ownerAdminUsername || '未指定')}</span></td>
         <td><span class="tag ${statusInfo.cls}">${statusInfo.label}</span></td>

@@ -57,16 +57,31 @@ const Utils = {
 
   /* 岗位类型映射 */
   categoryMap: {
-    writing:  { label: '撰稿人',    icon: '✍️',  color: '#D0DDE8' },
-    editing:  { label: '编辑',      icon: '📝',  color: '#D8D0E8' },
-    design:   { label: '设计师',    icon: '🎨',  color: '#E8DDD0' },
-    planning: { label: '活动策划执行', icon: '🎪', color: '#D8E8D0' },
-    podcast:  { label: '播客制作人', icon: '🎙️', color: '#E8E0D0' },
-    other:    { label: '其他',      icon: '✨',  color: '#E8D0D8' },
+    writing:       { label: '撰稿人',     icon: 'W', color: '#D0DDE8' },
+    editing:       { label: '编辑',       icon: 'E', color: '#D8D0E8' },
+    illustration:  { label: '插画师',     icon: 'I', color: '#E8DDD0' },
+    design:        { label: '设计师',     icon: 'D', color: '#E8DDD0' },
+    photography:   { label: '摄影摄像师', icon: 'P', color: '#C9D4BE' },
+    photo_video:   { label: '摄影摄像师', icon: 'P', color: '#C9D4BE' },
+    podcast:       { label: '播客制作人', icon: 'A', color: '#E8E0D0' },
+    audio_editing: { label: '音频剪辑师', icon: 'S', color: '#B8C9DD' },
+    planning:      { label: '活动策划',   icon: 'C', color: '#DDB37C' },
+    interview:     { label: '采访记者',   icon: 'R', color: '#E8E0D0' },
+    other:         { label: '其他',       icon: '+', color: '#E8D0D8' },
   },
 
   getCategoryInfo(category) {
     return this.categoryMap[category] || { label: category, icon: '✦', color: '#F0EDE6' };
+  },
+
+  departmentMap: {
+    'about出版物': { label: 'about出版物', color: '#C9D4BE' },
+    'about热水频道': { label: 'about热水频道', color: '#DDB37C' },
+    'about/CCC': { label: 'about/CCC', color: '#B8C9DD' },
+  },
+
+  getDepartmentInfo(department) {
+    return this.departmentMap[department] || { label: department || '未设置', color: '#E8DDD0' };
   },
 
   escapeHtml(value) {

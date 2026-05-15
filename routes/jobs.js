@@ -5,6 +5,16 @@ const router = express.Router();
 const { pool, genId, now, mapJob, isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 
+const DEPARTMENT_COLORS = {
+  'about出版物': '#C9D4BE',
+  'about热水频道': '#DDB37C',
+  'about/CCC': '#B8C9DD',
+};
+
+function coverColorForDepartment(department, fallback = '#E8DDD0') {
+  return DEPARTMENT_COLORS[department] || fallback || '#E8DDD0';
+}
+
 function mapAdminJob(row) {
   return {
     ...mapJob(row),
@@ -29,12 +39,13 @@ router.get('/', async (req, res) => {
       q += ` AND status = 'open'`;
     }
     if (category && category !== 'all') {
-      params.push(category);
-      q += ` AND category = $${params.length}`;
+      const categories = category === 'photo_video' ? ['photo_video', 'photography'] : [category];
+      params.push(categories);
+      q += ` AND category = ANY($${params.length})`;
     }
     if (keyword) {
       params.push(`%${keyword.toLowerCase()}%`);
-      q += ` AND (LOWER(title) LIKE $${params.length} OR tags::text ILIKE $${params.length})`;
+      q += ` AND (LOWER(title) LIKE $${params.length} OR LOWER(COALESCE(department,'')) LIKE $${params.length} OR tags::text ILIKE $${params.length})`;
     }
 
     q += ` ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, created_at DESC`;
@@ -63,7 +74,7 @@ router.get('/admin', requireAdmin, async (req, res) => {
     }
     if (keyword) {
       params.push(`%${keyword.toLowerCase()}%`);
-      q += ` AND LOWER(j.title) LIKE $${params.length}`;
+      q += ` AND (LOWER(j.title) LIKE $${params.length} OR LOWER(COALESCE(j.department,'')) LIKE $${params.length})`;
     }
 
     q += ` ORDER BY j.created_at DESC`;
@@ -110,7 +121,7 @@ router.get('/:id', async (req, res) => {
 /* POST /api/jobs */
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { title, category, status = 'draft', description, requirements = [],
+    const { title, department = '', category, status = 'draft', description, requirements = [],
       deliverables, fee, feeType = 'per_project', deadline,
       slots = 1, tags = [], coverColor = '#E8DDD0' } = req.body;
 
@@ -125,14 +136,15 @@ router.post('/', requireAdmin, async (req, res) => {
     const ownerAdminId = req.adminUser.role === 'superadmin' && req.body.ownerAdminId
       ? req.body.ownerAdminId
       : req.adminUser.id;
+    const resolvedCoverColor = coverColorForDepartment(department, coverColor);
 
     const { rows } = await pool.query(
-      `INSERT INTO jobs (id,title,category,status,description,requirements,deliverables,
+      `INSERT INTO jobs (id,title,category,department,status,description,requirements,deliverables,
         fee,fee_type,deadline,slots,tags,cover_color,owner_admin_id,application_count,published_at,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
-      [id, title, category, status, description,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+      [id, title, category, department, status, description,
        JSON.stringify(requirements), deliverables,
-       fee, feeType, deadline || null, slots, JSON.stringify(tags), coverColor,
+       fee, feeType, deadline || null, slots, JSON.stringify(tags), resolvedCoverColor,
        ownerAdminId, 0, publishedAt, ts, ts]
     );
     res.status(201).json(mapJob(rows[0]));
@@ -157,14 +169,19 @@ router.put('/:id', requireAdmin, async (req, res) => {
     let publishedAt = existing[0].published_at;
     if (req.body.status === 'open' && !publishedAt) publishedAt = ts;
 
-    const allowed = ['title','category','status','description','requirements','deliverables',
+    const body = { ...req.body };
+    if (body.department !== undefined && body.coverColor === undefined) {
+      body.coverColor = coverColorForDepartment(body.department, existing[0].cover_color);
+    }
+
+    const allowed = ['title','department','category','status','description','requirements','deliverables',
       'fee','feeType','deadline','slots','tags','coverColor'];
     if (req.adminUser.role === 'superadmin') allowed.push('ownerAdminId');
     const setClauses = [];
     const params = [];
 
     const fieldMap = {
-      title: 'title', category: 'category', status: 'status', description: 'description',
+      title: 'title', department: 'department', category: 'category', status: 'status', description: 'description',
       requirements: 'requirements', deliverables: 'deliverables', fee: 'fee',
       feeType: 'fee_type', deadline: 'deadline', slots: 'slots',
       tags: 'tags', coverColor: 'cover_color', ownerAdminId: 'owner_admin_id',
@@ -172,9 +189,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
     const jsonFields = new Set(['requirements', 'tags']);
 
     for (const key of allowed) {
-      if (req.body[key] !== undefined) {
+      if (body[key] !== undefined) {
         const col = fieldMap[key];
-        const val = jsonFields.has(key) ? JSON.stringify(req.body[key]) : req.body[key];
+        const val = jsonFields.has(key) ? JSON.stringify(body[key]) : body[key];
         params.push(val);
         setClauses.push(`${col} = $${params.length}`);
       }

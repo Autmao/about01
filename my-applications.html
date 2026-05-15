@@ -208,9 +208,6 @@
     <section class="query-intro" id="query-intro">
       <div class="query-kicker">Application Status</div>
       <h1>查询你的投递。</h1>
-      <p>
-        这里不需要短信验证码。输入投递时填写的邮箱，就能查看当前记录与处理状态。
-      </p>
     </section>
 
     <section class="query-card" id="query-section">
@@ -219,7 +216,7 @@
         <span>status desk</span>
       </div>
       <h2>用邮箱进入记录。</h2>
-      <p class="query-card__hint">如果没有查到记录，请确认邮箱是否与投递表单中填写的一致。</p>
+      <p class="query-card__hint">输入投递时填写的邮箱，查看当前记录与处理状态。如果没有查到记录，请确认邮箱是否与投递表单中填写的一致。</p>
       <div class="query-form">
         <div class="form-field" style="text-align:left;">
           <label class="form-label">投递邮箱</label>
@@ -244,7 +241,7 @@
       </div>
       <div id="apps-list"></div>
       <div class="empty-apps" id="apps-empty" style="display:none;">
-        暂无投递记录，<a href="index.html#open-calls">去看看正在招募的 brief</a>
+        暂无投递记录，<a href="index.html#open-calls">去看看正在招募的岗位</a>
       </div>
     </section>
   </main>
@@ -275,7 +272,7 @@
         return;
       }
       const btn = document.getElementById('btn-query');
-      btn.disabled = true; btn.textContent = '查询中…';
+      btn.disabled = true; btn.textContent = '查询中…...';
       try {
         const apps = await Store.getMyApplications(email);
         currentEmail = email;
@@ -285,9 +282,7 @@
         document.getElementById('queried-email').textContent = email;
         renderApps(apps);
       } catch (e) {
-        errEl.textContent = e.message && e.message.includes('Failed to fetch')
-          ? '当前页面无法连接线上服务，请从 about01.vercel.app 打开后重试'
-          : '查询失败，请稍后重试';
+        errEl.textContent = '查询失败，请稍后重试';
       } finally {
         btn.disabled = false; btn.textContent = '查看投递记录';
       }

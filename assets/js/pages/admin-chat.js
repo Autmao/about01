@@ -15,7 +15,7 @@ function initSidebar() {
   const el = document.getElementById('sidebar-user');
   if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
   const navLabel = document.getElementById('nav-accounts-label');
-  if (navLabel) navLabel.textContent = user.role === 'superadmin' ? '账号管理' : '账号设置';
+  if (navLabel) navLabel.textContent = '账号管理';
 }
 
 const STATUS_LABELS = {
@@ -156,8 +156,9 @@ async function openSession(id) {
     const { session, messages } = await res.json();
     currentSession = session;
 
-    document.getElementById('modal-job-title').textContent = session.jobTitle || '通用咨询';
+    document.getElementById('modal-job-title').textContent = '对话详情';
     const meta = [
+      session.jobTitle ? `岗位：${session.jobTitle}` : '通用咨询',
       session.email ? `邮箱：${session.email}` : null,
       `访客 ID：${session.visitorId || '-'}`,
       `创建：${(session.createdAt || '').slice(0, 16).replace('T', ' ')}`,
@@ -175,22 +176,22 @@ async function openSession(id) {
     const msgEl = document.getElementById('modal-messages');
     msgEl.innerHTML = messages.map(m => {
       const roleLabel = m.role === 'user'
-        ? '访客'
+        ? '候选人'
         : m.role === 'human_agent'
-          ? `编辑部${m.authorAdminName ? ` · ${escHtml(m.authorAdminName)}` : ''}`
-          : 'about 招募助手';
-      const [bg, color] = m.role === 'user'
-        ? ['var(--color-brand)', 'white']
+          ? `负责人${m.authorAdminName ? ` · ${escHtml(m.authorAdminName)}` : ''}`
+          : 'about编辑部招募助手';
+      const [bg, color, border] = m.role === 'user'
+        ? ['#fbf8f1', 'var(--color-text-primary)', '1px solid rgba(17,17,17,0.18)']
         : m.role === 'human_agent'
-          ? ['#E3F2FD', '#1565C0']
-          : ['var(--color-surface-warm)', 'var(--color-text-primary)'];
-      const align = m.role === 'user' ? 'flex-end' : 'flex-start';
+          ? ['#111111', '#fbf8f1', '1px solid #111111']
+          : ['#eef2f5', '#2c5f9f', '1px solid rgba(44,95,159,0.18)'];
+      const align = m.role === 'user' ? 'flex-start' : 'flex-end';
       return `
       <div style="display:flex;flex-direction:column;align-items:${align};gap:2px;">
         <div style="font-size:10px;color:var(--color-text-muted);margin-bottom:1px;">${roleLabel}</div>
         <div style="max-width:85%;padding:var(--space-2) var(--space-3);border-radius:var(--radius-lg);
           font-size:var(--text-sm);line-height:var(--leading-normal);word-break:break-word;white-space:pre-wrap;
-          background:${bg};color:${color};">${escHtml(m.content)}</div>
+          background:${bg};color:${color};border:${border};">${escHtml(m.content)}</div>
       </div>`;
     }).join('');
     msgEl.scrollTop = msgEl.scrollHeight;

@@ -165,7 +165,7 @@ function collectFormData() {
     phone:          document.getElementById('field-phone').value.trim(),
     wechat:         document.getElementById('field-wechat').value.trim(),
     bio:            document.getElementById('field-bio').value.trim(),
-    portfolioNote:  document.getElementById('field-note').value.trim(),
+    portfolioNote:  '',
     portfolioLinks: links,
     resumeUrl:      uploadedResumeUrl,
     portfolioFiles: uploadedPortfolioFiles.map(f => ({ name: f.name, url: f.url })),
@@ -217,7 +217,7 @@ async function handleSubmit(e) {
 
   const btn = document.getElementById('submit-btn');
   btn.classList.add('btn--loading');
-  btn.innerHTML = `<span class="btn-spinner"></span> 提交中...`;
+  btn.innerHTML = `<span class="btn-spinner"></span> 提交中......`;
 
   try {
     const app = await Store.createApplication({ ...data, jobId });

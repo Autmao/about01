@@ -54,6 +54,7 @@ async function initDB() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       category TEXT NOT NULL,
+      department TEXT DEFAULT '',
       status TEXT NOT NULL DEFAULT 'draft',
       description TEXT,
       requirements JSONB DEFAULT '[]',
@@ -212,6 +213,7 @@ async function initDB() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_files JSONB DEFAULT '[]';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id);
     ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS notification_email TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS department TEXT DEFAULT '';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS owner_admin_id TEXT DEFAULT '';
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_id TEXT DEFAULT '';
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_name TEXT DEFAULT '';
@@ -228,6 +230,18 @@ async function initDB() {
     CREATE UNIQUE INDEX IF NOT EXISTS admin_users_notification_email_unique
     ON admin_users (LOWER(notification_email))
     WHERE COALESCE(notification_email, '') <> '';
+
+    CREATE INDEX IF NOT EXISTS jobs_status_created_at_idx
+    ON jobs (status, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS applications_submitted_at_idx
+    ON applications (submitted_at DESC);
+
+    CREATE INDEX IF NOT EXISTS applications_job_status_idx
+    ON applications (job_id, status);
+
+    CREATE INDEX IF NOT EXISTS applications_lower_email_idx
+    ON applications (LOWER(email));
   `);
 
   // 确保超级管理员账号始终存在且密码正确（每次冷启动同步）
@@ -289,6 +303,7 @@ function mapJob(r) {
   if (!r) return null;
   return {
     id: r.id, title: r.title, category: r.category, status: r.status,
+    department: r.department || '',
     description: r.description,
     requirements: r.requirements || [],
     deliverables: r.deliverables, fee: r.fee, feeType: r.fee_type,

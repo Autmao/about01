@@ -14,7 +14,7 @@ function initSidebar() {
   const el = document.getElementById('sidebar-user');
   if (el) el.textContent = `${user.displayName || user.username}${user.role === 'superadmin' ? ' · 管理员' : ''}`;
   const navLabel = document.getElementById('nav-accounts-label');
-  if (navLabel) navLabel.textContent = user.role === 'superadmin' ? '账号管理' : '账号设置';
+  if (navLabel) navLabel.textContent = '账号管理';
 }
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -103,10 +103,10 @@ function renderAppCard(app) {
         <div class="app-card__info">
           <div class="app-card__name">${esc(app.name)}</div>
           <div class="app-card__meta">
+            ${app.jobTitle ? `<span>岗位：${esc(app.jobTitle)}</span>` : ''}
             <span>邮箱：${esc(app.email)}</span>
             <span>手机：${esc(app.phone)}</span>
             ${app.wechat ? `<span>微信：${esc(app.wechat)}</span>` : ''}
-            ${app.jobTitle ? `<span>岗位：${esc(app.jobTitle)}</span>` : ''}
           </div>
         </div>
         <div class="app-card__right">
@@ -122,7 +122,6 @@ function renderAppCard(app) {
         ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${esc(app.portfolioNote)}</p>` : ''}
         <div class="app-detail__actions">
           <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;">
-            ${app.status !== 'read' ? `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','read')">标记已读</button>` : ''}
             ${hiredBtn}
             ${rejectedBtn}
             <span style="width:1px;height:20px;background:var(--color-border-light);margin:0 2px;"></span>
@@ -132,13 +131,13 @@ function renderAppCard(app) {
           <div class="app-detail__note">
             <div style="display:flex;flex-direction:column;gap:var(--space-2);">
               <div>
-                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">共享备注（所有成员可见）</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">共享备注 · 所有成员可见</div>
                 <input type="text" class="app-note-input" placeholder="添加共享备注..."
                   value="${esc(app.adminNote || '')}"
                   onblur="saveNote('${app.id}', this.value)">
               </div>
               <div>
-                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">我的备注（仅自己可见）</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">我的备注 · 仅自己可见</div>
                 <input type="text" class="app-note-input" id="my-note-${app.id}" placeholder="添加私人备注..."
                   onblur="saveMyNote('${app.id}', this.value)">
               </div>
@@ -150,13 +149,19 @@ function renderAppCard(app) {
 }
 
 async function renderApps() {
-  const [apps] = await Promise.all([
-    Store.getApplications({ jobId: currentJobId || undefined, status: currentStatus, keyword: currentKeyword }),
-    updateCounts(),
-  ]);
-
   const list  = document.getElementById('apps-list');
   const empty = document.getElementById('apps-empty');
+  list.innerHTML = '<div style="padding:var(--space-6);color:var(--color-text-muted);">加载中......</div>';
+  empty.style.display = 'none';
+
+  let apps = [];
+  try {
+    apps = await Store.getApplications({ jobId: currentJobId || undefined, status: currentStatus, keyword: currentKeyword });
+  } catch {
+    list.innerHTML = '<div style="padding:var(--space-6);color:var(--color-text-muted);">加载失败，请稍后重试</div>';
+    return;
+  }
+  updateCounts().catch(() => {});
 
   if (apps.length === 0) {
     list.innerHTML = '';
@@ -237,11 +242,12 @@ function _savePrefs() {
 document.addEventListener('DOMContentLoaded', async () => {
   if (!checkAuth()) return;
   initSidebar();
-  await renderJobSelector();
+  const prefsPromise = Store.getPreferences().catch(() => ({}));
+  const jobsPromise = renderJobSelector().catch(() => {});
 
   // 恢复筛选偏好
   try {
-    const prefs = await Store.getPreferences();
+    const prefs = await prefsPromise;
     if (prefs.jobId !== undefined) {
       currentJobId = prefs.jobId;
       const sel = document.getElementById('job-selector');
@@ -254,9 +260,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   } catch {}
+  await jobsPromise;
+  const sel = document.getElementById('job-selector');
+  if (sel) sel.value = currentJobId;
   _prefsLoaded = true;
 
-  await renderApps();
+  renderApps();
 
   document.getElementById('job-selector').addEventListener('change', e => {
     currentJobId = e.target.value;

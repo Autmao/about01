@@ -25,15 +25,15 @@
     <div class="chat-panel" id="chat-panel">
       <div class="chat-header">
         <div>
-          <div class="chat-header__title">about 招募助手</div>
-          <div class="chat-header__sub" id="chat-header-sub">AI 先答，复杂问题转给编辑部</div>
+          <div class="chat-header__title">about编辑部招募助手</div>
+          <div class="chat-header__sub" id="chat-header-sub">如有岗位相关疑问，欢迎咨询</div>
         </div>
         <button class="chat-header__close" onclick="window.__closeChatWidget()">×</button>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
         <textarea class="chat-input" id="chat-input" rows="1"
-          placeholder="输入你的问题…（回车发送，Shift+回车换行）"></textarea>
+          placeholder="输入你的问题…..."></textarea>
         <button class="chat-send-btn" id="chat-send-btn" onclick="window.__sendChatMessage()" aria-label="发送">
           ↑
         </button>
@@ -98,13 +98,13 @@
       } else {
         // 欢迎语
         const welcome = jobId
-          ? '你好，我是 about 招募助手。关于这个岗位的职责、要求和投递方式，可以直接问我。'
-          : '你好，我是 about 招募助手。关于正在招募的岗位和投递流程，可以直接问我。';
+          ? '你好，我是 about编辑部招募助手。关于这个岗位的职责、要求和投递方式，可以直接问我。'
+          : '你好，我是 about编辑部招募助手。关于正在招募的岗位和投递流程，可以直接问我。';
         renderMessage('assistant', welcome);
       }
       scrollToBottom();
     } catch (e) {
-      renderMessage('assistant', '助手暂时无法连接，请稍后再试。');
+      renderMessage('assistant', '助手暂时不在线，请稍后再试。');
     }
   }
 
@@ -124,7 +124,7 @@
     scrollToBottom();
 
     // 打字动画占位
-    const typingEl = renderMessage('assistant', '正在思考…', true);
+    const typingEl = renderMessage('assistant', '正在思考…...', true);
     scrollToBottom();
 
     try {
@@ -144,7 +144,7 @@
       updateHeader(data.status);
 
       if (data.needHuman) {
-        renderNotice('您的问题已通知编辑部，稍后会有团队成员回复。');
+        renderNotice('您的问题已通知编辑部，请耐心等待，稍后会有回复。');
         startPolling();
       }
       scrollToBottom();
@@ -192,10 +192,10 @@
   }
 
   function updateHeader(status) {
-    if (status === 'pending_human') headerSub.textContent = '已转给编辑部同事，等待人工回复';
-    else if (status === 'human_active') headerSub.textContent = '编辑部同事已介入，可继续沟通';
-    else if (status === 'resolved') headerSub.textContent = '对话已解决，可以继续提问';
-    else headerSub.textContent = 'AI 先答，复杂问题转给编辑部';
+    if (status === 'pending_human') headerSub.textContent = '已转给编辑部同事，等待人工回复。';
+    else if (status === 'human_active') headerSub.textContent = '编辑部同事已介入，可继续沟通。';
+    else if (status === 'resolved') headerSub.textContent = '对话已解决，可以继续提问。';
+    else headerSub.textContent = '如有岗位相关疑问，欢迎咨询';
   }
 
   function rememberEcho(role, content) {

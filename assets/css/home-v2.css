@@ -119,9 +119,8 @@
   background:
     linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255,255,255,0.035) 1px, transparent 1px),
-    radial-gradient(circle at 78% 28%, rgba(222,212,194,0.18), transparent 26%),
     linear-gradient(135deg, var(--home-coal), var(--home-coal-2));
-  background-size: 64px 64px, 64px 64px, auto, auto;
+  background-size: 64px 64px, 64px 64px, auto;
   padding: 112px clamp(20px, 5vw, 76px) 42px;
   display: grid;
   grid-template-rows: 1fr auto;
@@ -134,6 +133,7 @@
   position: absolute;
   right: clamp(18px, 7vw, 124px);
   top: clamp(118px, 18vh, 174px);
+  z-index: 1;
   width: clamp(220px, 30vw, 430px);
   aspect-ratio: 4 / 5.15;
   border-radius: 18px;
@@ -416,7 +416,7 @@
 .home-search {
   border: 1px solid var(--home-line-strong);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto 14px minmax(0, 1fr);
   align-items: center;
   min-height: 38px;
   padding: 0 12px;
@@ -428,6 +428,24 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.home-search__icon {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--home-muted);
+  border-radius: 50%;
+  position: relative;
+}
+.home-search__icon::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 1.5px;
+  background: var(--home-muted);
+  right: -5px;
+  bottom: -2px;
+  transform: rotate(45deg);
+  transform-origin: left center;
 }
 .home-search input {
   min-width: 0;
@@ -516,7 +534,7 @@
 }
 .home-application-note {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   border: 1px solid var(--home-line-strong);
   border-top: 0;
   background: rgba(255,255,255,0.26);
@@ -524,7 +542,7 @@
 .home-application-note span {
   min-height: 72px;
   padding: 18px;
-  border-right: 1px solid var(--home-line-strong);
+  border-right: 0;
   color: var(--home-muted);
   display: flex;
   align-items: center;
@@ -567,9 +585,10 @@
   .home-nav__links { display: none; }
   .home-hero { min-height: 900px; }
   .home-hero__object {
-    width: 246px;
-    top: 118px;
-    opacity: 0.34;
+    width: 220px;
+    right: -132px;
+    top: 132px;
+    opacity: 0.14;
   }
   .home-hero__meta,
   .home-section__head,
@@ -627,7 +646,7 @@
     padding: 22px;
   }
   .home-search {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 14px minmax(0, 1fr);
     padding: 10px 12px;
   }
 }
