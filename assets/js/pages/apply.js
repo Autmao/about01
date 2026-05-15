@@ -128,7 +128,7 @@ function renderJobSummary(job) {
       </div>
     </div>`;
   const bcJob = document.getElementById('bc-job');
-  if (bcJob) { bcJob.textContent = job.title; bcJob.href = `job-detail.html?id=${job.id}`; }
+  if (bcJob) { bcJob.textContent = '岗位详情'; bcJob.href = `job-detail.html?id=${job.id}`; }
 }
 
 /* ===== 链接行 ===== */

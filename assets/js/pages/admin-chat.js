@@ -160,7 +160,6 @@ async function openSession(id) {
     const meta = [
       session.jobTitle ? `岗位：${session.jobTitle}` : '通用咨询',
       session.email ? `邮箱：${session.email}` : null,
-      `访客 ID：${session.visitorId || '-'}`,
       `创建：${(session.createdAt || '').slice(0, 16).replace('T', ' ')}`,
     ].filter(Boolean).join(' · ');
     document.getElementById('modal-meta').textContent = meta;

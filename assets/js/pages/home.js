@@ -1,6 +1,5 @@
 /* ===== HOME.JS ===== */
 
-let currentCategory = 'all';
 let currentKeyword = '';
 
 function esc(value) {
@@ -51,7 +50,7 @@ async function renderGrid() {
   list.innerHTML = '<div class="home-loading">正在整理当前招募中的岗位......</div>';
 
   try {
-    const jobs = await Store.getJobs({ category: currentCategory, keyword: currentKeyword });
+    const jobs = await Store.getJobs({ keyword: currentKeyword });
 
     if (jobs.length === 0) {
       list.innerHTML = '';
@@ -90,15 +89,6 @@ async function updateHeroCount() {
 }
 
 function bindEvents() {
-  document.getElementById('filter-tabs').addEventListener('click', e => {
-    const tab = e.target.closest('.home-filter-chip');
-    if (!tab) return;
-    document.querySelectorAll('.home-filter-chip').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentCategory = tab.dataset.category;
-    renderGrid();
-  });
-
   document.getElementById('search-input').addEventListener('input', Utils.debounce(e => {
     currentKeyword = e.target.value.trim();
     renderGrid();

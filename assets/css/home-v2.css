@@ -215,7 +215,7 @@
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns: 180px;
   gap: 24px;
   align-items: center;
   color: rgba(255,255,255,0.66);
@@ -303,7 +303,7 @@
 }
 .home-call-sheet {
   display: grid;
-  grid-template-columns: minmax(0, 0.94fr) minmax(360px, 1.06fr);
+  grid-template-columns: 1fr;
   gap: clamp(28px, 5vw, 62px);
   align-items: start;
 }
@@ -384,7 +384,8 @@
 }
 .home-filter-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-columns: minmax(260px, 360px);
+  justify-content: end;
   gap: 16px;
   align-items: start;
   margin-bottom: 22px;

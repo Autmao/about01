@@ -14,7 +14,7 @@ function renderDetail(job) {
   const applyUrl = `apply.html?jobId=${job.id}`;
 
   document.title = `${job.title} | about编辑部`;
-  document.getElementById('bc-title').textContent = job.title;
+  document.getElementById('bc-title').textContent = '岗位详情';
 
   const reqs = (job.requirements || []).map(r =>
     `<li class="req-item"><span class="req-dot"></span>${esc(r)}</li>`
@@ -59,10 +59,6 @@ function renderDetail(job) {
         <div class="sidebar-row">
           <span class="sidebar-label">截止日期</span>
           <span class="sidebar-value ${dl.cls}">${dl.text}</span>
-        </div>
-        <div class="sidebar-row" style="border-bottom:none;padding-bottom:0;">
-          <span class="sidebar-label">已收到投递</span>
-          <span class="sidebar-value">${job.applicationCount || 0} 份</span>
         </div>
       </div>
     </aside>
