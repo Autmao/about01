@@ -135,10 +135,10 @@
     linear-gradient(180deg, rgba(255,255,255,0.035) 1px, transparent 1px),
     linear-gradient(135deg, var(--home-coal), var(--home-coal-2));
   background-size: 64px 64px, 64px 64px, auto;
-  padding: 104px clamp(20px, 5vw, 76px) 28px;
+  padding: 104px clamp(24px, 5vw, 72px) 26px;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 22px;
+  gap: 0;
   border-bottom: 1px solid rgba(255,255,255,0.12);
   position: relative;
   overflow: hidden;
@@ -147,18 +147,16 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 0.96fr) minmax(360px, 0.84fr);
-  gap: clamp(42px, 8vw, 132px);
+  grid-template-columns: minmax(0, 0.72fr) minmax(420px, 1fr);
+  gap: clamp(72px, 10vw, 168px);
   align-items: center;
-  min-height: min(620px, calc(100svh - 220px));
-  padding: clamp(32px, 5.5vh, 64px) 0;
-  border-top: 1px solid rgba(255,255,255,0.16);
-  border-bottom: 1px solid rgba(255,255,255,0.16);
+  min-height: min(680px, calc(100svh - 210px));
+  padding: clamp(48px, 7vh, 84px) 0 clamp(58px, 8vh, 96px);
 }
 .home-hero__object {
   position: relative;
   z-index: 1;
-  width: min(100%, 560px);
+  width: min(100%, 760px);
   justify-self: end;
   align-self: center;
 }
@@ -168,8 +166,6 @@
   grid-template-columns: repeat(5, minmax(48px, 1fr));
   gap: clamp(10px, 1.2vw, 16px);
   padding: clamp(14px, 2vw, 22px);
-  border-top: 1px solid rgba(255,255,255,0.18);
-  border-bottom: 1px solid rgba(255,255,255,0.18);
   animation: homeShelfGlide 9s ease-in-out infinite;
   transform-origin: center;
 }
@@ -178,15 +174,8 @@
 }
 .home-cover-shelf::before,
 .home-cover-shelf::after {
-  content: "";
-  position: absolute;
-  left: 2%;
-  right: 2%;
-  height: 1px;
-  background: rgba(255,255,255,0.2);
+  display: none;
 }
-.home-cover-shelf::before { top: 33%; }
-.home-cover-shelf::after { bottom: 31%; }
 .home-cover {
   --cover-ink: #111111;
   --cover-rotate: -1.6deg;
@@ -261,8 +250,8 @@
   grid-template-columns: minmax(0, 1fr) minmax(270px, auto);
   gap: clamp(18px, 4vw, 42px);
   align-items: end;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255,255,255,0.18);
+  padding-top: 16px;
+  border-top: 2px solid rgba(255,255,255,0.2);
 }
 .home-hero__recruit {
   display: flex;
@@ -371,15 +360,16 @@
 .home-ticker__track {
   display: flex;
   width: max-content;
-  animation: homeMarquee 28s linear infinite;
+  animation: homeMarquee 24s linear infinite;
 }
 .home-ticker span {
   display: inline-block;
-  padding-right: 28px;
+  padding-right: 0;
 }
 .home-ticker em {
   color: var(--home-warm);
   font-style: normal;
+  padding: 0 14px;
 }
 
 .home-section {
@@ -415,11 +405,6 @@
   line-height: 1.72;
   margin: 0;
   max-width: 690px;
-}
-.home-section__note {
-  display: block;
-  margin-top: 12px;
-  color: var(--home-ink);
 }
 
 .home-roles {
@@ -620,13 +605,6 @@
   align-content: start;
   gap: 9px;
 }
-.home-job-item__swatch {
-  width: 42px;
-  height: 9px;
-  border: 1px solid rgba(17,17,17,0.72);
-  background: var(--job-accent, var(--home-paper));
-  transition: transform 220ms ease, background 220ms ease, border-color 220ms ease;
-}
 .home-job-item__no {
   color: var(--home-blue);
   font-weight: 680;
@@ -666,10 +644,6 @@
 }
 .home-job-item:hover .home-job-item__no {
   color: var(--home-accent);
-  transform: translateX(3px);
-}
-.home-job-item:hover .home-job-item__swatch {
-  border-color: rgba(255,255,255,0.62);
   transform: translateX(3px);
 }
 .home-job-item:hover .home-job-item__label {
@@ -815,6 +789,7 @@
     transform: none;
     animation: none;
     grid-template-columns: repeat(5, minmax(44px, 1fr));
+    border: 0;
   }
   .home-cover {
     min-height: 106px;
@@ -925,8 +900,7 @@
     overflow-y: hidden;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
-    border-top-color: rgba(255,255,255,0.14);
-    border-bottom-color: rgba(255,255,255,0.14);
+    border: 0;
     -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
     mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
   }
@@ -982,6 +956,9 @@
     letter-spacing: 0.1em;
     opacity: 0.78;
   }
+  .home-ticker em {
+    padding: 0 8px;
+  }
   .home-section {
     padding: 50px 18px;
   }
@@ -1027,10 +1004,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  .home-job-item__swatch {
-    width: 24px;
-    height: 8px;
   }
   .home-job-item__no {
     font-size: 13px;

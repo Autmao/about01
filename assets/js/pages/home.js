@@ -57,7 +57,6 @@ function renderJobItem(job, index) {
   return `
     <article class="home-job-item" style="--job-accent:${accent};" onclick="window.location.href='${href}'">
       <div class="home-job-item__mark">
-        <span class="home-job-item__swatch" aria-hidden="true"></span>
         <span class="home-job-item__no">${twoDigit(index + 1)}</span>
         <span class="home-job-item__label">${jobEditorialLabel(job.category)}</span>
       </div>
