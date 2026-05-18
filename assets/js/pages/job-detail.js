@@ -126,15 +126,6 @@ function renderDetail(job) {
       </div>
     </div>`;
 
-  const mobileBar = document.getElementById('apply-bar-mobile');
-  if (!isClosed) {
-    mobileBar.style.display = 'block';
-    const mobileBtn = document.getElementById('apply-btn-mobile');
-    mobileBtn.textContent = applyText;
-    mobileBtn.onclick = () => { window.location.href = applyEntryUrl; };
-  } else {
-    mobileBar.style.display = 'none';
-  }
 }
 
 async function renderRelated(currentJob) {

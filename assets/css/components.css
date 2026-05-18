@@ -405,17 +405,6 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 .job-summary-meta { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; gap: var(--space-4); flex-wrap: wrap; }
 .job-summary-meta span { white-space: nowrap; }
 
-/* 手机端固定投递按钮 */
-.apply-bar-mobile {
-  display: none;
-  position: fixed; bottom: 0; left: 0; right: 0;
-  padding: var(--space-4) var(--space-5);
-  background: white;
-  border-top: 1px solid var(--color-border);
-  z-index: 50;
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
-}
-
 /* 相关岗位 */
 .related-section { border-top: 1px solid var(--color-border); padding-top: var(--space-10); margin-top: var(--space-10); }
 .related-title {
@@ -506,7 +495,6 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
     width: 100%; position: static;
     order: -1;
   }
-  .apply-bar-mobile { display: block; }
   .detail-sidebar .apply-btn-wrap { display: none; }
   .related-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
@@ -875,7 +863,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 }
 .apply-shell {
   max-width: 880px;
-  padding-top: var(--space-8);
+  padding-top: 96px;
   padding-bottom: var(--space-16);
 }
 .apply-page .job-summary-card {
@@ -933,6 +921,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 }
 @media (max-width: 720px) {
   .apply-shell {
+    padding-top: 76px;
     padding-left: 18px;
     padding-right: 18px;
   }
