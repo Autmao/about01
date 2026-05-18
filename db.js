@@ -206,6 +206,11 @@ async function initDB() {
       used BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS seed_runs (
+      key TEXT PRIMARY KEY,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // 为已存在的表补充新列（幂等）
@@ -307,6 +312,12 @@ async function initDB() {
     }
   } catch (e) {
     console.error('[db] chat owner backfill error:', e.message);
+  }
+
+  try {
+    await seedEditorialReserveJobs();
+  } catch (e) {
+    console.error('[db] editorial reserve jobs seed error:', e.message);
   }
 }
 
@@ -472,6 +483,213 @@ async function seedDemoData() {
   }
 
   return { seeded: true };
+}
+
+async function seedEditorialReserveJobs() {
+  const seedKey = 'editorial_reserve_jobs_2026_05_18';
+  const { rows: existingRuns } = await pool.query('SELECT key FROM seed_runs WHERE key = $1', [seedKey]);
+  if (existingRuns[0]) return { skipped: true };
+
+  const ownerNames = ['江舟', '毛毛', '宇野', '快银'];
+  const { rows: owners } = await pool.query(
+    `SELECT id, display_name, username
+     FROM admin_users
+     WHERE display_name = ANY($1) OR username = ANY($1)`,
+    [ownerNames]
+  );
+  const ownerByName = new Map();
+  for (const owner of owners) {
+    if (owner.display_name) ownerByName.set(owner.display_name, owner.id);
+    if (owner.username) ownerByName.set(owner.username, owner.id);
+  }
+
+  const ts = now();
+  const jobs = [
+    {
+      id: 'job_about12_layout_design_2026',
+      title: 'about12「手工再流行」书籍排版设计师',
+      department: 'about出版物',
+      category: 'design',
+      ownerName: '江舟',
+      description: [
+        '参与 about12「手工再流行」杂志书的整体排版设计，与编辑、视觉和图片团队共同完成从版式方向到印前文件的完整设计工作。',
+        '根据每篇稿件的内容气质、图片素材与栏目结构，建立清晰、有节奏的版面系统，让阅读在信息密度与留白之间保持舒展。',
+        '围绕“手工再流行”这一主题，探索手作、材料、工具、工艺痕迹在纸面上的视觉表达，而不是简单套用模板。',
+        '配合编辑部完成目录、卷首、专题页、人物专访、图文页、信息页等不同页面类型的设计延展。',
+        '需要在既有 about 出版物气质之上，加入更具触感、更接近材料现场的细节处理，让整本书有统一但不僵硬的节奏。',
+        '项目周期中需要多轮沟通与修订，能理解编辑意图，也能主动提出版式和阅读体验上的优化建议。',
+      ],
+      requirements: [
+        '有书籍、杂志、画册、品牌出版物或长篇内容排版经验，熟悉纸质阅读的节奏与限制。',
+        '能熟练使用 InDesign、Illustrator、Photoshop，了解印刷出血、网格、字号层级、图片精度、导出规范等基础流程。',
+        '对日杂、独立出版物、文化类书籍设计有审美判断，不追求过度装饰，更重视内容气质和版面秩序。',
+        '能够根据文字量和图片条件建立稳定版式系统，同时在重点页面做出适度变化。',
+        '对字体、行距、留白、图片裁切和跨页关系敏感，能处理较复杂的图文混排。',
+        '沟通清楚、交付稳定，能按阶段提交可讨论的设计稿，而不是最后一次性给出成稿。',
+        '有印前经验、熟悉纸张或装帧工艺者优先。',
+      ],
+      deliverables: [
+        '整本杂志书的排版设计文件与可审阅 PDF。',
+        '关键页面的版式方向提案与样张。',
+        '根据编辑部反馈完成多轮修改与终稿整理。',
+        '可交付印厂的打包文件、字体/图片链接整理与印前 PDF。',
+      ],
+      fee: '面议',
+      feeType: 'per_project',
+      deadline: '2026-06-30',
+      slots: 1,
+      tags: ['about12', '手工再流行', '书籍设计', '排版设计'],
+      displayOrder: -1779113000000,
+    },
+    {
+      id: 'job_about12_interview_photographer_2026',
+      title: 'about12「手工再流行」专访摄影师',
+      department: 'about出版物',
+      category: 'photo_video',
+      ownerName: '毛毛',
+      description: [
+        '参与 about12「手工再流行」杂志书的内文专访拍摄，围绕手工艺人、创作者、品牌主理人或相关从业者完成具有现场感的人物影像。',
+        '拍摄重点不只是人物肖像，也包括工作台、工具、材料、半成品、空间细节，以及能体现手作过程和生活状态的环境画面。',
+        '需要与编辑共同理解采访对象的故事线，在有限时间内形成一组可用于杂志内文叙事的图片。',
+        '影像风格希望自然、克制、真实，有观察感，避免过度摆拍和商业棚拍感。',
+        '项目可能涉及多位受访者与不同城市/空间，需要根据每次采访条件灵活制定拍摄方案。',
+        '后期需要保持出版物统一调性，色彩和颗粒感可以有个人风格，但不能牺牲内容辨识度。',
+      ],
+      requirements: [
+        '有人物专访、纪实、人文、生活方式或杂志拍摄经验，并能提供完整作品集。',
+        '能在自然光、工作室、店铺、家庭或手作空间等复杂环境中独立完成拍摄。',
+        '理解采访拍摄的节奏，能够在不打断沟通的情况下捕捉人物状态和关键细节。',
+        '对手工、材料、器物、生活方式内容有兴趣，能主动观察并提炼可拍摄的视觉线索。',
+        '能完成基础选片、调色和精修，交付文件命名清晰、分类明确。',
+        '沟通礼貌，现场协调能力好，能与受访者、编辑、造型或其他协作方配合。',
+        '可接受外地短途拍摄或多点位拍摄者优先。',
+      ],
+      deliverables: [
+        '每位受访者一组可用于杂志内文的精选成片。',
+        '人物肖像、工作环境、工具材料、过程细节等不同类型图片。',
+        '精修 JPG 与原始 RAW 文件。',
+        '拍摄后按编辑部要求完成补选、补修和文件整理。',
+      ],
+      fee: '2000-5000元/组',
+      feeType: 'per_project',
+      deadline: '2026-06-25',
+      slots: 2,
+      tags: ['about12', '手工再流行', '专访摄影', '人物拍摄'],
+      displayOrder: -1779112999000,
+    },
+    {
+      id: 'job_hotwater_podcast_producer_2026',
+      title: 'about热水频道播客制作人',
+      department: 'about热水频道',
+      category: 'podcast',
+      ownerName: '宇野',
+      description: [
+        '参与 about热水频道播客内容的选题策划、主持沟通和单集制作，让频道保持清晰的内容方向和稳定的更新节奏。',
+        '围绕生活方式、文化观察、创作现场、人物故事和当下议题，提出适合声音媒介展开的选题。',
+        '根据选题完成资料搜集、嘉宾沟通、提纲撰写、录制流程设计和现场控场。',
+        '需要理解 about 的编辑气质：轻松但不松散，有生活感，也有观点和结构。',
+        '可参与主持或协助主持，根据单集内容判断对谈节奏、追问方向和信息密度。',
+        '与剪辑、设计、运营协作，完成标题、shownotes、单集简介、重点摘录等上线素材。',
+      ],
+      requirements: [
+        '有播客、音频节目、视频访谈、内容策划或媒体采编经验。',
+        '对声音内容有判断，知道什么话题适合聊、怎么聊，以及一集节目怎样从开头走到结尾。',
+        '具备资料搜集和提纲写作能力，能把松散想法整理成可录制的结构。',
+        '有一定主持或采访意识，能倾听、追问、控制节奏，也能处理嘉宾临场表达。',
+        '熟悉播客制作基本流程，了解录制、剪辑、审听、上线和分发的协作节点。',
+        '文字能力好，能完成单集标题、简介、shownotes 和传播文案。',
+        '对生活方式、青年文化、艺术出版、城市空间或创作职业有长期兴趣者优先。',
+      ],
+      deliverables: [
+        '阶段性选题方案与单集策划案。',
+        '录制提纲、嘉宾沟通信息与现场流程。',
+        '单集成片制作跟进，包括审听意见和修改反馈。',
+        '上线所需标题、简介、shownotes 与传播摘要。',
+      ],
+      fee: '面议',
+      feeType: 'co_creation',
+      deadline: '2026-06-20',
+      slots: 1,
+      tags: ['about热水频道', '播客', '选题策划', '主持制作'],
+      displayOrder: -1779112998000,
+    },
+    {
+      id: 'job_ccc_naturalist_event_planner_2026',
+      title: '「博物学家的1㎡」线下活动策划执行',
+      department: 'about/CCC',
+      category: 'planning',
+      ownerName: '快银',
+      description: [
+        '参与 about10《我也是博物学家》延展项目「博物学家的1㎡」全国 10 城线下活动策划与执行。',
+        '项目希望把“博物学”从书页带到真实城市现场，让参与者在一平方米的观察范围里重新发现植物、昆虫、石头、气味、光线和日常环境。',
+        '需要根据不同城市的空间条件，策划适合落地的活动形式，例如观察工作坊、城市漫游、小型展陈、共创记录、分享会或亲子参与环节。',
+        '与编辑部、城市合作方、场地方、嘉宾和执行供应商协作，形成可复制但又能因地制宜的活动方案。',
+        '活动整体气质需要轻巧、有知识感、有参与感，避免传统路演式流程，更接近一次城市里的共同观察。',
+        '项目跨度较长，需要在多城执行中持续整理经验、优化流程和沉淀复盘。',
+      ],
+      requirements: [
+        '有线下活动策划、展览公共项目、品牌活动、城市文化项目或工作坊执行经验。',
+        '能独立完成活动方案、流程表、物料清单、人员分工、预算初表和执行排期。',
+        '具备现场统筹能力，能处理嘉宾、场地、物料、报名、动线、安全和突发情况。',
+        '对自然观察、博物学、城市漫游、亲子教育、公共文化或地方社区项目有兴趣。',
+        '审美和文字能力在线，能把知识型内容转译成普通参与者愿意靠近的体验。',
+        '沟通耐心，执行细致，能和不同城市的合作方保持稳定同步。',
+        '可接受阶段性出差或远程协调多地项目者优先。',
+      ],
+      deliverables: [
+        '全国 10 城活动的整体策划框架与单城落地方案。',
+        '活动流程、执行排期、物料清单、人员分工和预算建议。',
+        '现场执行统筹、活动复盘和下一站优化建议。',
+        '配合完成活动介绍、报名页文案和现场记录素材整理。',
+      ],
+      fee: '面议',
+      feeType: 'per_project',
+      deadline: '2026-06-30',
+      slots: 2,
+      tags: ['about/CCC', '我也是博物学家', '博物学家的1㎡', '线下活动'],
+      displayOrder: -1779112997000,
+    },
+  ];
+
+  for (const job of jobs) {
+    await pool.query(
+      `INSERT INTO jobs (id,title,category,department,status,description,requirements,deliverables,
+        fee,fee_type,deadline,slots,tags,cover_color,owner_admin_id,display_order,application_count,published_at,created_at,updated_at)
+       SELECT $1,$2,$3,$4,'draft',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,0,NULL,$16,$16
+       WHERE NOT EXISTS (
+         SELECT 1 FROM jobs WHERE id = $1 OR title = $2
+       )`,
+      [
+        job.id, job.title, job.category, job.department,
+        job.description.join('\n'),
+        JSON.stringify(job.requirements),
+        job.deliverables.join('\n'),
+        job.fee, job.feeType, job.deadline, job.slots,
+        JSON.stringify(job.tags),
+        departmentCoverColor(job.department),
+        ownerByName.get(job.ownerName) || job.ownerName,
+        job.displayOrder,
+        ts,
+      ]
+    );
+  }
+
+  await pool.query(
+    `INSERT INTO seed_runs (key, applied_at)
+     VALUES ($1, $2)
+     ON CONFLICT (key) DO NOTHING`,
+    [seedKey, ts]
+  );
+  return { seeded: true };
+}
+
+function departmentCoverColor(department) {
+  const map = {
+    'about出版物': '#C9D4BE',
+    'about热水频道': '#DDB37C',
+    'about/CCC': '#B8C9DD',
+  };
+  return map[department] || '#E8DDD0';
 }
 
 /* ===== 行映射：admin_users ===== */

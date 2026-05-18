@@ -62,7 +62,7 @@ router.get('/admin', requireAdmin, async (req, res) => {
   try {
     await closeExpiredJobs();
     const { status, keyword } = req.query;
-    let q = `SELECT j.*, au.display_name AS owner_admin_name, au.username AS owner_admin_username
+    let q = `SELECT j.*, COALESCE(au.display_name, NULLIF(j.owner_admin_id, '')) AS owner_admin_name, au.username AS owner_admin_username
              FROM jobs j
              LEFT JOIN admin_users au ON au.id = j.owner_admin_id
              WHERE 1=1`;
@@ -91,7 +91,7 @@ router.get('/admin/:id', requireAdmin, async (req, res) => {
   try {
     await closeExpiredJobs();
     const { rows } = await pool.query(
-      `SELECT j.*, au.display_name AS owner_admin_name, au.username AS owner_admin_username
+      `SELECT j.*, COALESCE(au.display_name, NULLIF(j.owner_admin_id, '')) AS owner_admin_name, au.username AS owner_admin_username
        FROM jobs j
        LEFT JOIN admin_users au ON au.id = j.owner_admin_id
        WHERE j.id = $1`,
