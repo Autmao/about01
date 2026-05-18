@@ -24,9 +24,13 @@
         var(--login-paper);
       background-size: 56px 56px;
       color: var(--login-ink);
+      overflow-x: hidden;
     }
       .login-shell {
         min-height: 100vh;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         padding: 108px clamp(18px, 5vw, 76px) 64px;
         display: grid;
         grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
@@ -35,6 +39,7 @@
       }
     .login-intro {
       max-width: 620px;
+      min-width: 0;
     }
     .login-kicker {
       color: var(--login-accent);
@@ -56,17 +61,79 @@
       font-size: 17px;
       line-height: 1.75;
       margin-top: 28px;
+      overflow-wrap: anywhere;
     }
     .login-panels {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
     }
+    .login-choice {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      min-width: 0;
+    }
+    .login-choice-card {
+      min-height: 236px;
+      border: 1px solid var(--login-line-strong);
+      background: rgba(251,248,241,0.78);
+      color: var(--login-ink);
+      padding: clamp(22px, 4vw, 34px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      min-width: 0;
+    }
+    .login-choice-card:hover {
+      transform: translateY(-4px);
+      background: #fffdf7;
+      box-shadow: 0 30px 84px rgba(0,0,0,0.13);
+    }
+    .login-choice-card__label {
+      color: var(--login-muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .login-choice-card strong {
+      display: block;
+      margin-top: auto;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.05;
+      font-weight: 720;
+    }
+    .login-choice-card small {
+      display: block;
+      margin-top: 12px;
+      color: var(--login-muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .login-page[data-role="choice"] .login-panels,
+    .login-page:not([data-role]) .login-panels {
+      display: none;
+    }
+    .login-page[data-role="applicant"] .login-choice,
+    .login-page[data-role="staff"] .login-choice {
+      display: none;
+    }
+    .login-page[data-role="applicant"] .login-panels,
+    .login-page[data-role="staff"] .login-panels {
+      grid-template-columns: minmax(0, 620px);
+    }
+    .login-page[data-role="applicant"] #staff-panel,
+    .login-page[data-role="staff"] #applicant-panel {
+      display: none;
+    }
     .login-panel {
       border: 1px solid var(--login-line-strong);
       background: rgba(251,248,241,0.82);
       padding: clamp(22px, 4vw, 34px);
       box-shadow: 0 24px 70px rgba(0,0,0,0.08);
+      min-width: 0;
     }
     .login-panel.is-active {
       background: #fffdf7;
@@ -90,6 +157,7 @@
       color: var(--login-muted);
       font-size: 14px;
       line-height: 1.7;
+      overflow-wrap: anywhere;
     }
     .login-panel .form-label {
       letter-spacing: 0.06em;
@@ -129,10 +197,23 @@
     .login-note {
       color: var(--login-muted);
     }
+    .login-switch {
+      margin-top: 18px;
+      display: inline-flex;
+      align-items: center;
+      color: var(--login-muted);
+      font-size: 13px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+    .login-switch:hover {
+      color: var(--login-ink);
+    }
     @media (max-width: 960px) {
       .login-shell,
-      .login-panels {
-        grid-template-columns: 1fr;
+      .login-panels,
+      .login-choice {
+        grid-template-columns: minmax(0, 1fr);
       }
       .login-shell {
         align-items: start;
@@ -143,6 +224,23 @@
         min-height: auto;
         padding: 92px 20px 48px;
         gap: 28px;
+      }
+      .login-page .home-nav__links {
+        display: none;
+      }
+      .login-page .home-nav {
+        right: auto;
+        width: calc(100vw - 24px);
+      }
+      .login-intro,
+      .login-choice,
+      .login-panels {
+        width: calc(100vw - 40px);
+        max-width: calc(100vw - 40px);
+      }
+      .login-choice-card,
+      .login-panel {
+        width: 100%;
       }
       .login-kicker {
         font-size: 12px;
@@ -161,6 +259,10 @@
         line-height: 1.68;
         margin-top: 20px;
       }
+      .login-choice-card {
+        min-height: 156px;
+        padding: 22px 20px;
+      }
       .login-panel {
         padding: 22px 20px;
       }
@@ -168,6 +270,12 @@
   </style>
 </head>
 <body class="home-v2 login-page">
+  <script>
+    (function () {
+      const role = new URLSearchParams(window.location.search).get('role');
+      document.body.dataset.role = role === 'staff' || role === 'applicant' ? role : 'choice';
+    })();
+  </script>
   <nav class="home-nav" aria-label="主导航">
     <a class="home-nav__brand" href="index.html">about编辑部</a>
     <div class="home-nav__links">
@@ -180,8 +288,25 @@
   <main class="login-shell">
     <section class="login-intro">
       <div class="login-kicker">Open Call Login</div>
-      <h1><span>选择你的</span><span>登录入口。</span></h1>
-      <p>创作伙伴登录后投递岗位、查看进度；工作人员登录后进入 Open Call 工作台。</p>
+      <h1 id="login-title"><span>选择你的</span><span>登录入口。</span></h1>
+      <p id="login-desc">创作伙伴登录后投递岗位、查看进度；工作人员登录后进入 Open Call 工作台。</p>
+    </section>
+
+    <section class="login-choice" aria-label="选择登录身份">
+      <a class="login-choice-card" href="login.html?role=applicant" data-role-option="applicant">
+        <span class="login-choice-card__label">Creative Partner</span>
+        <span>
+          <strong>我是创作伙伴</strong>
+          <small>想要投递岗位、查询进度。</small>
+        </span>
+      </a>
+      <a class="login-choice-card" href="login.html?role=staff" data-role-option="staff">
+        <span class="login-choice-card__label">Staff</span>
+        <span>
+          <strong>我是工作人员</strong>
+          <small>进入Open Call工作台。</small>
+        </span>
+      </a>
     </section>
 
     <section class="login-panels" aria-label="登录入口">
@@ -205,6 +330,7 @@
           <div class="login-error" id="applicant-error"></div>
           <div class="login-note" id="applicant-note"></div>
         </form>
+        <a class="login-switch" href="login.html" data-reset-role>重新选择身份</a>
       </div>
 
       <div class="login-panel" id="staff-panel">
@@ -223,6 +349,7 @@
           <button type="submit" class="btn btn--primary btn--full" id="staff-login-btn">进入工作台</button>
           <div class="login-error" id="staff-error"></div>
         </form>
+        <a class="login-switch" href="login.html" data-reset-role>重新选择身份</a>
       </div>
     </section>
   </main>
@@ -231,6 +358,16 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const from = params.get('from') || '';
+    const requestedRole = params.get('role');
+    const selectedRole = requestedRole === 'staff' || requestedRole === 'applicant' ? requestedRole : 'choice';
+    const titleEl = document.getElementById('login-title');
+    const descEl = document.getElementById('login-desc');
+
+    function roleUrl(role) {
+      const next = new URLSearchParams({ role });
+      if (from) next.set('from', from);
+      return `login.html?${next.toString()}`;
+    }
 
     function safeRedirect(defaultPath, allowAdmin) {
       if (!from || from.includes('://') || from.startsWith('//')) return defaultPath;
@@ -244,11 +381,24 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      document.body.dataset.role = selectedRole;
+      document.querySelectorAll('[data-role-option]').forEach(link => {
+        link.href = roleUrl(link.dataset.roleOption);
+      });
+      document.querySelectorAll('[data-reset-role]').forEach(link => {
+        link.href = from ? `login.html?from=${encodeURIComponent(from)}` : 'login.html';
+      });
+      if (selectedRole === 'applicant') {
+        titleEl.innerHTML = '<span>创作伙伴</span><span>登录。</span>';
+        descEl.textContent = '想要投递岗位、查询进度。';
+      } else if (selectedRole === 'staff') {
+        titleEl.innerHTML = '<span>工作人员</span><span>登录。</span>';
+        descEl.textContent = '进入Open Call工作台。';
+      }
       window.scrollTo(0, 0);
       requestAnimationFrame(() => window.scrollTo(0, 0));
-      const role = params.get('role');
-      if (role === 'staff' || role === 'applicant') {
-        document.getElementById(`${role}-panel`)?.classList.add('is-active');
+      if (selectedRole === 'staff' || selectedRole === 'applicant') {
+        document.getElementById(`${selectedRole}-panel`)?.classList.add('is-active');
       }
       const currentEmail = Store.getApplicantEmail();
       if (currentEmail) {
