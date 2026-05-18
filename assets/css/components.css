@@ -481,6 +481,9 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   font-size: var(--text-xs); color: var(--color-text-muted);
   text-align: center;
 }
+.poster-modal .btn--primary {
+  border-radius: 999px;
+}
 
 /* 响应式 */
 @media (max-width: 768px) {
@@ -499,11 +502,30 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 
 /* === 详情页新版 === */
 .detail-page {
+  --color-brand: #111111;
+  --color-brand-light: #3a3a38;
+  --color-brand-pale: #eee7dc;
+  --color-status-open: #111111;
+  --color-hired: #111111;
   background:
     linear-gradient(90deg, rgba(17,17,17,0.026) 1px, transparent 1px),
     linear-gradient(180deg, rgba(17,17,17,0.026) 1px, transparent 1px),
     #f7f3ea;
   background-size: 56px 56px;
+}
+.detail-page .nav {
+  background: rgba(31,32,33,0.86);
+  border-bottom-color: rgba(255,255,255,0.1);
+  backdrop-filter: blur(18px);
+}
+.detail-page .nav__logo {
+  color: #fbf8f1;
+}
+.detail-page .nav__logo-dot {
+  background: #ded4c2;
+}
+.detail-page .breadcrumb a:hover {
+  color: #b84a36;
 }
 .detail-page .container {
   max-width: 1180px;
@@ -540,6 +562,21 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   margin: 0;
   color: #b84a36;
   letter-spacing: 0.08em;
+}
+.detail-page .tag {
+  border-radius: 999px;
+}
+.detail-page .tag--category {
+  background: transparent;
+  border: 1px solid rgba(17,17,17,0.24);
+  color: #3f3b34;
+}
+.detail-page .tag--open {
+  background: #111111;
+  color: #fbf8f1;
+}
+.detail-page .sidebar-value--fee {
+  color: #b84a36;
 }
 .detail-page .detail-desc,
 .detail-page .req-item {
@@ -578,11 +615,71 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   flex-wrap: wrap;
   padding: 28px 0 8px;
 }
+.detail-page .btn--primary {
+  background: #111111;
+  color: #fbf8f1;
+  border-radius: 999px;
+}
+.detail-page .btn--primary:hover {
+  background: #3a3a38;
+}
+.detail-page .btn--ghost {
+  border-radius: 999px;
+}
 .detail-page .detail-share-btn {
   border-color: rgba(17,17,17,0.32);
+  color: #111111;
+}
+.detail-share {
+  position: relative;
+}
+.detail-share-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  min-width: 168px;
+  border: 1px solid rgba(17,17,17,0.78);
+  background: #fbf8f1;
+  box-shadow: 0 22px 54px rgba(0,0,0,0.16);
+  padding: 6px;
+}
+.detail-share-menu button {
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.detail-share-menu button:hover {
+  background: #111111;
+  color: #fbf8f1;
 }
 .detail-page .related-section {
   border-top-color: rgba(17,17,17,0.78);
+}
+.detail-page .related-grid .job-card {
+  border-radius: 0;
+  box-shadow: none;
+  background: rgba(251,248,241,0.68);
+  border-color: rgba(17,17,17,0.22);
+}
+.detail-page .related-grid .job-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.12);
+}
+.detail-page .related-grid .job-card__cover {
+  background: #ded4c2 !important;
+}
+.detail-page .fee-value {
+  color: #b84a36;
 }
 .poster-overlay {
   align-items: flex-start;
@@ -610,6 +707,15 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   }
   .detail-page .detail-cta-row {
     padding-bottom: 82px;
+  }
+  .detail-share,
+  .detail-share-btn {
+    width: 100%;
+  }
+  .detail-share-menu {
+    left: 0;
+    right: 0;
+    width: 100%;
   }
 }
 
@@ -689,12 +795,13 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 /* ===== 聊天组件 ===== */
 
 .chat-fab {
+  --chat-fab-bg: #1f2021;
   position: fixed;
   bottom: var(--space-8);
   right: var(--space-8);
   width: 52px; height: 52px;
   border-radius: var(--radius-full);
-  background: #1f2021;
+  background: var(--chat-fab-bg);
   color: #fbf8f1;
   border: 1px solid rgba(255,255,255,0.18);
   cursor: pointer;
@@ -704,12 +811,26 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   font-size: 20px;
   transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
-.chat-fab:hover { transform: translateY(-2px); background: #111111; box-shadow: 0 22px 48px rgba(0,0,0,0.28); }
+.chat-fab:hover { --chat-fab-bg: #111111; transform: translateY(-2px); box-shadow: 0 22px 48px rgba(0,0,0,0.28); }
 .chat-fab__mark {
   display: block;
-  font-size: 22px;
-  line-height: 1;
-  font-weight: 720;
+  width: 23px;
+  height: 17px;
+  border: 2px solid currentColor;
+  border-radius: 9px;
+  position: relative;
+}
+.chat-fab__mark::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  bottom: -6px;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: var(--chat-fab-bg);
+  transform: rotate(-28deg) skewX(-12deg);
 }
 .chat-fab__badge {
   position: absolute;

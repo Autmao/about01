@@ -19,7 +19,7 @@
   const container = document.createElement('div');
   container.innerHTML = `
     <button class="chat-fab" id="chat-fab" aria-label="岗位咨询" onclick="window.__openChatWidget()">
-      <span class="chat-fab__mark">?</span>
+      <span class="chat-fab__mark" aria-hidden="true"></span>
       <span class="chat-fab__badge" id="chat-fab-badge"></span>
     </button>
     <div class="chat-panel" id="chat-panel">
