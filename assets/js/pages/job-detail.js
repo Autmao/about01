@@ -66,7 +66,7 @@ function renderDetail(job) {
         <ul class="req-list">${reqs}</ul>
       </div>` : ''}
       ${job.deliverables ? `<div class="detail-section">
-        <p class="detail-section-title">交付物</p>
+        <p class="detail-section-title">交付要求</p>
         <p class="detail-desc" style="margin-bottom:0;">${esc(job.deliverables)}</p>
       </div>` : ''}
     </div>
