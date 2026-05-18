@@ -533,6 +533,9 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 .detail-page .container {
   max-width: 1180px;
 }
+.detail-page main.container {
+  padding-top: 88px;
+}
 .detail-page .detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -768,6 +771,9 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   .detail-page .container {
     padding-left: 20px;
     padding-right: 20px;
+  }
+  .detail-page main.container {
+    padding-top: 68px;
   }
   .detail-page .detail-layout {
     grid-template-columns: 1fr;
