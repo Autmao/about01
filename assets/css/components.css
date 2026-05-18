@@ -541,11 +541,15 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   padding-top: 22px;
 }
 .detail-page .detail-title {
-  font-size: clamp(44px, 7vw, 92px);
-  line-height: 0.96;
+  max-width: 920px;
+  font-size: clamp(42px, 5.2vw, 72px);
+  line-height: 1.06;
   letter-spacing: 0;
   font-weight: 720;
-  margin: 26px 0 44px;
+  margin: 24px 0 42px;
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .detail-page .detail-section {
   display: grid;
@@ -676,7 +680,45 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   box-shadow: 0 18px 50px rgba(0,0,0,0.12);
 }
 .detail-page .related-grid .job-card__cover {
-  background: #ded4c2 !important;
+  height: 136px;
+  background: var(--job-accent, #ded4c2) !important;
+  color: #111111;
+  display: block;
+  padding: 18px 18px 16px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(17,17,17,0.18);
+}
+.detail-page .related-grid .job-card__cover::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  background: #b84a36;
+}
+.detail-page .related-grid .job-card__cover-no {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  font-size: 44px;
+  line-height: 0.9;
+  font-weight: 680;
+  letter-spacing: 0;
+}
+.detail-page .related-grid .job-card__cover-type {
+  position: absolute;
+  left: 22px;
+  bottom: 16px;
+  max-width: calc(100% - 132px);
+  color: rgba(17,17,17,0.54);
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.detail-page .related-grid .job-card__cover .tag--open {
+  position: absolute;
+  left: 22px;
+  top: 18px;
 }
 .detail-page .fee-value {
   color: #b84a36;
@@ -698,6 +740,10 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 @media (max-width: 860px) {
   .detail-page .detail-layout {
     grid-template-columns: 1fr;
+  }
+  .detail-page .detail-title {
+    font-size: clamp(32px, 8.6vw, 44px);
+    line-height: 1.08;
   }
   .detail-page .detail-sidebar {
     order: 0;

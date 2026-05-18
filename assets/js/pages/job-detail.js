@@ -4,6 +4,30 @@ const params = new URLSearchParams(window.location.search);
 const jobId = params.get('id');
 const esc = value => Utils.escapeHtml(value);
 
+function jobEditorialLabel(category) {
+  const labels = {
+    writing: 'WRITING',
+    editing: 'EDITING',
+    illustration: 'ILLUSTRATION',
+    design: 'DESIGN',
+    photography: 'PHOTO',
+    photo_video: 'PHOTO / VIDEO',
+    podcast: 'PODCAST',
+    audio_editing: 'AUDIO',
+    audio_editor: 'AUDIO',
+    planning: 'EVENT',
+    event_planner: 'EVENT',
+    interview: 'INTERVIEW',
+    other: 'OPEN CALL',
+  };
+  return labels[category] || 'OPEN CALL';
+}
+
+function safeCssColor(value, fallback) {
+  const color = String(value || '').trim();
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
+}
+
 function renderDetail(job) {
   const cat = Utils.getCategoryInfo(job.category);
   const dl = Utils.deadlineText(job.deadline);
@@ -98,13 +122,16 @@ async function renderRelated(currentJob) {
   if (related.length === 0) return;
 
   document.getElementById('related-section').style.display = 'block';
-  document.getElementById('related-grid').innerHTML = related.map(job => {
+  document.getElementById('related-grid').innerHTML = related.map((job, index) => {
     const cat = Utils.getCategoryInfo(job.category);
+    const dept = Utils.getDepartmentInfo(job.department);
+    const accent = safeCssColor(job.coverColor, dept.color || cat.color || '#E8DDD0');
     const dl = Utils.deadlineText(job.deadline);
     return `
       <article class="job-card" onclick="window.location.href='job-detail.html?id=${job.id}'">
-        <div class="job-card__cover" style="background-color:${job.coverColor || cat.color}">
-          <span class="job-card__icon">${esc(cat.icon)}</span>
+        <div class="job-card__cover job-card__cover--editorial" style="--job-accent:${accent};">
+          <span class="job-card__cover-no">${String(index + 1).padStart(2, '0')}</span>
+          <span class="job-card__cover-type">${esc(jobEditorialLabel(job.category))}</span>
           <span class="tag tag--open">招募中</span>
         </div>
         <div class="job-card__body">
