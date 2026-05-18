@@ -211,16 +211,10 @@
     </section>
 
     <section class="query-card" id="query-section">
-      <h2>用邮箱进入记录。</h2>
-      <p class="query-card__hint">输入投递时填写的邮箱，查看当前记录与处理状态。如果没有查到记录，请确认邮箱是否与投递表单中填写的一致。</p>
+      <h2>登录后查看记录。</h2>
+      <p class="query-card__hint">使用投递邮箱登录后，查看当前记录与处理状态。</p>
       <div class="query-form">
-        <div class="form-field" style="text-align:left;">
-          <label class="form-label">投递邮箱</label>
-          <input type="text" inputmode="email" class="form-input" id="input-email"
-            placeholder="name@example.com" autocomplete="email">
-        </div>
-        <div class="query-error" id="err-email"></div>
-        <button class="btn btn--primary btn--full" id="btn-query" onclick="queryApps()">查看投递记录</button>
+        <button class="btn btn--primary btn--full" id="btn-query" onclick="goApplicantLogin()">创作伙伴登录</button>
       </div>
     </section>
 
@@ -232,7 +226,7 @@
           <span class="apps-header__info" id="queried-email"></span>
         </div>
         <div style="display:flex;align-items:center;gap:var(--space-3);">
-          <button class="btn btn--ghost btn--sm" onclick="resetQuery()">重新查询</button>
+          <button class="btn btn--ghost btn--sm" onclick="resetQuery()">切换账号</button>
         </div>
       </div>
       <div id="apps-list"></div>
@@ -254,33 +248,26 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('input-email').addEventListener('keydown', e => {
-        if (e.key === 'Enter') queryApps();
-      });
+      if (Store.isApplicantLoggedIn()) loadMyApplications();
     });
 
-    async function queryApps() {
-      const email = document.getElementById('input-email').value.trim().toLowerCase();
-      const errEl = document.getElementById('err-email');
-      errEl.textContent = '';
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errEl.textContent = '请输入有效的邮箱地址';
-        return;
-      }
-      const btn = document.getElementById('btn-query');
-      btn.disabled = true; btn.textContent = '查询中…...';
+    function goApplicantLogin() {
+      window.location.href = `login.html?role=applicant&from=${encodeURIComponent('my-applications.html')}`;
+    }
+
+    async function loadMyApplications() {
+      const email = Store.getApplicantEmail() || '';
       try {
-        const apps = await Store.getMyApplications(email);
+        const apps = await Store.getApplicantApplications();
         currentEmail = email;
         document.getElementById('query-intro').style.display = 'none';
         document.getElementById('query-section').style.display = 'none';
         document.getElementById('apps-section').style.display = 'block';
         document.getElementById('queried-email').textContent = email;
         renderApps(apps);
-      } catch (e) {
-        errEl.textContent = '查询失败，请稍后重试';
-      } finally {
-        btn.disabled = false; btn.textContent = '查看投递记录';
+      } catch {
+        Store.applicantLogout();
+        goApplicantLogin();
       }
     }
 
@@ -305,12 +292,8 @@
     }
 
     function resetQuery() {
-      document.getElementById('apps-section').style.display = 'none';
-      document.getElementById('query-intro').style.display = 'block';
-      document.getElementById('query-section').style.display = 'block';
-      document.getElementById('input-email').value = currentEmail;
-      document.getElementById('err-email').textContent = '';
-      setTimeout(() => document.getElementById('input-email').focus(), 50);
+      Store.applicantLogout();
+      goApplicantLogin();
     }
   </script>
 </body>

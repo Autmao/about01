@@ -26,18 +26,12 @@ function requireApplicant(req, res, next) {
 
 /* POST /api/applicant/send-otp
    body: { email }
-   检查邮箱有投递记录后发送验证码 */
+   创作伙伴邮箱登录验证码 */
 router.post('/send-otp', async (req, res) => {
   try {
     const email = (req.body.email || '').toLowerCase().trim();
-    if (!email) return res.status(400).json({ error: 'email required' });
-
-    const { rows } = await pool.query(
-      'SELECT id FROM applications WHERE email = $1 LIMIT 1',
-      [email]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'no_record', message: '该邮箱暂无投递记录' });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'invalid_email', message: '请输入有效的邮箱地址' });
     }
 
     const code = await createOtp(email);

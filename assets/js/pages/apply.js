@@ -8,6 +8,11 @@ let linkCount = 1;
 let uploadedResumeUrl = '';
 let uploadedPortfolioFiles = []; // [{ name, size, url }]
 
+function applicantLoginUrl() {
+  const from = jobId ? `apply.html?jobId=${encodeURIComponent(jobId)}` : 'index.html';
+  return `login.html?role=applicant&from=${encodeURIComponent(from)}`;
+}
+
 /* ===== 文件上传 ===== */
 async function uploadFile(file) {
   const res = await fetch(
@@ -227,6 +232,8 @@ async function handleSubmit(e) {
     btn.innerHTML = '提交投递';
     if (err.status === 409) {
       Utils.showToast('您已经投递过该岗位，无需重复提交', 'warning', 4000);
+    } else if (err.status === 401) {
+      window.location.href = applicantLoginUrl();
     } else {
       Utils.showToast('提交失败，请稍后重试', 'error');
     }
@@ -240,13 +247,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  if (!Store.isApplicantLoggedIn()) {
+    window.location.href = applicantLoginUrl();
+    return;
+  }
+
   const job = await Store.getJobById(jobId);
   if (!job || job.status !== 'open' || Utils.isPastDeadline(job.deadline)) {
     document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该岗位不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
     return;
   }
 
-  // 预填已登录用户信息
+  // 预填已登录创作伙伴信息
   const user = Store.getCurrentApplicant();
   if (user) {
     const phoneField = document.getElementById('field-phone');
@@ -254,7 +266,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const emailField = document.getElementById('field-email');
     if (phoneField && user.phone) phoneField.value = user.phone;
     if (nameField && user.name) nameField.value = user.name;
-    if (emailField && user.email) emailField.value = user.email;
+    if (emailField && user.email) {
+      emailField.value = user.email;
+      emailField.readOnly = true;
+      emailField.setAttribute('aria-readonly', 'true');
+    }
   }
 
   renderJobSummary(job);

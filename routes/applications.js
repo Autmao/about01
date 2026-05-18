@@ -2,10 +2,34 @@
 
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const { pool, genId, now, mapApp, mapCollab,
   isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { sendStatusEmail } = require('../lib/mailer');
+
+function getSecret() {
+  return process.env.JWT_SECRET || process.env.ADMIN_PASSWORD || 'dev-secret';
+}
+
+function getApplicantPayload(req) {
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = jwt.verify(token, getSecret());
+    return payload.type === 'applicant' && payload.email ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+function requireApplicant(req, res, next) {
+  const payload = getApplicantPayload(req);
+  if (!payload) return res.status(401).json({ error: 'Applicant login required' });
+  req.applicantEmail = String(payload.email).toLowerCase().trim();
+  next();
+}
 
 /* GET /api/applications */
 router.get('/', requireAdmin, async (req, res) => {
@@ -64,18 +88,15 @@ router.get('/counts', requireAdmin, async (req, res) => {
   }
 });
 
-/* GET /api/applications/my?email=... — 公开接口，投递者查询自己的投递状态 */
-router.get('/my', async (req, res) => {
+/* GET /api/applications/my — 创作伙伴登录后查询自己的投递状态 */
+router.get('/my', requireApplicant, async (req, res) => {
   try {
-    const { email } = req.query;
-    if (!email) return res.status(400).json({ error: 'email required' });
-    const normalizedEmail = email.toLowerCase().trim();
     const { rows } = await pool.query(
       `SELECT id, job_id, job_title, job_category, status, submitted_at, updated_at
        FROM applications
        WHERE LOWER(email) = $1
        ORDER BY submitted_at DESC`,
-      [normalizedEmail]
+      [req.applicantEmail]
     );
     res.json(rows.map(r => ({
       id: r.id,
@@ -104,8 +125,8 @@ router.get('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-/* POST /api/applications — 短期运营模式：免短信登录，直接提交 */
-router.post('/', async (req, res) => {
+/* POST /api/applications — 创作伙伴登录后提交 */
+router.post('/', requireApplicant, async (req, res) => {
   try {
     await closeExpiredJobs();
     const { jobId, name = '', email = '', phone = '', wechat = '', bio = '',
@@ -115,17 +136,18 @@ router.post('/', async (req, res) => {
     if (!jobId) return res.status(400).json({ error: 'jobId required' });
 
     const normalizedName = String(name).trim();
-    const normalizedEmail = String(email).toLowerCase().trim();
+    const normalizedEmail = req.applicantEmail;
+    const submittedEmail = String(email || '').toLowerCase().trim();
     const normalizedPhone = String(phone).trim();
     if (!normalizedName) return res.status(400).json({ error: 'name required' });
-    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      return res.status(400).json({ error: 'valid email required' });
+    if (submittedEmail && submittedEmail !== normalizedEmail) {
+      return res.status(403).json({ error: 'email must match logged in applicant' });
     }
     if (!/^1[3-9]\d{9}$/.test(normalizedPhone)) {
       return res.status(400).json({ error: 'valid phone required' });
     }
 
-    // 防重复投递（短期免登录模式下按邮箱或手机号）
+    // 防重复投递（登录邮箱或手机号）
     const { rows: dupRows } = await pool.query(
       `SELECT id FROM applications
        WHERE job_id = $1

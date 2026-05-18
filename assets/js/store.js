@@ -106,6 +106,19 @@ const Store = {
   isAdminLoggedIn() {
     return !!sessionStorage.getItem('mgs_admin_token');
   },
+  currentRelativePath(defaultPath = 'index.html') {
+    let path = (window.location.pathname || '').replace(/^\/+/, '');
+    const marker = 'about01/';
+    const markerIndex = path.lastIndexOf(marker);
+    if (markerIndex >= 0) path = path.slice(markerIndex + marker.length);
+    if (!path) path = defaultPath;
+    return `${path}${window.location.search || ''}${window.location.hash || ''}`;
+  },
+  adminLoginUrl(fromPath = null) {
+    const base = (window.location.pathname || '').includes('/admin/') ? '../login.html' : 'login.html';
+    const from = fromPath || this.currentRelativePath('admin/index.html');
+    return `${base}?role=staff&from=${encodeURIComponent(from)}`;
+  },
   getCurrentUser() {
     const token = sessionStorage.getItem('mgs_admin_token');
     if (!token) return null;
@@ -163,7 +176,16 @@ const Store = {
     return _get(`${API}/applications${_qs({ email })}`);
   },
   async getMyApplications(email) {
-    return _get(`${API}/applications/my${_qs({ email })}`);
+    const token = sessionStorage.getItem('mgs_applicant_token');
+    const res = await fetch(`${API}/applications/my${_qs({ email })}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+    if (res.status === 401) {
+      this.applicantLogout();
+      throw new Error('Not logged in');
+    }
+    if (!res.ok) throw new Error(`GET applications/my failed: ${res.status}`);
+    return res.json();
   },
 
   /* ====== USER AUTH (手机号 OTP) ====== */
@@ -201,6 +223,8 @@ const Store = {
   },
   getCurrentApplicant() {
     try {
+      const applicantEmail = this.getApplicantEmail();
+      if (applicantEmail) return { email: applicantEmail };
       const info = localStorage.getItem('mgs_user_info');
       if (info) return JSON.parse(info);
       const token = localStorage.getItem('mgs_user_token');
@@ -248,7 +272,7 @@ const Store = {
     return res.json();
   },
   async createApplication(data) {
-    const token = localStorage.getItem('mgs_user_token');
+    const token = sessionStorage.getItem('mgs_applicant_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch(`${API}/applications`, {

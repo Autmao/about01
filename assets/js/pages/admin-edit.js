@@ -2,10 +2,10 @@
 
 function checkAuth() {
   if (Store.isAdminLoggedIn()) return true;
-  window.location.href = 'login.html';
+  window.location.href = Store.adminLoginUrl();
   return false;
 }
-function logout() { Store.adminLogout(); window.location.href = 'login.html'; }
+function logout() { Store.adminLogout(); window.location.href = Store.adminLoginUrl('admin/job-edit.html'); }
 window.logout = logout;
 
 function initSidebar() {

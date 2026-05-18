@@ -2,10 +2,10 @@
 
 function checkAuth() {
   if (Store.isAdminLoggedIn()) return true;
-  window.location.href = 'login.html';
+  window.location.href = Store.adminLoginUrl();
   return false;
 }
-function logout() { Store.adminLogout(); window.location.href = 'login.html'; }
+function logout() { Store.adminLogout(); window.location.href = Store.adminLoginUrl('admin/accounts.html'); }
 window.logout = logout;
 
 function initSidebar() {
@@ -165,7 +165,7 @@ async function changeMyPwd() {
   try {
     await Store.changeMyPassword(current, newPwd);
     Utils.showToast('密码已修改，请重新登录', 'success');
-    setTimeout(() => { Store.adminLogout(); window.location.href = 'login.html'; }, 1500);
+    setTimeout(() => { Store.adminLogout(); window.location.href = Store.adminLoginUrl('admin/accounts.html'); }, 1500);
   } catch (err) {
     errEl.textContent = err.message || '修改失败';
     errEl.style.display = 'block';

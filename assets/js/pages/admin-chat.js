@@ -2,11 +2,11 @@
 
 function checkAuth() {
   if (Store.isAdminLoggedIn()) return true;
-  const from = `chat.html${window.location.search || ''}`;
-  window.location.href = `login.html?from=${encodeURIComponent(from)}`;
+  const from = `admin/chat.html${window.location.search || ''}`;
+  window.location.href = Store.adminLoginUrl(from);
   return false;
 }
-function logout() { Store.adminLogout(); window.location.href = 'login.html'; }
+function logout() { Store.adminLogout(); window.location.href = Store.adminLoginUrl('admin/chat.html'); }
 window.logout = logout;
 
 function initSidebar() {

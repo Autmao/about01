@@ -12,6 +12,11 @@ function renderDetail(job) {
   const isClosed = effectiveStatus !== 'open';
   const feeDisplay = job.fee ? `¥${job.fee}` : '面议';
   const applyUrl = `apply.html?jobId=${job.id}`;
+  const applicantLoggedIn = Store.isApplicantLoggedIn();
+  const applyEntryUrl = applicantLoggedIn
+    ? applyUrl
+    : `login.html?role=applicant&from=${encodeURIComponent(applyUrl)}`;
+  const applyText = applicantLoggedIn ? '立即投递' : '登录后投递';
 
   document.title = `${job.title} | about编辑部`;
   document.getElementById('bc-title').textContent = '岗位详情';
@@ -66,7 +71,7 @@ function renderDetail(job) {
     <div class="detail-cta-row">
       ${isClosed
         ? `<button class="btn btn--ghost btn--lg" disabled style="cursor:not-allowed;">招募已截止</button>`
-        : `<a href="${applyUrl}" class="btn btn--primary btn--lg">立即投递</a>`}
+        : `<a href="${applyEntryUrl}" class="btn btn--primary btn--lg">${applyText}</a>`}
       <button class="btn btn--ghost btn--lg" onclick="if(window.openChatWidget)openChatWidget();">咨询岗位问题</button>
       <button class="btn btn--ghost btn--lg detail-share-btn" onclick="copyLink()">复制链接</button>
       <button class="btn btn--ghost btn--lg detail-share-btn" onclick="openPoster()">生成海报</button>
@@ -75,7 +80,9 @@ function renderDetail(job) {
   const mobileBar = document.getElementById('apply-bar-mobile');
   if (!isClosed) {
     mobileBar.style.display = 'block';
-    document.getElementById('apply-btn-mobile').onclick = () => { window.location.href = applyUrl; };
+    const mobileBtn = document.getElementById('apply-btn-mobile');
+    mobileBtn.textContent = applyText;
+    mobileBtn.onclick = () => { window.location.href = applyEntryUrl; };
   } else {
     mobileBar.style.display = 'none';
   }

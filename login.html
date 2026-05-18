@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 | about编辑部 Open Call</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/home-v2.css">
+  <style>
+    .login-page {
+      --login-ink: #111111;
+      --login-paper: #f5f1e8;
+      --login-soft: #fbf8f1;
+      --login-muted: #6f6a60;
+      --login-line: rgba(17,17,17,0.18);
+      --login-line-strong: rgba(17,17,17,0.82);
+      --login-accent: #b84a36;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(17,17,17,0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(17,17,17,0.035) 1px, transparent 1px),
+        var(--login-paper);
+      background-size: 56px 56px;
+      color: var(--login-ink);
+    }
+      .login-shell {
+        min-height: 100vh;
+        padding: 108px clamp(18px, 5vw, 76px) 64px;
+        display: grid;
+        grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+        gap: clamp(32px, 6vw, 92px);
+        align-items: start;
+      }
+    .login-intro {
+      max-width: 620px;
+    }
+    .login-kicker {
+      color: var(--login-accent);
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 760;
+      margin-bottom: 18px;
+    }
+    .login-intro h1 {
+      margin: 0;
+      font-size: clamp(48px, 8vw, 100px);
+      line-height: 0.94;
+      letter-spacing: 0;
+      font-weight: 720;
+    }
+    .login-intro p {
+      color: var(--login-muted);
+      font-size: 17px;
+      line-height: 1.75;
+      margin-top: 28px;
+    }
+    .login-panels {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .login-panel {
+      border: 1px solid var(--login-line-strong);
+      background: rgba(251,248,241,0.82);
+      padding: clamp(22px, 4vw, 34px);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.08);
+    }
+    .login-panel.is-active {
+      background: #fffdf7;
+      box-shadow: 0 28px 82px rgba(0,0,0,0.12);
+    }
+    .login-panel__label {
+      color: var(--login-muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .login-panel h2 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 700;
+    }
+    .login-panel p {
+      margin: 0 0 26px;
+      color: var(--login-muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .login-panel .form-label {
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--login-muted);
+    }
+    .login-panel .form-input {
+      border-radius: 0;
+      border-color: var(--login-line-strong);
+      background: transparent;
+      min-height: 48px;
+    }
+    .login-panel .btn {
+      border-radius: 999px;
+    }
+    .login-panel .btn--primary {
+      background: var(--login-ink);
+      color: var(--login-soft);
+    }
+    .login-panel .btn--primary:hover {
+      background: #3a3a38;
+    }
+    .login-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .login-error,
+    .login-note {
+      min-height: 18px;
+      margin-top: 12px;
+      font-size: var(--text-xs);
+      color: var(--color-rejected);
+    }
+    .login-note {
+      color: var(--login-muted);
+    }
+    @media (max-width: 960px) {
+      .login-shell,
+      .login-panels {
+        grid-template-columns: 1fr;
+      }
+      .login-shell {
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body class="home-v2 login-page">
+  <nav class="home-nav" aria-label="主导航">
+    <a class="home-nav__brand" href="index.html">about编辑部</a>
+    <div class="home-nav__links">
+      <a href="index.html#open-calls">正在招募</a>
+      <a href="my-applications.html">查询状态</a>
+    </div>
+    <a class="home-nav__cta" href="index.html">返回首页</a>
+  </nav>
+
+  <main class="login-shell">
+    <section class="login-intro">
+      <div class="login-kicker">Open Call Login</div>
+      <h1>选择你的登录入口。</h1>
+      <p>创作伙伴登录后投递岗位、查看进度；工作人员登录后进入 Open Call 工作台。</p>
+    </section>
+
+    <section class="login-panels" aria-label="登录入口">
+      <div class="login-panel" id="applicant-panel">
+        <div class="login-panel__label">Creative Partner</div>
+        <h2>创作伙伴</h2>
+        <p>使用邮箱验证码登录。投递时会默认使用此邮箱接收状态通知。</p>
+        <form id="applicant-form" novalidate>
+          <div class="form-field">
+            <label class="form-label">邮箱</label>
+            <input type="email" class="form-input" id="applicant-email" placeholder="name@example.com" autocomplete="email">
+          </div>
+          <div class="login-actions">
+            <button type="button" class="btn btn--ghost" id="send-code-btn">发送验证码</button>
+          </div>
+          <div class="form-field" style="margin-top:16px;">
+            <label class="form-label">验证码</label>
+            <input type="text" class="form-input" id="applicant-code" placeholder="6位验证码" inputmode="numeric" autocomplete="one-time-code">
+          </div>
+          <button type="submit" class="btn btn--primary btn--full" id="applicant-login-btn">登录并继续</button>
+          <div class="login-error" id="applicant-error"></div>
+          <div class="login-note" id="applicant-note"></div>
+        </form>
+      </div>
+
+      <div class="login-panel" id="staff-panel">
+        <div class="login-panel__label">Staff</div>
+        <h2>工作人员</h2>
+        <p>使用工作台账号登录，管理岗位、投递、咨询记录与协作账号。</p>
+        <form id="staff-form" novalidate>
+          <div class="form-field">
+            <label class="form-label">登录账号</label>
+            <input type="tel" class="form-input" id="staff-username" placeholder="手机号码" autocomplete="username">
+          </div>
+          <div class="form-field">
+            <label class="form-label">密码</label>
+            <input type="password" class="form-input" id="staff-password" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn--primary btn--full" id="staff-login-btn">进入工作台</button>
+          <div class="login-error" id="staff-error"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/store.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from') || '';
+
+    function safeRedirect(defaultPath, allowAdmin) {
+      if (!from || from.includes('://') || from.startsWith('//')) return defaultPath;
+      if (!allowAdmin && from.startsWith('admin/')) return defaultPath;
+      if (allowAdmin && !from.startsWith('admin/')) return defaultPath;
+      return from;
+    }
+
+    function validEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+      const role = params.get('role');
+      if (role === 'staff' || role === 'applicant') {
+        document.getElementById(`${role}-panel`)?.classList.add('is-active');
+      }
+      const currentEmail = Store.getApplicantEmail();
+      if (currentEmail) {
+        document.getElementById('applicant-email').value = currentEmail;
+        document.getElementById('applicant-note').textContent = `当前已登录：${currentEmail}`;
+      }
+    });
+
+    document.getElementById('send-code-btn').addEventListener('click', async () => {
+      const email = document.getElementById('applicant-email').value.trim().toLowerCase();
+      const err = document.getElementById('applicant-error');
+      const note = document.getElementById('applicant-note');
+      const btn = document.getElementById('send-code-btn');
+      err.textContent = '';
+      note.textContent = '';
+      if (!validEmail(email)) {
+        err.textContent = '请输入有效的邮箱地址';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '发送中......';
+      try {
+        await Store.sendOtp(email);
+        note.textContent = '验证码已发送，请查看邮箱';
+        document.getElementById('applicant-code').focus();
+      } catch (e) {
+        err.textContent = e.message || '验证码发送失败，请稍后重试';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '发送验证码';
+      }
+    });
+
+    document.getElementById('applicant-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('applicant-email').value.trim().toLowerCase();
+      const code = document.getElementById('applicant-code').value.trim();
+      const err = document.getElementById('applicant-error');
+      const btn = document.getElementById('applicant-login-btn');
+      err.textContent = '';
+      if (!validEmail(email)) {
+        err.textContent = '请输入有效的邮箱地址';
+        return;
+      }
+      if (!code) {
+        err.textContent = '请输入验证码';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '登录中......';
+      try {
+        await Store.verifyOtp(email, code);
+        window.location.href = safeRedirect('my-applications.html', false);
+      } catch (e) {
+        err.textContent = e.message || '验证码错误或已过期';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登录并继续';
+      }
+    });
+
+    document.getElementById('staff-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const username = document.getElementById('staff-username').value.trim();
+      const password = document.getElementById('staff-password').value;
+      const err = document.getElementById('staff-error');
+      const btn = document.getElementById('staff-login-btn');
+      err.textContent = '';
+      if (!username || !password) {
+        err.textContent = '请输入登录账号和密码';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '登录中......';
+      try {
+        await Store.adminLogin(username, password);
+        window.location.href = safeRedirect('admin/index.html', true);
+      } catch {
+        err.textContent = '用户名或密码错误';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '进入工作台';
+      }
+    });
+  </script>
+</body>
+</html>
