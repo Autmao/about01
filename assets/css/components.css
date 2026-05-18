@@ -512,6 +512,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
     linear-gradient(180deg, rgba(17,17,17,0.026) 1px, transparent 1px),
     #f7f3ea;
   background-size: 56px 56px;
+  overflow-x: hidden;
 }
 .detail-page .nav {
   background: rgba(31,32,33,0.86);
@@ -699,20 +700,23 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   width: 10px;
   background: #b84a36;
 }
-.detail-page .related-grid .job-card__cover-no {
+.detail-page .related-grid .job-card__cover-dept {
   position: absolute;
   right: 18px;
-  top: 14px;
-  font-size: 44px;
-  line-height: 0.9;
-  font-weight: 680;
+  top: 17px;
+  max-width: calc(100% - 118px);
+  color: rgba(17,17,17,0.7);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 700;
   letter-spacing: 0;
+  text-align: right;
 }
 .detail-page .related-grid .job-card__cover-type {
   position: absolute;
   left: 22px;
   bottom: 16px;
-  max-width: calc(100% - 132px);
+  max-width: calc(100% - 44px);
   color: rgba(17,17,17,0.54);
   font-size: 12px;
   line-height: 1.2;
@@ -774,9 +778,23 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   }
   .detail-page .detail-card {
     padding: 18px;
+    min-width: 0;
   }
   .detail-page .sidebar-row {
+    display: grid;
+    grid-template-columns: minmax(72px, 1fr) minmax(0, 1.55fr);
+    align-items: center;
+    gap: 16px;
     padding: 12px 0;
+  }
+  .detail-page .sidebar-value {
+    justify-self: end;
+    min-width: 0;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+  .detail-page .sidebar-value--fee {
+    font-size: clamp(22px, 7vw, 28px);
   }
   .detail-page .detail-cta-row {
     display: grid;

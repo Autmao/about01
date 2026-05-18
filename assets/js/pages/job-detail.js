@@ -122,15 +122,16 @@ async function renderRelated(currentJob) {
   if (related.length === 0) return;
 
   document.getElementById('related-section').style.display = 'block';
-  document.getElementById('related-grid').innerHTML = related.map((job, index) => {
+  document.getElementById('related-grid').innerHTML = related.map((job) => {
     const cat = Utils.getCategoryInfo(job.category);
     const dept = Utils.getDepartmentInfo(job.department);
+    const deptLabel = job.department ? dept.label : 'about编辑部';
     const accent = safeCssColor(job.coverColor, dept.color || cat.color || '#E8DDD0');
     const dl = Utils.deadlineText(job.deadline);
     return `
       <article class="job-card" onclick="window.location.href='job-detail.html?id=${job.id}'">
         <div class="job-card__cover job-card__cover--editorial" style="--job-accent:${accent};">
-          <span class="job-card__cover-no">${String(index + 1).padStart(2, '0')}</span>
+          <span class="job-card__cover-dept">${esc(deptLabel)}</span>
           <span class="job-card__cover-type">${esc(jobEditorialLabel(job.category))}</span>
           <span class="tag tag--open">招募中</span>
         </div>
