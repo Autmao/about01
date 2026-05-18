@@ -138,6 +138,33 @@
         align-items: start;
       }
     }
+    @media (max-width: 560px) {
+      .login-shell {
+        min-height: auto;
+        padding: 92px 20px 48px;
+        gap: 28px;
+      }
+      .login-kicker {
+        font-size: 12px;
+        margin-bottom: 14px;
+      }
+      .login-intro h1 {
+        max-width: 340px;
+        font-size: clamp(38px, 11vw, 48px);
+        line-height: 1.04;
+      }
+      .login-intro h1 span {
+        display: block;
+      }
+      .login-intro p {
+        font-size: 15px;
+        line-height: 1.68;
+        margin-top: 20px;
+      }
+      .login-panel {
+        padding: 22px 20px;
+      }
+    }
   </style>
 </head>
 <body class="home-v2 login-page">
@@ -153,7 +180,7 @@
   <main class="login-shell">
     <section class="login-intro">
       <div class="login-kicker">Open Call Login</div>
-      <h1>选择你的登录入口。</h1>
+      <h1><span>选择你的</span><span>登录入口。</span></h1>
       <p>创作伙伴登录后投递岗位、查看进度；工作人员登录后进入 Open Call 工作台。</p>
     </section>
 

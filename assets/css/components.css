@@ -752,11 +752,20 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
     grid-template-columns: 1fr;
   }
   .detail-page .detail-cta-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
     padding-bottom: 82px;
   }
-  .detail-share,
+  .detail-page .detail-cta-row > .btn,
   .detail-share-btn {
+    min-height: 54px;
     width: 100%;
+  }
+  .detail-share {
+    width: auto;
+    min-width: 0;
   }
   .detail-share-menu {
     left: 0;
