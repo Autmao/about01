@@ -5,7 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const {
   listAdminUsers, createAdminUser, deleteAdminUser,
-  updateAdminUserPassword, updateAdminUserNotificationEmail, getAdminUserById,
+  updateAdminUserPassword, updateAdminUserNotificationEmail, updateAdminUserRole, getAdminUserById,
 } = require('../db');
 
 /* 所有路由由 server.js 挂载时的 requireSuperAdmin 保护 */
@@ -68,6 +68,26 @@ router.patch('/:id/notification-email', async (req, res) => {
     res.json(updated);
   } catch (e) {
     if (e.code === '23505') return res.status(409).json({ error: '该邮箱已绑定其他账号' });
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* PATCH /api/admin-users/:id/role */
+router.patch('/:id/role', async (req, res) => {
+  const role = String(req.body.role || '').trim();
+  if (!['member', 'superadmin'].includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+  if (req.params.id === req.adminUser.id) {
+    return res.status(400).json({ error: '不能修改自己的角色' });
+  }
+  try {
+    const user = await getAdminUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const updated = await updateAdminUserRole(req.params.id, role);
+    res.json(updated);
+  } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
   }

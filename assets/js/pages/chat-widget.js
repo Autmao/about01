@@ -8,12 +8,22 @@
     localStorage.setItem('mgs_visitor_id', visitorId);
   }
 
-  const jobId = new URLSearchParams(location.search).get('id') || null;
+  const initialJobId = new URLSearchParams(location.search).get('id') || null;
+  let selectedJobId = initialJobId;
   let sessionId = null;
   let isSending = false;
   let pollTimer = null;
   const renderedMessageIds = new Set();
   const pendingEchoes = [];
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   /* ── 注入 HTML ── */
   const container = document.createElement('div');
@@ -30,6 +40,12 @@
         </div>
         <button class="chat-header__close" onclick="window.__closeChatWidget()">×</button>
       </div>
+      <label class="chat-topic">
+        <span>咨询岗位</span>
+        <select class="chat-topic__select" id="chat-job-select">
+          <option value="">不指定岗位</option>
+        </select>
+      </label>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
         <textarea class="chat-input" id="chat-input" rows="1"
@@ -47,6 +63,25 @@
   const inputEl = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send-btn');
   const headerSub = document.getElementById('chat-header-sub');
+  const jobSelectEl = document.getElementById('chat-job-select');
+
+  loadJobOptions();
+
+  jobSelectEl.addEventListener('change', async () => {
+    const nextJobId = jobSelectEl.value || null;
+    if (nextJobId === selectedJobId) return;
+    selectedJobId = nextJobId;
+    sessionId = null;
+    renderedMessageIds.clear();
+    pendingEchoes.length = 0;
+    messagesEl.innerHTML = '';
+    updateHeader('bot');
+    stopPolling();
+    if (panel.classList.contains('open')) {
+      await initSession();
+      startPolling();
+    }
+  });
 
   /* ── 回车发送 ── */
   inputEl.addEventListener('keydown', e => {
@@ -85,7 +120,7 @@
       const res = await fetch('/api/chat/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, visitorId }),
+        body: JSON.stringify({ jobId: selectedJobId, visitorId }),
       });
       if (!res.ok) throw new Error('session init failed');
       const data = await res.json();
@@ -97,7 +132,7 @@
         data.messages.forEach(m => renderStoredMessage(m));
       } else {
         // 欢迎语
-        const welcome = jobId
+        const welcome = selectedJobId
           ? '你好，我是 about编辑部招募助手。关于这个岗位的职责、要求和投递方式，可以直接问我。'
           : '你好，我是 about编辑部招募助手。关于正在招募的岗位和投递流程，可以直接问我。';
         renderMessage('assistant', welcome);
@@ -195,7 +230,29 @@
     if (status === 'pending_human') headerSub.textContent = '已转给编辑部同事，等待人工回复。';
     else if (status === 'human_active') headerSub.textContent = '编辑部同事已介入，可继续沟通。';
     else if (status === 'resolved') headerSub.textContent = '对话已解决，可以继续提问。';
-    else headerSub.textContent = '如有岗位相关疑问，欢迎咨询';
+    else headerSub.textContent = selectedJobId ? '已选择岗位，可直接提问。' : '如有岗位相关疑问，欢迎咨询';
+  }
+
+  async function loadJobOptions() {
+    try {
+      const res = await fetch('/api/jobs?status=open');
+      if (!res.ok) throw new Error('jobs failed');
+      const jobs = await res.json();
+      const hasInitial = jobs.some(job => job.id === initialJobId);
+      jobSelectEl.innerHTML = `
+        <option value="">不指定岗位</option>
+        ${!hasInitial && initialJobId ? `<option value="${escapeHtml(initialJobId)}">当前岗位</option>` : ''}
+        ${(jobs || []).map(job => `<option value="${escapeHtml(job.id)}">${escapeHtml(job.title)}</option>`).join('')}
+      `;
+      jobSelectEl.value = selectedJobId || '';
+      updateHeader('bot');
+    } catch {
+      jobSelectEl.innerHTML = `
+        <option value="">不指定岗位</option>
+        ${initialJobId ? `<option value="${escapeHtml(initialJobId)}">当前岗位</option>` : ''}
+      `;
+      jobSelectEl.value = selectedJobId || '';
+    }
   }
 
   function rememberEcho(role, content) {

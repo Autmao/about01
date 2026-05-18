@@ -397,6 +397,9 @@ const Store = {
   async updateAdminUserNotificationEmail(id, notificationEmail) {
     return _patch(`${API}/admin-users/${id}/notification-email`, { notificationEmail });
   },
+  async updateAdminUserRole(id, role) {
+    return _patch(`${API}/admin-users/${id}/role`, { role });
+  },
   async updateMyNotificationEmail(notificationEmail) {
     return _patch(`${API}/admin/me/notification-email`, { notificationEmail });
   },

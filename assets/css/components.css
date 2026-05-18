@@ -1046,6 +1046,31 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 }
 .chat-header__close:hover { background: rgba(255,255,255,0.1); }
 
+.chat-topic {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(17,17,17,0.12);
+  background: rgba(251,248,241,0.78);
+  flex-shrink: 0;
+}
+.chat-topic span {
+  color: rgba(17,17,17,0.52);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.chat-topic__select {
+  width: 100%;
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(17,17,17,0.18);
+  background: rgba(255,255,255,0.62);
+  color: #111111;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;

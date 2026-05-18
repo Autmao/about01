@@ -43,7 +43,17 @@ async function renderUsers() {
           <button class="action-btn action-btn--edit" onclick="saveMemberEmail('${esc(u.id)}')">保存</button>
         </div>
       </td>
-      <td><span class="tag ${u.role === 'superadmin' ? 'tag--hired' : 'tag--read'}">${ROLE_LABELS[u.role] || u.role}</span></td>
+      <td>
+        <div style="display:flex;gap:var(--space-2);align-items:center;min-width:150px;">
+          <select class="form-input form-input--sm" id="role-${esc(u.id)}" ${u.id === currentUser?.id ? 'disabled' : ''}>
+            <option value="member" ${u.role === 'member' ? 'selected' : ''}>成员</option>
+            <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>管理员</option>
+          </select>
+          ${u.id !== currentUser?.id
+            ? `<button class="action-btn action-btn--edit" onclick="saveMemberRole('${esc(u.id)}')">保存</button>`
+            : ''}
+        </div>
+      </td>
       <td>${Utils.formatDate(u.createdAt)}</td>
       <td>
         <div class="table-actions">
@@ -107,6 +117,19 @@ async function saveMemberEmail(id) {
   }
 }
 window.saveMemberEmail = saveMemberEmail;
+
+async function saveMemberRole(id) {
+  const role = document.getElementById(`role-${id}`)?.value;
+  if (!role) return;
+  try {
+    await Store.updateAdminUserRole(id, role);
+    Utils.showToast('角色已保存', 'success');
+    await renderUsers();
+  } catch (err) {
+    Utils.showToast(err.message || '保存失败', 'error');
+  }
+}
+window.saveMemberRole = saveMemberRole;
 
 async function removeMember(id, username) {
   Utils.showConfirm(`确定删除账号「${username}」？此操作不可恢复。`, async () => {

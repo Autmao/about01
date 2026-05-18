@@ -530,6 +530,17 @@ async function updateAdminUserNotificationEmail(id, notificationEmail) {
   );
   return rows[0] ? mapAdminUser(rows[0]) : null;
 }
+async function updateAdminUserRole(id, role) {
+  const ts = now();
+  const { rows } = await pool.query(
+    `UPDATE admin_users
+     SET role = $1, updated_at = $2
+     WHERE id = $3
+     RETURNING *`,
+    [role, ts, id]
+  );
+  return rows[0] ? mapAdminUser(rows[0]) : null;
+}
 
 /* ===== member_notes CRUD ===== */
 async function getMemberNote(adminUserId, appId) {
@@ -826,6 +837,7 @@ module.exports = {
   mapJob, mapApp, mapCollab, mapAdminUser,
   getAdminUserByUsername, getAdminUserById, listAdminUsers,
   createAdminUser, deleteAdminUser, updateAdminUserPassword, updateAdminUserNotificationEmail,
+  updateAdminUserRole,
   getMemberNote, upsertMemberNote,
   getMemberPreferences, upsertMemberPreferences,
   createOtp, verifyOtp,

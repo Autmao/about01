@@ -33,7 +33,7 @@ function esc(s) {
   }[ch]));
 }
 
-function collectData() {
+function collectData(status = 'open') {
   const department = document.getElementById('f-department').value;
   const data = {
     title:        document.getElementById('f-title').value.trim(),
@@ -48,7 +48,7 @@ function collectData() {
     deadline:     document.getElementById('f-deadline').value,
     tags:         [],
     coverColor:   DEPARTMENT_COLORS[department] || '#E8DDD0',
-    status:       document.querySelector('input[name=status]:checked')?.value || 'open',
+    status,
   };
   const ownerEl = document.getElementById('f-owner');
   if (ownerEl && ownerEl.value) data.ownerAdminId = ownerEl.value;
@@ -131,14 +131,8 @@ async function loadOwnerOptions() {
 async function handleSubmit(e) {
   e.preventDefault();
   const submitter = e.submitter;
-  if (submitter?.id === 'draft-btn') {
-    const draftRadio = document.querySelector('input[name=status][value="draft"]');
-    if (draftRadio) draftRadio.checked = true;
-  } else {
-    const openRadio = document.querySelector('input[name=status][value="open"]');
-    if (openRadio) openRadio.checked = true;
-  }
-  const data = collectData();
+  const nextStatus = submitter?.id === 'draft-btn' ? 'draft' : 'open';
+  const data = collectData(nextStatus);
   const errors = validate(data);
   showErrors(errors);
   if (Object.keys(errors).length > 0) return;

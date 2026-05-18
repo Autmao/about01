@@ -11,7 +11,7 @@ const { sendHumanChatNotificationEmail } = require('../lib/mailer');
 
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
-  per_day: '按天', negotiable: '面议',
+  per_day: '按天', co_creation: '共创', negotiable: '面议',
 };
 
 function getClient() {
