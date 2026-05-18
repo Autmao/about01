@@ -16,8 +16,34 @@ function shortDescription(text) {
     .trim();
 }
 
+function jobEditorialLabel(category) {
+  const labels = {
+    writing: 'WRITING',
+    editing: 'EDITING',
+    illustration: 'ILLUSTRATION',
+    design: 'DESIGN',
+    photography: 'PHOTO',
+    photo_video: 'PHOTO / VIDEO',
+    podcast: 'PODCAST',
+    audio_editing: 'AUDIO',
+    audio_editor: 'AUDIO',
+    planning: 'EVENT',
+    event_planner: 'EVENT',
+    interview: 'INTERVIEW',
+    other: 'OPEN CALL',
+  };
+  return labels[category] || 'OPEN CALL';
+}
+
+function safeCssColor(value, fallback) {
+  const color = String(value || '').trim();
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
+}
+
 function renderJobItem(job, index) {
   const cat = Utils.getCategoryInfo(job.category);
+  const dept = Utils.getDepartmentInfo(job.department);
+  const accent = safeCssColor(job.coverColor, dept.color || cat.color || '#E8DDD0');
   const dl = Utils.deadlineText(job.deadline);
   const effectiveStatus = Utils.isPastDeadline(job.deadline) ? 'closed' : job.status;
   const statusInfo = Utils.jobStatusMap[effectiveStatus] || { label: effectiveStatus, cls: '' };
@@ -29,8 +55,12 @@ function renderJobItem(job, index) {
   const href = `job-detail.html?id=${encodeURIComponent(job.id)}`;
 
   return `
-    <article class="home-job-item" onclick="window.location.href='${href}'">
-      <span class="home-job-item__no">${twoDigit(index + 1)}</span>
+    <article class="home-job-item" style="--job-accent:${accent};" onclick="window.location.href='${href}'">
+      <div class="home-job-item__mark">
+        <span class="home-job-item__swatch" aria-hidden="true"></span>
+        <span class="home-job-item__no">${twoDigit(index + 1)}</span>
+        <span class="home-job-item__label">${jobEditorialLabel(job.category)}</span>
+      </div>
       <div>
         <h3>${esc(job.title)}</h3>
         <p>${esc(shortDescription(job.description) || '这是一份正在招募中的创作岗位，欢迎打开详情了解项目背景与投递要求。')}</p>
