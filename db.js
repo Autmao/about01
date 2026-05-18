@@ -66,6 +66,7 @@ async function initDB() {
       tags JSONB DEFAULT '[]',
       cover_color TEXT DEFAULT '#E8DDD0',
       owner_admin_id TEXT DEFAULT '',
+      display_order BIGINT DEFAULT 0,
       application_count INTEGER DEFAULT 0,
       published_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -215,6 +216,7 @@ async function initDB() {
     ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS notification_email TEXT DEFAULT '';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS department TEXT DEFAULT '';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS owner_admin_id TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS display_order BIGINT;
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_id TEXT DEFAULT '';
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS assigned_admin_name TEXT DEFAULT '';
     ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS human_reason TEXT DEFAULT '';
@@ -227,12 +229,22 @@ async function initDB() {
   `);
 
   await pool.query(`
+    UPDATE jobs
+    SET display_order = (-EXTRACT(EPOCH FROM created_at) * 1000)::BIGINT
+    WHERE display_order IS NULL OR display_order = 0;
+    ALTER TABLE jobs ALTER COLUMN display_order SET DEFAULT 0;
+  `);
+
+  await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS admin_users_notification_email_unique
     ON admin_users (LOWER(notification_email))
     WHERE COALESCE(notification_email, '') <> '';
 
     CREATE INDEX IF NOT EXISTS jobs_status_created_at_idx
     ON jobs (status, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS jobs_display_order_idx
+    ON jobs (display_order ASC, created_at DESC);
 
     CREATE INDEX IF NOT EXISTS applications_submitted_at_idx
     ON applications (submitted_at DESC);
@@ -309,6 +321,7 @@ function mapJob(r) {
     deliverables: r.deliverables, fee: r.fee, feeType: r.fee_type,
     deadline: r.deadline ? String(r.deadline).slice(0, 10) : null,
     slots: r.slots, tags: r.tags || [], coverColor: r.cover_color,
+    displayOrder: r.display_order !== undefined && r.display_order !== null ? Number(r.display_order) : 0,
     applicationCount: r.application_count,
     publishedAt: r.published_at, createdAt: r.created_at, updatedAt: r.updated_at,
   };
@@ -409,13 +422,14 @@ async function seedDemoData() {
   const insertedJobs = [];
   for (const j of demoJobs) {
     const id = genId('job');
+    const displayOrder = -Date.now() - insertedJobs.length;
     await pool.query(
       `INSERT INTO jobs (id,title,category,status,description,requirements,deliverables,
-        fee,fee_type,deadline,slots,tags,cover_color,application_count,published_at,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        fee,fee_type,deadline,slots,tags,cover_color,display_order,application_count,published_at,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
       [id, j.title, j.category, j.status, j.description,
        JSON.stringify(j.requirements), j.deliverables,
-       j.fee, j.feeType, j.deadline, j.slots, JSON.stringify(j.tags), j.coverColor,
+       j.fee, j.feeType, j.deadline, j.slots, JSON.stringify(j.tags), j.coverColor, displayOrder,
        0, j.status === 'open' ? ts : null, ts, ts]
     );
     insertedJobs.push({ id, ...j });

@@ -64,11 +64,12 @@ const Utils = {
     photography:   { label: '摄影摄像师', icon: 'P', color: '#C9D4BE' },
     photo_video:   { label: '摄影摄像师', icon: 'P', color: '#C9D4BE' },
     podcast:       { label: '播客制作人', icon: 'A', color: '#E8E0D0' },
-    audio_editing: { label: '音频剪辑师', icon: 'S', color: '#B8C9DD' },
-    audio_editor:  { label: '音频剪辑师', icon: 'S', color: '#B8C9DD' },
+    audio_editing: { label: '音/视频剪辑师', icon: 'S', color: '#B8C9DD' },
+    audio_editor:  { label: '音/视频剪辑师', icon: 'S', color: '#B8C9DD' },
     planning:      { label: '活动策划',   icon: 'C', color: '#DDB37C' },
     event_planner: { label: '活动策划',   icon: 'C', color: '#B8C9DD' },
     interview:     { label: '采访记者',   icon: 'R', color: '#E8E0D0' },
+    x:             { label: 'X',          icon: 'X', color: '#E8E0D0' },
     other:         { label: '其他',       icon: '+', color: '#E8D0D8' },
   },
 
@@ -167,7 +168,7 @@ const Utils = {
 
   /* 稿费类型标签 */
   feeTypeLabel(type) {
-    const map = { per_project: '按项目', per_word: '按字数', per_day: '按天', negotiable: '面议' };
+    const map = { per_project: '按项目', per_word: '按字数', per_day: '按天', co_creation: '共创', negotiable: '面议' };
     return map[type] || type;
   },
 

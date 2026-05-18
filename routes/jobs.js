@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
       q += ` AND (LOWER(title) LIKE $${params.length} OR LOWER(COALESCE(department,'')) LIKE $${params.length} OR tags::text ILIKE $${params.length})`;
     }
 
-    q += ` ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, created_at DESC`;
+    q += ` ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, display_order ASC NULLS LAST, created_at DESC`;
     const { rows } = await pool.query(q, params);
     res.json(rows.map(mapJob));
   } catch (e) {
@@ -77,7 +77,7 @@ router.get('/admin', requireAdmin, async (req, res) => {
       q += ` AND (LOWER(j.title) LIKE $${params.length} OR LOWER(COALESCE(j.department,'')) LIKE $${params.length})`;
     }
 
-    q += ` ORDER BY j.created_at DESC`;
+    q += ` ORDER BY j.display_order ASC NULLS LAST, j.created_at DESC`;
     const { rows } = await pool.query(q, params);
     res.json(rows.map(mapAdminJob));
   } catch (e) {
@@ -137,15 +137,18 @@ router.post('/', requireAdmin, async (req, res) => {
       ? req.body.ownerAdminId
       : req.adminUser.id;
     const resolvedCoverColor = coverColorForDepartment(department, coverColor);
+    const displayOrder = Number.isFinite(Number(req.body.displayOrder))
+      ? Number(req.body.displayOrder)
+      : -Date.now();
 
     const { rows } = await pool.query(
       `INSERT INTO jobs (id,title,category,department,status,description,requirements,deliverables,
-        fee,fee_type,deadline,slots,tags,cover_color,owner_admin_id,application_count,published_at,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+        fee,fee_type,deadline,slots,tags,cover_color,owner_admin_id,display_order,application_count,published_at,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
       [id, title, category, department, status, description,
        JSON.stringify(requirements), deliverables,
        fee, feeType, deadline || null, slots, JSON.stringify(tags), resolvedCoverColor,
-       ownerAdminId, 0, publishedAt, ts, ts]
+       ownerAdminId, displayOrder, 0, publishedAt, ts, ts]
     );
     res.status(201).json(mapJob(rows[0]));
   } catch (e) {
@@ -175,7 +178,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     const allowed = ['title','department','category','status','description','requirements','deliverables',
-      'fee','feeType','deadline','slots','tags','coverColor'];
+      'fee','feeType','deadline','slots','tags','coverColor','displayOrder'];
     if (req.adminUser.role === 'superadmin') allowed.push('ownerAdminId');
     const setClauses = [];
     const params = [];
@@ -185,6 +188,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
       requirements: 'requirements', deliverables: 'deliverables', fee: 'fee',
       feeType: 'fee_type', deadline: 'deadline', slots: 'slots',
       tags: 'tags', coverColor: 'cover_color', ownerAdminId: 'owner_admin_id',
+      displayOrder: 'display_order',
     };
     const jsonFields = new Set(['requirements', 'tags']);
 
@@ -211,6 +215,52 @@ router.put('/:id', requireAdmin, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* PATCH /api/jobs/:id/order — 调整前台显示顺序 */
+router.patch('/:id/order', requireAdmin, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const direction = req.body.direction === 'down' ? 'down' : 'up';
+    await client.query('BEGIN');
+    const { rows: jobs } = await client.query(
+      `SELECT id
+       FROM jobs
+       ORDER BY display_order ASC NULLS LAST, created_at DESC`
+    );
+    const currentIndex = jobs.findIndex(job => job.id === req.params.id);
+    if (currentIndex < 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= jobs.length) {
+      await client.query('COMMIT');
+      return res.json({ ok: true, unchanged: true });
+    }
+
+    const reordered = jobs.map(job => job.id);
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+    const ts = now();
+
+    for (let i = 0; i < reordered.length; i++) {
+      await client.query(
+        'UPDATE jobs SET display_order = $1, updated_at = $2 WHERE id = $3',
+        [(i + 1) * 1000, ts, reordered[i]]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

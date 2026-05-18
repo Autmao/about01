@@ -79,8 +79,9 @@
                   <option value="design">设计师</option>
                   <option value="photo_video">摄影摄像师</option>
                   <option value="podcast">播客制作人</option>
-                  <option value="audio_editing">音频剪辑师</option>
+                  <option value="audio_editing">音/视频剪辑师</option>
                   <option value="planning">活动策划</option>
+                  <option value="x">X</option>
                 </select>
                 <span class="form-error" id="err-category"></span>
               </div>
@@ -96,9 +97,9 @@
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">岗位描述 <span class="form-required">*</span></label>
+              <label class="form-label">岗位描述 <span class="form-required">*</span> <span class="form-optional">每行一条</span></label>
               <textarea class="form-input" id="f-desc" rows="6"
-                placeholder="详细描述工作背景、内容、期望产出..."></textarea>
+                placeholder="如：策划选题&#10;邀约嘉宾&#10;撰写稿件"></textarea>
               <span class="form-error" id="err-desc"></span>
             </div>
             <div class="form-field">
@@ -107,8 +108,9 @@
                 placeholder="如：3年以上相关经验&#10;有杂志出版经验优先"></textarea>
             </div>
             <div class="form-field">
-              <label class="form-label">交付物说明</label>
-              <input type="text" class="form-input" id="f-deliverables" placeholder="如：10张精修图 + RAW源文件，一周内交付">
+              <label class="form-label">交付物说明 <span class="form-optional">每行一条</span></label>
+              <textarea class="form-input" id="f-deliverables" rows="3"
+                placeholder="如：10张精修图 + RAW源文件&#10;一周内交付"></textarea>
             </div>
           </div>
 
@@ -125,6 +127,7 @@
                   <option value="per_project">按项目</option>
                   <option value="per_word">按字数</option>
                   <option value="per_day">按天</option>
+                  <option value="co_creation">共创</option>
                   <option value="negotiable">面议</option>
                 </select>
               </div>

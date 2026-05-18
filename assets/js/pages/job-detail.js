@@ -18,6 +18,7 @@ function jobEditorialLabel(category) {
     planning: 'EVENT',
     event_planner: 'EVENT',
     interview: 'INTERVIEW',
+    x: 'X',
     other: 'OPEN CALL',
   };
   return labels[category] || 'OPEN CALL';
@@ -26,6 +27,26 @@ function jobEditorialLabel(category) {
 function safeCssColor(value, fallback) {
   const color = String(value || '').trim();
   return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
+}
+
+function splitLines(value) {
+  return String(value || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+}
+
+function renderOrderedList(items) {
+  const list = (items || []).map(item => String(item || '').trim()).filter(Boolean);
+  if (!list.length) return '';
+  return `
+    <ol class="detail-ordered-list">
+      ${list.map((item, index) => `
+        <li class="detail-ordered-item">
+          <span class="detail-ordered-item__no">${index + 1}.</span>
+          <span>${esc(item)}</span>
+        </li>`).join('')}
+    </ol>`;
 }
 
 function renderDetail(job) {
@@ -40,14 +61,14 @@ function renderDetail(job) {
   const applyEntryUrl = applicantLoggedIn
     ? applyUrl
     : `login.html?role=applicant&from=${encodeURIComponent(applyUrl)}`;
-  const applyText = applicantLoggedIn ? '立即投递' : '登录后投递';
+  const applyText = '立即投递';
 
   document.title = `${job.title} | about编辑部`;
   document.getElementById('bc-title').textContent = '岗位详情';
 
-  const reqs = (job.requirements || []).map(r =>
-    `<li class="req-item"><span class="req-dot"></span>${esc(r)}</li>`
-  ).join('');
+  const descriptionList = renderOrderedList(splitLines(job.description));
+  const reqs = renderOrderedList(job.requirements || []);
+  const deliverablesList = renderOrderedList(splitLines(job.deliverables));
 
   document.getElementById('detail-layout').innerHTML = `
     <div class="detail-main">
@@ -57,17 +78,17 @@ function renderDetail(job) {
         <span class="tag ${statusInfo.cls}">${statusInfo.label}</span>
       </div>
       <h1 class="detail-title">${esc(job.title)}</h1>
-      <div class="detail-section">
+      ${descriptionList ? `<div class="detail-section">
         <p class="detail-section-title">岗位描述</p>
-        <p class="detail-desc">${esc(job.description || '')}</p>
-      </div>
+        ${descriptionList}
+      </div>` : ''}
       ${reqs ? `<div class="detail-section">
         <p class="detail-section-title">具体要求</p>
-        <ul class="req-list">${reqs}</ul>
+        ${reqs}
       </div>` : ''}
-      ${job.deliverables ? `<div class="detail-section">
+      ${deliverablesList ? `<div class="detail-section">
         <p class="detail-section-title">交付要求</p>
-        <p class="detail-desc" style="margin-bottom:0;">${esc(job.deliverables)}</p>
+        ${deliverablesList}
       </div>` : ''}
     </div>
 

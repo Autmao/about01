@@ -160,6 +160,9 @@ const Store = {
   async deleteJob(id) {
     return _delete(`${API}/jobs/${id}`);
   },
+  async moveJobOrder(id, direction) {
+    return _patch(`${API}/jobs/${id}/order`, { direction });
+  },
   async getAllJobsAdmin(filters = {}) {
     return _get(`${API}/jobs/admin${_qs(filters)}`);
   },

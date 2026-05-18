@@ -158,7 +158,8 @@
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: rgba(255,255,255,0.42); }
 .table-job-title { font-weight: var(--weight-semibold); }
-.table-actions { display: flex; gap: var(--space-2); }
+.table-actions,
+.order-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .action-btn {
   font-size: var(--text-xs); font-weight: var(--weight-medium);
   padding: 3px var(--space-3);

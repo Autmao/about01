@@ -30,6 +30,7 @@ function jobEditorialLabel(category) {
     planning: 'EVENT',
     event_planner: 'EVENT',
     interview: 'INTERVIEW',
+    x: 'X',
     other: 'OPEN CALL',
   };
   return labels[category] || 'OPEN CALL';

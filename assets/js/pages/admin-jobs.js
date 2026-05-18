@@ -71,6 +71,12 @@ async function renderJobsTable() {
         <td><span class="${dl.cls}">${dl.text}</span></td>
         <td>${Utils.formatDate(job.createdAt)}</td>
         <td>
+          <div class="order-actions">
+            <button class="action-btn action-btn--view" onclick="moveJob('${job.id}','up')" title="前移">上移</button>
+            <button class="action-btn action-btn--view" onclick="moveJob('${job.id}','down')" title="后移">下移</button>
+          </div>
+        </td>
+        <td>
           <div class="table-actions">
             <button class="action-btn action-btn--view" onclick="viewApps('${job.id}')">查看投递</button>
             <button class="action-btn action-btn--edit" onclick="editJob('${job.id}')">编辑</button>
@@ -90,6 +96,17 @@ function viewApps(jobId)  { window.location.href = `applications.html?jobId=${jo
 function editJob(jobId)   { window.location.href = `job-edit.html?id=${jobId}`; }
 window.viewApps = viewApps;
 window.editJob = editJob;
+
+async function moveJob(jobId, direction) {
+  try {
+    await Store.moveJobOrder(jobId, direction);
+    await renderJobsTable();
+    Utils.showToast('前台显示顺序已更新', 'success');
+  } catch (e) {
+    Utils.showToast(e.message || '排序失败，请稍后重试', 'error');
+  }
+}
+window.moveJob = moveJob;
 
 async function toggleStatus(jobId, newStatus) {
   try {

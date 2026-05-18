@@ -28,6 +28,24 @@
   display: inline-block;
 }
 .nav__actions { display: flex; align-items: center; gap: var(--space-3); }
+.nav__cta {
+  min-height: 38px;
+  padding: 0 17px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fbf8f1;
+  border: 1px solid rgba(17,17,17,0.16);
+  color: #111111;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+.nav__cta:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+}
 
 /* === Hero 区 === */
 .hero {
