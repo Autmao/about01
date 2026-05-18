@@ -384,6 +384,40 @@
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
+    const OTP_COUNTDOWN_SECONDS = 60;
+    let otpCountdownTimer = null;
+
+    function resetOtpButton(label = '重新发送') {
+      const btn = document.getElementById('send-code-btn');
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+
+    function startOtpCountdown() {
+      const btn = document.getElementById('send-code-btn');
+      let remaining = OTP_COUNTDOWN_SECONDS;
+
+      if (otpCountdownTimer) {
+        clearInterval(otpCountdownTimer);
+      }
+
+      const tick = () => {
+        if (remaining <= 0) {
+          clearInterval(otpCountdownTimer);
+          otpCountdownTimer = null;
+          resetOtpButton();
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = `${remaining}秒后重新发送`;
+        remaining -= 1;
+      };
+
+      tick();
+      otpCountdownTimer = setInterval(tick, 1000);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       document.body.dataset.role = selectedRole;
       document.querySelectorAll('[data-role-option]').forEach(link => {
@@ -412,6 +446,7 @@
     });
 
     document.getElementById('send-code-btn').addEventListener('click', async () => {
+      if (otpCountdownTimer) return;
       const email = document.getElementById('applicant-email').value.trim().toLowerCase();
       const err = document.getElementById('applicant-error');
       const note = document.getElementById('applicant-note');
@@ -428,11 +463,10 @@
         await Store.sendOtp(email);
         note.textContent = '验证码已发送，请查看邮箱';
         document.getElementById('applicant-code').focus();
+        startOtpCountdown();
       } catch (e) {
         err.textContent = e.message || '验证码发送失败，请稍后重试';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '发送验证码';
+        resetOtpButton('发送验证码');
       }
     });
 

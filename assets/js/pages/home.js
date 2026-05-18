@@ -124,7 +124,28 @@ function bindEvents() {
   }, 300));
 }
 
+function updateHomeAuthLink() {
+  const link = document.getElementById('home-auth-link');
+  if (!link) return;
+
+  if (Store.isApplicantLoggedIn()) {
+    link.textContent = '查询投递';
+    link.href = 'my-applications.html';
+    return;
+  }
+
+  if (Store.isAdminLoggedIn()) {
+    link.textContent = '工作台';
+    link.href = 'admin/index.html';
+    return;
+  }
+
+  link.textContent = '登录';
+  link.href = 'login.html';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  updateHomeAuthLink();
   await Store.seedDemoData();
   await Promise.all([updateHeroCount(), renderGrid()]);
   bindEvents();
