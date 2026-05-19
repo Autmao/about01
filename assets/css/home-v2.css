@@ -180,33 +180,34 @@
   --cover-rotate: -1.8deg;
   aspect-ratio: 0.72;
   min-height: 0;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.05);
-  box-shadow: 0 24px 54px rgba(0,0,0,0.26);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   display: block;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   isolation: isolate;
   animation: homeCoverFloat 6.4s ease-in-out infinite;
   animation-delay: var(--cover-delay);
 }
+.home-cover:nth-child(2n) {
+  --cover-rotate: 1.6deg;
+  margin-top: clamp(14px, 2.4vw, 30px);
+}
+.home-cover:nth-child(3n) {
+  --cover-rotate: -2.4deg;
+}
 .home-cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 42%);
-  mix-blend-mode: screen;
-  opacity: 0.42;
+  display: none;
 }
 .home-cover img {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   transform: translateZ(0);
+  filter: drop-shadow(0 24px 26px rgba(0,0,0,0.32));
 }
 .home-hero__footer {
   position: relative;
@@ -776,7 +777,7 @@
     border: 0;
   }
   .home-cover {
-    box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+    box-shadow: none;
   }
   .home-section__head,
   .home-call-sheet,
@@ -910,8 +911,14 @@
     aspect-ratio: 0.72;
     min-height: 0;
     scroll-snap-align: start;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.18);
+    box-shadow: none;
     animation: homeCoverFloat 7s ease-in-out infinite;
+  }
+  .home-cover:nth-child(2n) {
+    margin-top: 0;
+  }
+  .home-cover img {
+    filter: drop-shadow(0 12px 14px rgba(0,0,0,0.28));
   }
   .home-cover::after {
     display: none;
