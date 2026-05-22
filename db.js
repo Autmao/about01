@@ -11,6 +11,7 @@ types.setTypeParser(1082, val => val);
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 8000,
 });
 
 /* ===== 辅助函数 ===== */

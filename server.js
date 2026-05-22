@@ -29,8 +29,19 @@ app.use((req, res, next) => {
 // 解析 JSON 请求体
 app.use(express.json());
 
-// 懒初始化 DB（serverless 冷启动时自动建表）
-app.use(async (req, res, next) => {
+// 托管静态文件。静态页面不能等待数据库，否则数据库连接慢时首页会一直转圈。
+app.use(express.static(path.join(__dirname)));
+
+// SPA fallback
+app.get('/admin/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
+});
+app.get('/admin/:page', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', req.params.page));
+});
+
+// 懒初始化 DB（仅 API 请求需要）
+app.use('/api', async (req, res, next) => {
   try { await ensureDB(); next(); }
   catch (e) { console.error('DB init failed:', e.message); res.status(503).json({ error: 'Database unavailable' }); }
 });
@@ -62,17 +73,6 @@ app.use('/api/jobs',          require('./routes/jobs'));          // 内部区�
 app.use('/api/applications',  require('./routes/applications'));  // 内部区分
 app.use('/api/collaborators', requireAdmin, require('./routes/collaborators'));
 app.use('/api',               requireAdmin, require('./routes/stats'));
-
-// 托管静态文件（本地开发用；Vercel 生产环境由 CDN 托管）
-app.use(express.static(path.join(__dirname)));
-
-// SPA fallback
-app.get('/admin/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
-});
-app.get('/admin/:page', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin', req.params.page));
-});
 
 // 导出 app（供 Vercel serverless 函数使用）
 module.exports = app;
