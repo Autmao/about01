@@ -7,6 +7,7 @@ const { pool, genId, now, mapApp, mapCollab,
   isPastDeadline, closeExpiredJobs } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { sendStatusEmail } = require('../lib/mailer');
+const { decorateApplicationFiles } = require('../lib/storage');
 
 function getSecret() {
   return process.env.JWT_SECRET || process.env.ADMIN_PASSWORD || 'dev-secret';
@@ -57,7 +58,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
     q += ` ORDER BY submitted_at DESC`;
     const { rows } = await pool.query(q, params);
-    res.json(rows.map(mapApp));
+    res.json(rows.map(row => decorateApplicationFiles(mapApp(row))));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -118,7 +119,7 @@ router.get('/:id', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM applications WHERE id = $1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
-    res.json(mapApp(rows[0]));
+    res.json(decorateApplicationFiles(mapApp(rows[0])));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });

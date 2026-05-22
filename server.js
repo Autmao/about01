@@ -9,6 +9,15 @@ const { requireAdmin, requireSuperAdmin } = require('./middleware/auth');
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 
+app.get(['/health', '/api/health'], (req, res) => {
+  res.json({
+    ok: true,
+    service: 'about-open-call',
+    storage: process.env.STORAGE_PROVIDER || (process.env.OSS_BUCKET ? 'oss' : 'vercel-blob'),
+    time: new Date().toISOString(),
+  });
+});
+
 // 安全响应头
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -68,18 +77,21 @@ app.get('/admin/:page', (req, res) => {
 // 导出 app（供 Vercel serverless 函数使用）
 module.exports = app;
 
-// 本地开发：直接执行时启动 HTTP 服务器
+// 本地/容器运行：直接执行时启动 HTTP 服务器
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`\n  about编辑部 Open Call 招募平台`);
+    console.log(`  前台: http://localhost:${PORT}`);
+    console.log(`  后台: http://localhost:${PORT}/admin/`);
+    console.log(`  Health: http://localhost:${PORT}/health\n`);
+  });
+
   initDB()
     .then(() => {
       if (!isProd) seedDemoData().catch(() => {});
-      app.listen(PORT, () => {
-        console.log(`\n  about编辑部 Open Call 招募平台`);
-        console.log(`  前台: http://localhost:${PORT}`);
-        console.log(`  后台: http://localhost:${PORT}/admin/`);
-        console.log(`  API:  http://localhost:${PORT}/api/stats\n`);
-      });
     })
-    .catch(err => { console.error('启动失败:', err.message || err); process.exit(1); });
+    .catch(err => {
+      console.error('DB 初始化失败，业务接口会在数据库恢复后重试:', err.message || err);
+    });
 }
