@@ -9,8 +9,9 @@
 ## 1. 准备数据库
 
 1. 在阿里云 Supabase / AnalyticDB PostgreSQL 创建项目或实例。
-2. 获取 PostgreSQL 连接串，填入 SAE 环境变量：
-   - `DATABASE_URL=postgresql://user:password@host:port/dbname?sslmode=require`
+2. 获取 PostgreSQL 连接串，填入 SAE 环境变量。阿里云 RDS Supabase 内网连接通常关闭 SSL：
+   - `DATABASE_URL=postgresql://user:password@host:port/dbname?sslmode=disable`
+   - `DB_SSL=false`
 3. 确认数据库网络允许 SAE 访问。
 4. 应用首次启动时会自动执行建表逻辑，表结构在 `db.js` 中维护。
 
@@ -61,6 +62,7 @@ SAE 中建议配置：
 NODE_ENV=production
 PORT=3000
 DATABASE_URL=postgresql://...
+DB_SSL=false
 ADMIN_PASSWORD=your_admin_password
 JWT_SECRET=replace_with_a_long_random_secret
 FILE_ACCESS_SECRET=replace_with_another_long_random_secret

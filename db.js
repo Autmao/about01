@@ -8,9 +8,45 @@ const bcrypt = require('bcryptjs');
 types.setTypeParser(1082, val => val);
 
 // Vercel Postgres 注入 POSTGRES_URL，Railway/本地用 DATABASE_URL
+const rawConnectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+
+function envFlag(name) {
+  return String(process.env[name] || '').trim().toLowerCase();
+}
+
+function isSslDisabled() {
+  const disabledValues = new Set(['false', '0', 'no', 'off', 'disable', 'disabled']);
+  return disabledValues.has(envFlag('DB_SSL')) ||
+    disabledValues.has(envFlag('DATABASE_SSL')) ||
+    envFlag('PGSSLMODE') === 'disable';
+}
+
+function isSslEnabled() {
+  const enabledValues = new Set(['true', '1', 'yes', 'on', 'require', 'prefer', 'verify-ca', 'verify-full']);
+  return enabledValues.has(envFlag('DB_SSL')) ||
+    enabledValues.has(envFlag('DATABASE_SSL')) ||
+    enabledValues.has(envFlag('PGSSLMODE')) ||
+    /sslmode=(require|prefer|verify-ca|verify-full)/i.test(rawConnectionString || '');
+}
+
+function normalizeConnectionString(connectionString) {
+  if (!connectionString || !isSslDisabled()) return connectionString;
+
+  try {
+    const url = new URL(connectionString);
+    url.searchParams.delete('sslcert');
+    url.searchParams.delete('sslkey');
+    url.searchParams.delete('sslrootcert');
+    url.searchParams.set('sslmode', 'disable');
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
+
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: normalizeConnectionString(rawConnectionString),
+  ssl: isSslDisabled() ? false : (isSslEnabled() ? { rejectUnauthorized: false } : false),
   connectionTimeoutMillis: 8000,
 });
 
