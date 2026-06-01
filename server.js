@@ -29,6 +29,26 @@ app.use((req, res, next) => {
 // 解析 JSON 请求体
 app.use(express.json());
 
+// 阻止项目源码、配置和部署文件被静态托管到公网。
+app.use((req, res, next) => {
+  const rawPath = decodeURIComponent((req.path || '').split('?')[0]);
+  const isPublicAsset = rawPath === '/' ||
+    rawPath.endsWith('.html') ||
+    rawPath.startsWith('/assets/') ||
+    rawPath.startsWith('/admin/');
+  if (isPublicAsset) return next();
+
+  const blocked = [
+    '/server.js', '/db.js', '/package.json', '/package-lock.json',
+    '/Dockerfile', '/.env', '/.env.example',
+  ];
+  const blockedPrefixes = ['/routes/', '/lib/', '/middleware/', '/docs/', '/api/'];
+  if (blocked.includes(rawPath) || blockedPrefixes.some(prefix => rawPath.startsWith(prefix))) {
+    return res.status(404).send('Not found');
+  }
+  next();
+});
+
 // 托管静态文件。静态页面不能等待数据库，否则数据库连接慢时首页会一直转圈。
 app.use(express.static(path.join(__dirname)));
 
