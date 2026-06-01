@@ -42,7 +42,7 @@ app.use((req, res, next) => {
     '/server.js', '/db.js', '/package.json', '/package-lock.json',
     '/Dockerfile', '/.env', '/.env.example',
   ];
-  const blockedPrefixes = ['/routes/', '/lib/', '/middleware/', '/docs/', '/api/'];
+  const blockedPrefixes = ['/routes/', '/lib/', '/middleware/', '/docs/'];
   if (blocked.includes(rawPath) || blockedPrefixes.some(prefix => rawPath.startsWith(prefix))) {
     return res.status(404).send('Not found');
   }
