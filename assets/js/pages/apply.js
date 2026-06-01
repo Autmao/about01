@@ -3,10 +3,11 @@
 const params = new URLSearchParams(window.location.search);
 const jobId = params.get('jobId');
 let linkCount = 1;
+const MAX_TOTAL_UPLOAD_SIZE = 50 * 1024 * 1024;
+const MAX_BIO_LENGTH = 200;
 
 // 已上传的文件 URL
-let uploadedResumeUrl = '';
-let uploadedPortfolioFiles = []; // [{ name, size, url }]
+let uploadedMaterialFiles = []; // [{ name, size, url }]
 
 function applicantLoginUrl() {
   const from = jobId ? `apply.html?jobId=${encodeURIComponent(jobId)}` : 'index.html';
@@ -44,75 +45,56 @@ function clearUploading(zoneId) {
   if (el) el.remove();
 }
 
-/* 简历上传 */
-async function handleResumeChange(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const preview = document.getElementById('resume-preview');
-  setUploading('resume-zone', '上传中…');
-  try {
-    uploadedResumeUrl = await uploadFile(file);
-    preview.style.display = 'flex';
-    preview.innerHTML = `
-      <span class="upload-file-item__name">简历 · ${file.name}</span>
-      <span class="upload-file-item__size">${formatSize(file.size)}</span>
-      <button type="button" class="upload-file-item__remove" onclick="removeResume()">×</button>`;
-    clearUploading('resume-zone');
-  } catch (err) {
-    clearUploading('resume-zone');
-    Utils.showToast(`简历上传失败：${err.message}`, 'error');
-    e.target.value = '';
-  }
+function uploadedMaterialsSize() {
+  return uploadedMaterialFiles.reduce((sum, file) => sum + Number(file.size || 0), 0);
 }
 
-function removeResume() {
-  uploadedResumeUrl = '';
-  document.getElementById('resume-preview').style.display = 'none';
-  document.getElementById('resume-input').value = '';
-}
-window.removeResume = removeResume;
-
-/* 作品集文件上传 */
-async function handlePortfolioChange(e) {
+/* 简历 / 作品集材料上传 */
+async function handleMaterialsChange(e) {
   const files = Array.from(e.target.files);
   if (!files.length) return;
-  const remaining = 3 - uploadedPortfolioFiles.length;
-  const toUpload = files.slice(0, remaining);
-  if (toUpload.length < files.length) Utils.showToast('最多上传3个作品集文件', 'warning');
 
-  setUploading('portfolio-zone', `上传中… (0/${toUpload.length})`);
-  for (let i = 0; i < toUpload.length; i++) {
-    const file = toUpload[i];
+  const nextTotal = uploadedMaterialsSize() + files.reduce((sum, file) => sum + file.size, 0);
+  if (nextTotal > MAX_TOTAL_UPLOAD_SIZE) {
+    Utils.showToast('所有上传文件合计不能超过 50MB', 'warning', 4000);
+    e.target.value = '';
+    return;
+  }
+
+  setUploading('materials-zone', `上传中… (0/${files.length})`);
+  for (let i = 0; i < files.length; i++) {
+    const beforeUploadTotal = uploadedMaterialsSize() + files[i].size;
+    if (beforeUploadTotal > MAX_TOTAL_UPLOAD_SIZE) {
+      Utils.showToast('已达到 50MB 上传上限，后续文件未上传', 'warning', 4000);
+      break;
+    }
+    const file = files[i];
     try {
-      setUploading('portfolio-zone', `上传中… (${i + 1}/${toUpload.length})`);
+      setUploading('materials-zone', `上传中… (${i + 1}/${files.length})`);
       const url = await uploadFile(file);
-      uploadedPortfolioFiles.push({ name: file.name, size: file.size, url });
+      uploadedMaterialFiles.push({ name: file.name, size: file.size, url });
     } catch (err) {
       Utils.showToast(`「${file.name}」上传失败：${err.message}`, 'error');
     }
   }
-  clearUploading('portfolio-zone');
-  renderPortfolioFilePreviews();
+  clearUploading('materials-zone');
+  renderMaterialFilePreviews();
   e.target.value = '';
-  if (uploadedPortfolioFiles.length >= 3) {
-    document.getElementById('portfolio-zone').querySelector('.upload-zone__inner').style.display = 'none';
-  }
 }
 
-function removePortfolioFile(idx) {
-  uploadedPortfolioFiles.splice(idx, 1);
-  renderPortfolioFilePreviews();
-  document.getElementById('portfolio-zone').querySelector('.upload-zone__inner').style.display = '';
+function removeMaterialFile(idx) {
+  uploadedMaterialFiles.splice(idx, 1);
+  renderMaterialFilePreviews();
 }
-window.removePortfolioFile = removePortfolioFile;
+window.removeMaterialFile = removeMaterialFile;
 
-function renderPortfolioFilePreviews() {
-  const container = document.getElementById('portfolio-files-preview');
-  container.innerHTML = uploadedPortfolioFiles.map((f, i) => `
+function renderMaterialFilePreviews() {
+  const container = document.getElementById('materials-files-preview');
+  container.innerHTML = uploadedMaterialFiles.map((f, i) => `
     <div class="upload-file-item">
-      <span class="upload-file-item__name">作品集 · ${f.name}</span>
+      <span class="upload-file-item__name">材料 ${i + 1} · ${esc(f.name)}</span>
       <span class="upload-file-item__size">${formatSize(f.size)}</span>
-      <button type="button" class="upload-file-item__remove" onclick="removePortfolioFile(${i})">×</button>
+      <button type="button" class="upload-file-item__remove" onclick="removeMaterialFile(${i})">×</button>
     </div>`).join('');
 }
 
@@ -143,6 +125,7 @@ function addLinkRow(index) {
   row.className = 'portfolio-link-row';
   row.dataset.index = index;
   row.innerHTML = `
+    <span class="portfolio-link-index">链接 ${index}</span>
     <input type="url" class="form-input" name="link_url_${index}" placeholder="https://...">
     <input type="text" class="form-input form-input--sm" name="link_label_${index}" placeholder="备注（如：Behance主页）">
     ${index > 1 ? `<button type="button" class="btn-remove-link" onclick="removeLinkRow(this)">×</button>` : ''}`;
@@ -162,8 +145,10 @@ function collectFormData() {
   document.querySelectorAll('.portfolio-link-row').forEach(row => {
     const url = row.querySelector('input[type=url]').value.trim();
     const label = row.querySelector('input[type=text]').value.trim();
-    if (url) links.push({ url, label: label || '作品链接' });
+    const index = Number(row.dataset.index || links.length + 1);
+    if (url) links.push({ url, label: label || `作品链接 ${index}`, index });
   });
+  const materialFiles = uploadedMaterialFiles.map(f => ({ name: f.name, size: f.size, url: f.url }));
   return {
     name:           document.getElementById('field-name').value.trim(),
     email:          document.getElementById('field-email').value.trim(),
@@ -172,8 +157,8 @@ function collectFormData() {
     bio:            document.getElementById('field-bio').value.trim(),
     portfolioNote:  '',
     portfolioLinks: links,
-    resumeUrl:      uploadedResumeUrl,
-    portfolioFiles: uploadedPortfolioFiles.map(f => ({ name: f.name, url: f.url })),
+    resumeUrl:      materialFiles[0]?.url || '',
+    portfolioFiles: materialFiles,
   };
 }
 
@@ -182,11 +167,16 @@ function validateForm(data) {
   if (!data.name) errors.name = '请填写您的姓名';
   if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.email = '请填写有效的邮箱地址';
   if (!data.phone || !/^1[3-9]\d{9}$/.test(data.phone)) errors.phone = '请填写有效的11位手机号';
+  if (!data.bio) errors.bio = '请填写200字内的个人介绍';
+  if (data.bio && data.bio.length > MAX_BIO_LENGTH) errors.bio = '个人介绍请控制在200字内';
+  const totalSize = (data.portfolioFiles || []).reduce((sum, file) => sum + Number(file.size || 0), 0);
+  if (!(data.portfolioFiles || []).length) errors.materials = '请上传简历和作品集材料';
+  if (totalSize > MAX_TOTAL_UPLOAD_SIZE) errors.materials = '所有上传文件合计不能超过50MB';
   return errors;
 }
 
 function clearErrors() {
-  ['name','email','phone'].forEach(f => {
+  ['name','email','phone','bio','materials'].forEach(f => {
     const el = document.getElementById(`err-${f}`);
     if (el) el.textContent = '';
     const input = document.getElementById(`field-${f}`);
@@ -201,7 +191,7 @@ function showErrors(errors) {
     const inputEl = document.getElementById(`field-${field}`);
     if (inputEl) inputEl.classList.add('error');
   });
-  document.querySelector('.form-input.error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.querySelector('.form-input.error, .form-error:not(:empty)')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function showSuccess(app) {
@@ -276,8 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderJobSummary(job);
   addLinkRow(1);
 
-  document.getElementById('resume-input').addEventListener('change', handleResumeChange);
-  document.getElementById('portfolio-input').addEventListener('change', handlePortfolioChange);
+  document.getElementById('materials-input').addEventListener('change', handleMaterialsChange);
 
   document.getElementById('add-link-btn').addEventListener('click', () => {
     if (linkCount >= 3) return;
@@ -288,8 +277,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('field-bio').addEventListener('input', e => {
     const count = e.target.value.length;
-    if (count > 500) e.target.value = e.target.value.slice(0, 500);
-    document.getElementById('bio-count').textContent = `${Math.min(count,500)}/500`;
+    if (count > MAX_BIO_LENGTH) e.target.value = e.target.value.slice(0, MAX_BIO_LENGTH);
+    document.getElementById('bio-count').textContent = `${Math.min(count, MAX_BIO_LENGTH)}/${MAX_BIO_LENGTH}`;
   });
 
   document.getElementById('apply-form').addEventListener('submit', handleSubmit);

@@ -31,10 +31,6 @@ function renderStars(rating, collabId) {
 
 function renderCollabCard(collab) {
   const avatar = Utils.getAvatarInfo(collab.name);
-  const cats = (collab.categories || []).map(c => {
-    const info = Utils.getCategoryInfo(c);
-    return `<span class="tag tag--category">${info.label}</span>`;
-  }).join('');
   const tags = (collab.internalTags || []).map(t => `<span class="internal-tag">${esc(t)}</span>`).join('');
 
   return `
@@ -43,13 +39,12 @@ function renderCollabCard(collab) {
         <div class="avatar avatar--lg" style="background:${avatar.bg}">${esc(avatar.char)}</div>
         <div>
           <div class="collab-card__name">${esc(collab.name)}</div>
+          <div class="collab-card__basic">${esc(collab.email)}${collab.phone ? ` · ${esc(collab.phone)}` : ''}</div>
           <div class="star-rating" onclick="event.stopPropagation()">
             ${renderStars(collab.rating || 0, collab.id)}
           </div>
         </div>
       </div>
-      <div class="collab-card__cats">${cats}</div>
-      <div class="collab-card__history">合作 ${(collab.cooperationHistory || []).length} 次 · 加入于 ${esc(Utils.formatDate(collab.addedAt))}</div>
       ${tags ? `<div class="collab-card__tags">${tags}</div>` : ''}
     </div>`;
 }
@@ -116,7 +111,7 @@ async function openModal(collabId) {
     : `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无成员备注</p>`;
 
   // 操作记录区块
-  const ACTION_LABELS = { pending:'待查看', read:'已读', hired:'录用', rejected:'婉拒' };
+  const ACTION_LABELS = { pending:'待处理', read:'已读', hired:'录用', rejected:'婉拒' };
   const actionLogHtml = (activity.actionLog || []).length
     ? (activity.actionLog || []).map(h => {
         const time = h.at ? h.at.slice(0,16).replace('T',' ') : '';
@@ -170,11 +165,6 @@ async function openModal(collabId) {
     </div>
 
     <div class="modal-section">
-      <div class="modal-section-title">操作记录</div>
-      <div class="action-log">${actionLogHtml}</div>
-    </div>
-
-    <div class="modal-section">
       <div class="modal-section-title">评分</div>
       <div class="star-rating" id="modal-stars">${renderStars(collab.rating || 0, collab.id)}</div>
     </div>
@@ -200,6 +190,11 @@ async function openModal(collabId) {
       <textarea class="form-input" id="collab-note" rows="3"
         placeholder="仅内部可见的合作评价..."
         onblur="saveCollabNote('${collab.id}', this.value)">${esc(collab.internalNote || '')}</textarea>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">工作人员操作记录</div>
+      <div class="action-log">${actionLogHtml}</div>
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:var(--space-3);padding-top:var(--space-4);">

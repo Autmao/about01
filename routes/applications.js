@@ -9,6 +9,9 @@ const { requireAdmin } = require('../middleware/auth');
 const { sendStatusEmail } = require('../lib/mailer');
 const { decorateApplicationFiles } = require('../lib/storage');
 
+const MAX_TOTAL_UPLOAD_SIZE = 50 * 1024 * 1024;
+const MAX_BIO_LENGTH = 200;
+
 function getSecret() {
   return process.env.JWT_SECRET || process.env.ADMIN_PASSWORD || 'dev-secret';
 }
@@ -140,12 +143,24 @@ router.post('/', requireApplicant, async (req, res) => {
     const normalizedEmail = req.applicantEmail;
     const submittedEmail = String(email || '').toLowerCase().trim();
     const normalizedPhone = String(phone).trim();
+    const normalizedBio = String(bio || '').trim();
+    const normalizedPortfolioFiles = Array.isArray(portfolioFiles) ? portfolioFiles : [];
+    const totalUploadSize = normalizedPortfolioFiles.reduce((sum, file) => sum + Number(file?.size || 0), 0);
     if (!normalizedName) return res.status(400).json({ error: 'name required' });
     if (submittedEmail && submittedEmail !== normalizedEmail) {
       return res.status(403).json({ error: 'email must match logged in applicant' });
     }
     if (!/^1[3-9]\d{9}$/.test(normalizedPhone)) {
       return res.status(400).json({ error: 'valid phone required' });
+    }
+    if (!normalizedBio || normalizedBio.length > MAX_BIO_LENGTH) {
+      return res.status(400).json({ error: 'bio required and max 200 chars' });
+    }
+    if (!normalizedPortfolioFiles.length) {
+      return res.status(400).json({ error: 'resume and portfolio materials required' });
+    }
+    if (totalUploadSize > MAX_TOTAL_UPLOAD_SIZE) {
+      return res.status(400).json({ error: 'uploaded files exceed 50MB total' });
     }
 
     // 防重复投递（登录邮箱或手机号）
@@ -174,8 +189,8 @@ router.post('/', requireApplicant, async (req, res) => {
         status,status_history,admin_note,user_id,submitted_at,updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [id, jobId, jobRows[0].title, jobRows[0].category,
-       normalizedName, normalizedEmail, normalizedPhone, wechat, bio, portfolioNote, JSON.stringify(portfolioLinks),
-       resumeUrl, JSON.stringify(portfolioFiles),
+       normalizedName, normalizedEmail, normalizedPhone, wechat, normalizedBio, portfolioNote, JSON.stringify(portfolioLinks),
+       resumeUrl || normalizedPortfolioFiles[0]?.url || '', JSON.stringify(normalizedPortfolioFiles),
        'pending', history, '', null, ts, ts]
     );
 
@@ -194,7 +209,7 @@ router.post('/', requireApplicant, async (req, res) => {
 /* PATCH /api/applications/:id/status */
 router.patch('/:id/status', requireAdmin, async (req, res) => {
   try {
-    const { status, note = '' } = req.body;
+    const { status, note = '', emailSubject = '', emailBody = '' } = req.body;
     if (!['pending','read','hired','rejected'].includes(status))
       return res.status(400).json({ error: 'Invalid status' });
 
@@ -203,6 +218,12 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
 
     const ts = now();
     const app = mapApp(existing[0]);
+    const finalStatuses = new Set(['hired', 'rejected']);
+    if (finalStatuses.has(app.status) && status !== app.status) {
+      return res.status(409).json({ error: 'Final decision cannot be changed' });
+    }
+    if (app.status === status) return res.json(decorateApplicationFiles(app));
+
     const actor = req.adminUser.displayName || req.adminUser.username || '';
     const history = [...(app.statusHistory || []), { from: app.status, to: status, at: ts, note, actor }];
 
@@ -211,9 +232,12 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       [status, JSON.stringify(history), ts, req.params.id]
     );
 
-    // 状态变化时发邮件通知候选人（await 确保 serverless 函数退出前完成）
-    if (status === 'read' || status === 'hired' || status === 'rejected') {
-      await sendStatusEmail(app.email, app.name, app.jobTitle, status);
+    // 只有最终结果才发邮件；已读/待处理是后台内部状态。
+    if (status === 'hired' || status === 'rejected') {
+      await sendStatusEmail(app.email, app.name, app.jobTitle, status, {
+        subject: emailSubject,
+        body: emailBody,
+      });
     }
 
     res.json(mapApp(rows[0]));

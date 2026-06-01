@@ -109,6 +109,11 @@
 .auth-page .btn--ghost {
   border-color: rgba(17,17,17,0.22);
 }
+.admin-layout .btn:disabled {
+  opacity: 0.58;
+  cursor: default;
+  pointer-events: none;
+}
 .admin-layout .form-input,
 .auth-page .form-input {
   border-radius: 8px;
@@ -276,6 +281,17 @@
   transition: border-color var(--transition-fast);
 }
 .app-note-input:focus { border-color: var(--color-brand-light); }
+.admin-mini-title {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+.app-action-log-block {
+  border-top: 1px solid var(--color-border-light);
+  padding-top: var(--space-3);
+}
 
 /* 投递列表容器 */
 .apps-list { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
@@ -295,6 +311,12 @@
 .collab-card:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(0,0,0,0.08); }
 .collab-card__header { display: flex; align-items: center; gap: var(--space-3); }
 .collab-card__name { font-weight: var(--weight-semibold); font-size: var(--text-base); }
+.collab-card__basic {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 2px 0 var(--space-2);
+  overflow-wrap: anywhere;
+}
 .collab-card__cats { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .collab-card__history { font-size: var(--text-xs); color: var(--color-text-muted); }
 .collab-card__tags { display: flex; gap: var(--space-2); flex-wrap: wrap; }
@@ -429,9 +451,9 @@
   border-color: var(--color-brand) !important;
 }
 .action-btn--active-reject {
-  background: var(--color-rejected) !important;
+  background: var(--color-text-primary) !important;
   color: white !important;
-  border-color: var(--color-rejected) !important;
+  border-color: var(--color-text-primary) !important;
 }
 .action-btn--archived {
   opacity: 0.6; cursor: default;
@@ -440,6 +462,62 @@
   background: #F0F4FF; color: #3B5BDB;
   font-size: var(--text-xs); font-weight: var(--weight-medium);
   padding: 3px 8px; border-radius: var(--radius-full);
+}
+.admin-layout .tag--rejected {
+  background: #ECEAE5;
+  color: var(--color-text-secondary);
+}
+
+/* === 录用/婉拒邮件确认 === */
+.decision-mail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(17,17,17,0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+.decision-mail-box {
+  width: min(620px, 100%);
+  max-height: min(82vh, 720px);
+  overflow-y: auto;
+  background: #fbf8f1;
+  border: 1px solid rgba(17,17,17,0.18);
+  border-radius: 8px;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.22);
+  padding: var(--space-6);
+}
+.decision-mail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.decision-mail-head h2 {
+  font-size: var(--text-xl);
+  line-height: 1.25;
+  margin: 0;
+}
+.decision-mail-field {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.decision-mail-field span {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.decision-mail-field textarea {
+  line-height: var(--leading-loose);
+}
+.decision-mail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
 }
 
 /* === 合作档案 · 成员备注 === */

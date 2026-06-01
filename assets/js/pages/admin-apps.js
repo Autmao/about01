@@ -22,13 +22,25 @@ let currentJobId = urlParams.get('jobId') || '';
 let currentStatus = 'all';
 let currentKeyword = '';
 
-const STATUS_MSGS = {
-  read:     '我们已收到您的投递，正在认真审阅中，请耐心等待。',
-  hired:    '恭喜！您已通过审核，我们会尽快联系您确认合作细节。',
-  rejected: '感谢您的投递，本次暂未通过，欢迎关注我们后续的岗位发布。',
+const DECISION_LABELS = {
+  hired: '录用',
+  rejected: '婉拒',
 };
 const esc = value => Utils.escapeHtml(value);
 const safeUrl = value => Utils.safeUrl(value);
+
+function decisionEmailDefaults(app, status) {
+  if (status === 'hired') {
+    return {
+      subject: `您的投递已通过审核 — about编辑部`,
+      body: `您好，${app.name}：\n\n恭喜！您投递的「${app.jobTitle || '相关'}」岗位已通过审核，我们会尽快联系您确认合作细节。\n\n期待与您合作。\n\nabout编辑部`,
+    };
+  }
+  return {
+    subject: `关于您的投递 — about编辑部`,
+    body: `您好，${app.name}：\n\n感谢您投递「${app.jobTitle || '相关'}」岗位。本次暂未通过，欢迎关注我们后续的岗位发布。\n\nabout编辑部`,
+  };
+}
 
 async function renderJobSelector() {
   const selector = document.getElementById('job-selector');
@@ -59,38 +71,46 @@ function renderActionHistory(history) {
     if (h.action === 'archived') {
       return `<div class="action-log-item"><span class="action-log__actor">${esc(h.actor)}</span> 加入了合作档案 <span class="action-log__time">${esc(time)}</span></div>`;
     }
-    const toLabel = { pending:'待查看', read:'已读', hired:'录用', rejected:'婉拒' }[h.to] || h.to;
+    const toLabel = { pending:'待处理', read:'已读', hired:'录用', rejected:'婉拒' }[h.to] || h.to;
     return `<div class="action-log-item"><span class="action-log__actor">${esc(h.actor)}</span> 标记为「${esc(toLabel)}」<span class="action-log__time">${esc(time)}</span></div>`;
   });
-  return `<div class="action-log" id="action-log-appId">${items.join('')}</div>`;
+  return `<div class="action-log">${items.join('')}</div>`;
 }
 
 function renderAppCard(app) {
   const avatar = Utils.getAvatarInfo(app.name);
   const statusInfo = Utils.getStatusInfo(app.status);
   const archived = isArchived(app);
-  const resumeLink = app.resumeUrl
-    ? `<a href="${safeUrl(app.resumeUrl)}" target="_blank" rel="noopener">下载简历</a>`
+  const materialUrls = new Set();
+  const portfolioFileLinks = (app.portfolioFiles || []).map((f, i) => {
+    materialUrls.add(f.url);
+    return `<a href="${safeUrl(f.url)}" target="_blank" rel="noopener">材料 ${i + 1} · ${esc(f.name || '未命名')}</a>`;
+  }).join('');
+  const resumeLink = app.resumeUrl && !materialUrls.has(app.resumeUrl)
+    ? `<a href="${safeUrl(app.resumeUrl)}" target="_blank" rel="noopener">简历材料</a>`
     : '';
-  const portfolioFileLinks = (app.portfolioFiles || []).map(f =>
-    `<a href="${safeUrl(f.url)}" target="_blank" rel="noopener">作品集文件 · ${esc(f.name || '未命名')}</a>`
-  ).join('');
-  const links = (app.portfolioLinks || []).map(l =>
-    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">作品链接 · ${esc(l.label || '未命名')}</a>`
+  const links = (app.portfolioLinks || []).map((l, i) =>
+    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">作品链接 ${l.index || i + 1} · ${esc(l.label || '未命名')}</a>`
   ).join('');
   const allLinks = resumeLink + portfolioFileLinks + links;
 
-  // 录用/婉拒互斥：active 态显示已选中样式
   const hiredActive   = app.status === 'hired';
   const rejectedActive = app.status === 'rejected';
+  const finalDecision = hiredActive || rejectedActive;
+  const actionHistory = renderActionHistory(app.statusHistory);
+  const reviewBtn = app.status === 'read'
+    ? `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','pending')">标为待处理/未读</button>`
+    : app.status === 'pending'
+      ? `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','read')">标记已读</button>`
+      : '';
 
   const hiredBtn = hiredActive
-    ? `<button class="btn btn--primary btn--sm action-btn--active" onclick="changeStatus('${app.id}','read')" title="撤销录用">✓ 已录用</button>`
-    : `<button class="btn btn--ghost btn--sm" onclick="changeStatus('${app.id}','hired')">录用</button>`;
+    ? `<button class="btn btn--primary btn--sm action-btn--active" disabled>✓ 已录用</button>`
+    : `<button class="btn btn--ghost btn--sm" ${finalDecision ? 'disabled' : `onclick="requestDecision('${app.id}','hired')"`}>录用</button>`;
 
   const rejectedBtn = rejectedActive
-    ? `<button class="btn btn--ghost btn--sm action-btn--active-reject" onclick="changeStatus('${app.id}','read')" title="撤销婉拒">✓ 已婉拒</button>`
-    : `<button class="btn btn--ghost btn--sm" style="color:var(--color-rejected);border-color:var(--color-rejected);" onclick="changeStatus('${app.id}','rejected')">婉拒</button>`;
+    ? `<button class="btn btn--ghost btn--sm action-btn--active-reject" disabled>✓ 已婉拒</button>`
+    : `<button class="btn btn--ghost btn--sm" ${finalDecision ? 'disabled' : `onclick="requestDecision('${app.id}','rejected')"`}>婉拒</button>`;
 
   const archiveBtn = archived
     ? `<button class="btn btn--ghost btn--sm action-btn--archived" disabled title="已在合作档案">已入档</button>`
@@ -122,12 +142,12 @@ function renderAppCard(app) {
         ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${esc(app.portfolioNote)}</p>` : ''}
         <div class="app-detail__actions">
           <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;">
+            ${reviewBtn}
             ${hiredBtn}
             ${rejectedBtn}
             <span style="width:1px;height:20px;background:var(--color-border-light);margin:0 2px;"></span>
             ${archiveBtn}
           </div>
-          ${renderActionHistory(app.statusHistory)}
           <div class="app-detail__note">
             <div style="display:flex;flex-direction:column;gap:var(--space-2);">
               <div>
@@ -143,6 +163,7 @@ function renderAppCard(app) {
               </div>
             </div>
           </div>
+          ${actionHistory ? `<div class="app-action-log-block"><div class="admin-mini-title">工作人员操作记录</div>${actionHistory}</div>` : ''}
         </div>
       </div>
     </div>`;
@@ -204,11 +225,81 @@ async function toggleDetail(appId) {
 window.toggleDetail = toggleDetail;
 
 async function changeStatus(appId, newStatus) {
-  await Store.updateApplicationStatus(appId, newStatus);
-  Utils.showToast(`已标记为「${Utils.getStatusInfo(newStatus).label}」`, 'success');
-  await renderApps();
+  try {
+    await Store.updateApplicationStatus(appId, newStatus);
+    Utils.showToast(`已标记为「${Utils.getStatusInfo(newStatus).label}」`, 'success');
+    await renderApps();
+  } catch (err) {
+    Utils.showToast(err.message || '状态更新失败', 'error');
+  }
 }
 window.changeStatus = changeStatus;
+
+async function requestDecision(appId, status) {
+  const app = await Store.getApplicationById(appId);
+  if (!app) return;
+  const defaults = decisionEmailDefaults(app, status);
+  showDecisionEmailModal(app, status, defaults);
+}
+window.requestDecision = requestDecision;
+
+function showDecisionEmailModal(app, status, defaults) {
+  document.querySelector('.decision-mail-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'decision-mail-overlay';
+  overlay.innerHTML = `
+    <div class="decision-mail-box">
+      <div class="decision-mail-head">
+        <div>
+          <div class="admin-mini-title">通知邮件</div>
+          <h2>${esc(DECISION_LABELS[status])} · ${esc(app.name)}</h2>
+        </div>
+        <button type="button" class="modal-close decision-mail-close">×</button>
+      </div>
+      <label class="decision-mail-field">
+        <span>邮件标题</span>
+        <input type="text" class="form-input" id="decision-mail-subject" value="${esc(defaults.subject)}">
+      </label>
+      <label class="decision-mail-field">
+        <span>邮件正文</span>
+        <textarea class="form-input" id="decision-mail-body" rows="9">${esc(defaults.body)}</textarea>
+      </label>
+      <div class="decision-mail-actions">
+        <button type="button" class="btn btn--ghost btn--sm decision-mail-cancel">取消</button>
+        <button type="button" class="btn btn--primary btn--sm decision-mail-confirm">确认发送并${esc(DECISION_LABELS[status])}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector('.decision-mail-close').onclick = close;
+  overlay.querySelector('.decision-mail-cancel').onclick = close;
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('.decision-mail-confirm').onclick = async () => {
+    const subject = document.getElementById('decision-mail-subject').value.trim();
+    const body = document.getElementById('decision-mail-body').value.trim();
+    if (!subject || !body) {
+      Utils.showToast('邮件标题和正文都需要填写', 'warning');
+      return;
+    }
+    const btn = overlay.querySelector('.decision-mail-confirm');
+    btn.disabled = true;
+    btn.textContent = '发送中...';
+    try {
+      await Store.updateApplicationStatus(app.id, status, '', {
+        emailSubject: subject,
+        emailBody: body,
+      });
+      close();
+      Utils.showToast(`已${DECISION_LABELS[status]}并发送邮件`, 'success');
+      await renderApps();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = `确认发送并${DECISION_LABELS[status]}`;
+      Utils.showToast(err.message || '发送失败', 'error');
+    }
+  };
+}
 
 async function archiveApp(appId) {
   const app = await Store.getApplicationById(appId);

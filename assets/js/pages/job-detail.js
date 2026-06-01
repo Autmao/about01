@@ -72,10 +72,10 @@ function renderDetail(job) {
 
   document.getElementById('detail-layout').innerHTML = `
     <div class="detail-main">
-      <div class="detail-tags">
-        ${job.department ? `<span class="tag tag--category">${esc(job.department)}</span>` : ''}
-        <span class="tag tag--category">${esc(cat.label)}</span>
-        <span class="tag ${statusInfo.cls}">${statusInfo.label}</span>
+      <div class="detail-hashtags" aria-label="岗位标签">
+        <span>#${esc(statusInfo.label)}</span>
+        <span>#${esc(job.department || 'about编辑部')}</span>
+        <span>#${esc(cat.label)}</span>
       </div>
       <h1 class="detail-title">${esc(job.title)}</h1>
       ${descriptionList ? `<div class="detail-section">

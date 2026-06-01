@@ -61,42 +61,33 @@
         <h2 class="form-section__title">自我介绍</h2>
         <div class="form-field">
           <label class="form-label">
-            个人介绍 <span class="form-optional">选填</span>
-            <span class="char-count" id="bio-count">0/500</span>
+            个人介绍 <span class="form-required">*</span>
+            <span class="char-count" id="bio-count">0/200</span>
           </label>
           <textarea class="form-input" id="field-bio" name="bio" rows="5"
-            placeholder="介绍你的背景、代表作品、工作风格——让我们更好地了解你。&#10;简洁真实最好，不需要长篇大论。"></textarea>
+            placeholder="200字内介绍你的背景、代表作品和工作风格。"></textarea>
+          <span class="form-error" id="err-bio"></span>
         </div>
       </div>
 
       <div class="form-section">
-        <h2 class="form-section__title">简历</h2>
+        <h2 class="form-section__title">简历 / 作品集</h2>
         <div class="form-field">
-          <label class="form-label">上传简历 <span class="form-optional">选填</span></label>
-          <div class="upload-zone" id="resume-zone">
-            <input type="file" id="resume-input" accept=".pdf,.doc,.docx" style="display:none">
-            <div class="upload-zone__inner" onclick="document.getElementById('resume-input').click()">
-              <span class="upload-zone__text">点击上传简历</span>
-              <span class="upload-zone__hint">支持 PDF、Word，不超过 10MB</span>
+          <label class="form-label">上传简历和作品集 <span class="form-required">*</span></label>
+          <div class="upload-zone" id="materials-zone">
+            <input type="file" id="materials-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp" style="display:none" multiple>
+            <div class="upload-zone__inner" onclick="document.getElementById('materials-input').click()">
+              <span class="upload-zone__text">点击上传文件</span>
+              <span class="upload-zone__hint">可上传多个文件，所有文件合计不超过 50MB</span>
             </div>
-            <div class="upload-file-item" id="resume-preview" style="display:none"></div>
+            <div id="materials-files-preview"></div>
           </div>
+          <span class="form-error" id="err-materials"></span>
         </div>
       </div>
 
       <div class="form-section">
-        <h2 class="form-section__title">作品集</h2>
-        <div class="form-field">
-          <label class="form-label">上传作品集 <span class="form-optional">选填，最多3个</span></label>
-          <div class="upload-zone" id="portfolio-zone">
-            <input type="file" id="portfolio-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" multiple>
-            <div class="upload-zone__inner" onclick="document.getElementById('portfolio-input').click()">
-              <span class="upload-zone__text">点击上传作品集</span>
-              <span class="upload-zone__hint">支持 PDF、图片，单个不超过 10MB</span>
-            </div>
-            <div id="portfolio-files-preview"></div>
-          </div>
-        </div>
+        <h2 class="form-section__title">作品集链接</h2>
         <div class="form-field">
           <label class="form-label">作品集链接 <span class="form-optional">选填，最多3个</span></label>
           <div id="portfolio-links-container"></div>

@@ -1,9 +1,9 @@
 /* ===== STORE.JS — API 客户端（fetch 版）===== */
 
-const PRODUCTION_ORIGIN = 'https://about01.vercel.app';
+const PRODUCTION_ORIGIN = window.APP_ORIGIN || '';
 
 function _redirectFilePreviewToProduction() {
-  if (window.location.protocol !== 'file:') return;
+  if (window.location.protocol !== 'file:' || !PRODUCTION_ORIGIN) return;
   const rawPath = decodeURIComponent(window.location.pathname || '');
   const marker = '/about01/';
   const idx = rawPath.lastIndexOf(marker);
@@ -13,7 +13,7 @@ function _redirectFilePreviewToProduction() {
 
 _redirectFilePreviewToProduction();
 
-const API = window.location.origin === 'null' ? `${PRODUCTION_ORIGIN}/api` : '/api';
+const API = window.location.origin === 'null' && PRODUCTION_ORIGIN ? `${PRODUCTION_ORIGIN}/api` : '/api';
 
 function _adminHeaders(extra = {}) {
   const token = sessionStorage.getItem('mgs_admin_token');
@@ -343,8 +343,8 @@ const Store = {
     if (!res.ok) throw new Error('Failed');
     return res.json();
   },
-  async updateApplicationStatus(id, status, note = '') {
-    return _patch(`${API}/applications/${id}/status`, { status, note });
+  async updateApplicationStatus(id, status, note = '', options = {}) {
+    return _patch(`${API}/applications/${id}/status`, { status, note, ...options });
   },
   async updateApplicationNote(id, note) {
     return _patch(`${API}/applications/${id}/note`, { note });

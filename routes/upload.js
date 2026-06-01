@@ -13,7 +13,7 @@ const ALLOWED_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
 ];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
 async function uploadToOss(filename, buffer, type) {
   const client = createOssClient();
@@ -80,7 +80,7 @@ router.post('/', async (req, res) => {
     const buffer = Buffer.concat(chunks);
 
     if (buffer.length > MAX_SIZE) {
-      return res.status(400).json({ error: 'File too large (max 10MB)' });
+      return res.status(400).json({ error: 'File too large (max 50MB)' });
     }
 
     const uploaded = await uploadFile(filename, buffer, type);

@@ -109,7 +109,7 @@ const Utils = {
 
   /* 投递状态映射 */
   statusMap: {
-    pending:  { label: '待查看', cls: 'tag--pending' },
+    pending:  { label: '待处理', cls: 'tag--pending' },
     read:     { label: '已读',   cls: 'tag--read' },
     hired:    { label: '已录用', cls: 'tag--hired' },
     rejected: { label: '已婉拒', cls: 'tag--rejected' },
