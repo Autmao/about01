@@ -11,6 +11,7 @@ const { decorateApplicationFiles } = require('../lib/storage');
 
 const MAX_TOTAL_UPLOAD_SIZE = 50 * 1024 * 1024;
 const MAX_BIO_LENGTH = 200;
+const MAX_FILE_NAME_LENGTH = 160;
 
 function getSecret() {
   return process.env.JWT_SECRET || process.env.ADMIN_PASSWORD || 'dev-secret';
@@ -33,6 +34,33 @@ function requireApplicant(req, res, next) {
   if (!payload) return res.status(401).json({ error: 'Applicant login required' });
   req.applicantEmail = String(payload.email).toLowerCase().trim();
   next();
+}
+
+function normalizeUploadedFile(file) {
+  if (!file || typeof file !== 'object') return null;
+  const url = String(file.url || '').trim();
+  const size = Number(file.size);
+  if (!url.startsWith('oss://') || !Number.isFinite(size) || size <= 0) return null;
+  const name = String(file.name || '未命名材料')
+    .trim()
+    .slice(0, MAX_FILE_NAME_LENGTH) || '未命名材料';
+  return { name, size, url };
+}
+
+function normalizePortfolioLinks(links) {
+  if (!Array.isArray(links)) return [];
+  return links
+    .map((link, index) => {
+      const url = String(link?.url || '').trim();
+      if (!url) return null;
+      const rawIndex = Number(link?.index);
+      return {
+        url,
+        label: String(link?.label || `作品链接 ${index + 1}`).trim(),
+        index: Number.isFinite(rawIndex) && rawIndex > 0 ? rawIndex : index + 1,
+      };
+    })
+    .filter(Boolean);
 }
 
 /* GET /api/applications */
@@ -144,7 +172,9 @@ router.post('/', requireApplicant, async (req, res) => {
     const submittedEmail = String(email || '').toLowerCase().trim();
     const normalizedPhone = String(phone).trim();
     const normalizedBio = String(bio || '').trim();
-    const normalizedPortfolioFiles = Array.isArray(portfolioFiles) ? portfolioFiles : [];
+    const rawPortfolioFiles = Array.isArray(portfolioFiles) ? portfolioFiles : [];
+    const normalizedPortfolioFiles = rawPortfolioFiles.map(normalizeUploadedFile).filter(Boolean);
+    const normalizedPortfolioLinks = normalizePortfolioLinks(portfolioLinks);
     const totalUploadSize = normalizedPortfolioFiles.reduce((sum, file) => sum + Number(file?.size || 0), 0);
     if (!normalizedName) return res.status(400).json({ error: 'name required' });
     if (submittedEmail && submittedEmail !== normalizedEmail) {
@@ -156,8 +186,11 @@ router.post('/', requireApplicant, async (req, res) => {
     if (!normalizedBio || normalizedBio.length > MAX_BIO_LENGTH) {
       return res.status(400).json({ error: 'bio required and max 200 chars' });
     }
-    if (!normalizedPortfolioFiles.length) {
+    if (!rawPortfolioFiles.length) {
       return res.status(400).json({ error: 'resume and portfolio materials required' });
+    }
+    if (normalizedPortfolioFiles.length !== rawPortfolioFiles.length) {
+      return res.status(400).json({ error: 'valid uploaded files required' });
     }
     if (totalUploadSize > MAX_TOTAL_UPLOAD_SIZE) {
       return res.status(400).json({ error: 'uploaded files exceed 50MB total' });
@@ -189,8 +222,8 @@ router.post('/', requireApplicant, async (req, res) => {
         status,status_history,admin_note,user_id,submitted_at,updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [id, jobId, jobRows[0].title, jobRows[0].category,
-       normalizedName, normalizedEmail, normalizedPhone, wechat, normalizedBio, portfolioNote, JSON.stringify(portfolioLinks),
-       resumeUrl || normalizedPortfolioFiles[0]?.url || '', JSON.stringify(normalizedPortfolioFiles),
+       normalizedName, normalizedEmail, normalizedPhone, wechat, normalizedBio, portfolioNote, JSON.stringify(normalizedPortfolioLinks),
+       normalizedPortfolioFiles[0]?.url || '', JSON.stringify(normalizedPortfolioFiles),
        'pending', history, '', null, ts, ts]
     );
 

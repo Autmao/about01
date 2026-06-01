@@ -109,7 +109,11 @@ router.get('/admin/:id', requireAdmin, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     await closeExpiredJobs();
-    const { rows } = await pool.query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
+    const { rows } = await pool.query(
+      `SELECT * FROM jobs
+       WHERE id = $1 AND status != 'draft'`,
+      [req.params.id]
+    );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(mapJob(rows[0]));
   } catch (e) {
