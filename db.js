@@ -7,8 +7,8 @@ const bcrypt = require('bcryptjs');
 // OID 1082 = DATE，直接返回原始字符串如 "2026-05-01"
 types.setTypeParser(1082, val => val);
 
-// Vercel Postgres 注入 POSTGRES_URL，Railway/本地用 DATABASE_URL
-const rawConnectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+// 阿里云 SAE / 本地开发使用 DATABASE_URL；POSTGRES_URL 仅作为旧环境兼容。
+const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 function envFlag(name) {
   return String(process.env[name] || '').trim().toLowerCase();

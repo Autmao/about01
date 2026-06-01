@@ -1,9 +1,9 @@
-/* ===== routes/upload.js — 文件上传到 Vercel Blob / Aliyun OSS ===== */
+/* ===== routes/upload.js — 文件上传到阿里云 OSS ===== */
 
 const express = require('express');
 const router = express.Router();
 const {
-  createOssClient, hasOssConfig, objectKey, ossRef, safeFilename, verifyFileAccess,
+  createOssClient, hasOssConfig, objectKey, ossRef, verifyFileAccess,
 } = require('../lib/storage');
 
 // 限制：仅允许 PDF、Word、常见图片格式
@@ -27,20 +27,13 @@ async function uploadToOss(filename, buffer, type) {
   return { url: ossRef(process.env.OSS_BUCKET, key), provider: 'oss', key };
 }
 
-async function uploadToVercelBlob(filename, buffer, type) {
-  const { put } = require('@vercel/blob');
-  const blob = await put(safeFilename(filename), buffer, {
-    access: 'public',
-    contentType: type,
-  });
-  return { url: blob.url, provider: 'vercel-blob' };
-}
-
 async function uploadFile(filename, buffer, type) {
-  if (process.env.STORAGE_PROVIDER === 'oss' || hasOssConfig()) {
-    return uploadToOss(filename, buffer, type);
+  if (!hasOssConfig()) {
+    const err = new Error('OSS storage is not configured');
+    err.statusCode = 503;
+    throw err;
   }
-  return uploadToVercelBlob(filename, buffer, type);
+  return uploadToOss(filename, buffer, type);
 }
 
 router.get('/view', async (req, res) => {
@@ -87,7 +80,7 @@ router.post('/', async (req, res) => {
     res.json(uploaded);
   } catch (e) {
     console.error('[upload]', e.message);
-    res.status(500).json({ error: 'Upload failed' });
+    res.status(e.statusCode || 500).json({ error: e.statusCode ? e.message : 'Upload failed' });
   }
 });
 

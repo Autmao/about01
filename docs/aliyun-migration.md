@@ -1,4 +1,4 @@
-# about编辑部 Open Call 阿里云迁移手册
+# about编辑部 Open Call 阿里云部署手册
 
 目标架构：
 
@@ -18,7 +18,7 @@
 ## 2. 准备 OSS
 
 1. 创建 OSS Bucket，建议与 SAE 在同一地域。
-2. 如果简历和作品集需要后台直接打开，Bucket 需要可公开读取，或绑定一个公开 CDN/自定义域名。
+2. Bucket 可以保持私有，后台下载会由应用签发临时访问链接。
 3. 创建 RAM 用户，授予该 Bucket 的上传权限。
 4. 在 SAE 环境变量中设置：
 
@@ -89,7 +89,7 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxx
 
 1. 从旧 PostgreSQL 导出数据。
 2. 导入到阿里云 PostgreSQL。
-3. 已上传到 Vercel Blob 的旧文件不会自动搬到 OSS；需要单独迁移文件，并批量替换 `applications.resume_url` 和 `applications.portfolio_files` 中的 URL。
+3. 已上传到旧对象存储的文件不会自动搬到 OSS；需要单独迁移文件，并批量替换 `applications.resume_url` 和 `applications.portfolio_files` 中的 URL。
 
 如果当前没有需要保留的真实数据，可以直接让新库空库启动，应用会自动建表。
 
@@ -106,4 +106,4 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxx
 
 ## 7. 回滚方案
 
-本次代码保留 Vercel Blob 兼容。如果需要临时回滚文件上传，只需移除 SAE 环境变量中的 `STORAGE_PROVIDER=oss` 和 OSS 相关配置，并配置 Vercel Blob 对应环境即可。
+如果新版本发布后需要回滚，在 SAE 中回退到上一个可用镜像或重新部署上一个 Git 提交。文件上传依赖 OSS 环境变量，请不要在生产环境移除 OSS 配置。

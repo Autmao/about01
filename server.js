@@ -13,7 +13,7 @@ app.get(['/health', '/api/health'], (req, res) => {
   res.json({
     ok: true,
     service: 'about-open-call',
-    storage: process.env.STORAGE_PROVIDER || (process.env.OSS_BUCKET ? 'oss' : 'vercel-blob'),
+    storage: process.env.STORAGE_PROVIDER || (process.env.OSS_BUCKET ? 'oss' : 'unconfigured'),
     time: new Date().toISOString(),
   });
 });
@@ -74,7 +74,7 @@ app.use('/api/applications',  require('./routes/applications'));  // 内部区�
 app.use('/api/collaborators', requireAdmin, require('./routes/collaborators'));
 app.use('/api',               requireAdmin, require('./routes/stats'));
 
-// 导出 app（供 Vercel serverless 函数使用）
+// 导出 app（供测试或外部 Node 容器入口复用）
 module.exports = app;
 
 // 本地/容器运行：直接执行时启动 HTTP 服务器
