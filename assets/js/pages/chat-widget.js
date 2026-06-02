@@ -17,7 +17,8 @@
   const renderedMessageIds = new Set();
   const pendingEchoes = [];
   const POLL_INTERVAL_MS = 2500;
-  const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
+  const AI_RETURN_NOTICE_LEGACY = '人工暂时搬砖中，AI助手继续服务。';
+  const AI_RETURN_NOTICE = '人工暂时搬砖中，招募助手继续服务。';
   let aiLimit = 3;
   let aiUserCount = 0;
 
@@ -56,8 +57,8 @@
           <span id="chat-usage-fill"></span>
         </div>
         <div class="chat-usage__meta">
-          <span id="chat-usage-count">AI 咨询 0/3</span>
-          <span id="chat-usage-hint">请尽量一次说清楚，AI 最多回复 3 条</span>
+          <span id="chat-usage-count">本轮咨询 0/3</span>
+          <span id="chat-usage-hint">请尽量一次说清楚，招募助手最多回复 3 条</span>
         </div>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
@@ -153,8 +154,8 @@
       } else {
         // 欢迎语
         const welcome = selectedJobId
-          ? '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位职责、要求、投递方式等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。'
-          : '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位、投递流程、作品准备等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。';
+          ? '你好，我是 about编辑部招募助手。\n\n本轮最多回复 3 条，请尽量把岗位职责、要求、投递方式等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。'
+          : '你好，我是 about编辑部招募助手。\n\n本轮最多回复 3 条，请尽量把岗位、投递流程、作品准备等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。';
         renderMessage('assistant', welcome);
       }
       scrollToBottom();
@@ -172,7 +173,7 @@
     if (currentStatus === 'bot' && aiUserCount >= aiLimit && !shouldSubmitAfterLimit(content)) {
       inputEl.value = '';
       inputEl.style.height = 'auto';
-      renderNotice('本轮 AI 咨询的 3 条额度已经用完。建议你根据上面的结论核对岗位要求、整理投递材料。');
+      renderNotice('本轮咨询的 3 条额度已经用完。建议你根据上面的回复核对岗位要求、整理投递材料。');
       scrollToBottom();
       inputEl.focus();
       return;
@@ -282,8 +283,8 @@
     if (currentStatus === 'pending_human') headerSub.textContent = '正在进一步确认';
     else if (currentStatus === 'human_active') headerSub.textContent = '可继续补充';
     else if (currentStatus === 'resolved') headerSub.textContent = '对话已解决，可以重新发起咨询';
-    else if (aiUserCount >= aiLimit) headerSub.textContent = 'AI 已完成本轮回答';
-    else headerSub.textContent = selectedJobId ? 'AI助手服务中，可直接提问' : 'AI助手服务中，欢迎咨询';
+    else if (aiUserCount >= aiLimit) headerSub.textContent = '招募助手已完成本轮回答';
+    else headerSub.textContent = selectedJobId ? '招募助手服务中，可直接提问' : '招募助手服务中，欢迎咨询';
     updateComposerState();
   }
 
@@ -296,7 +297,7 @@
     } else if (currentStatus === 'human_active') {
       inputEl.placeholder = '继续补充你的问题…...';
     } else if (aiUserCount >= aiLimit) {
-      inputEl.placeholder = '本轮 AI 咨询已完成';
+      inputEl.placeholder = '本轮咨询已完成';
     } else {
       inputEl.placeholder = '输入你的问题…...';
     }
@@ -308,10 +309,10 @@
     aiUserCount = Math.max(0, Math.min(nextCount, aiLimit));
     const ratio = aiLimit ? aiUserCount / aiLimit : 0;
     usageFillEl.style.width = `${Math.min(100, ratio * 100)}%`;
-    usageCountEl.textContent = `AI 咨询 ${aiUserCount}/${aiLimit}`;
+    usageCountEl.textContent = `本轮咨询 ${aiUserCount}/${aiLimit}`;
     usageHintEl.textContent = aiUserCount >= aiLimit
-      ? '本轮 AI 咨询已完成'
-      : `还可向 AI 咨询 ${Math.max(aiLimit - aiUserCount, 0)} 条`;
+      ? '本轮咨询已完成'
+      : `还可向招募助手咨询 ${Math.max(aiLimit - aiUserCount, 0)} 条`;
     usageEl.dataset.state = aiUserCount >= aiLimit ? 'limit' : 'active';
     updateComposerState();
   }
@@ -321,7 +322,7 @@
     for (let i = (messages || []).length - 1; i >= 0; i -= 1) {
       const message = messages[i];
       if (message.role === 'human_agent') break;
-      if (message.role === 'assistant' && message.content === AI_RETURN_NOTICE) break;
+      if (message.role === 'assistant' && (message.content === AI_RETURN_NOTICE || message.content === AI_RETURN_NOTICE_LEGACY)) break;
       if (message.role === 'user') count += 1;
     }
     return Math.min(count, aiLimit);
@@ -333,11 +334,13 @@
 
   function formatChatText(role, content) {
     let text = String(content || '').replace(/\r\n/g, '\n').trim();
-    if (role === 'assistant' && text === AI_RETURN_NOTICE) return 'AI助手继续服务。';
+    if (role === 'assistant' && (text === AI_RETURN_NOTICE || text === AI_RETURN_NOTICE_LEGACY)) return '招募助手继续服务。';
     if (role !== 'assistant') return text;
     text = text
-      .replace(/([。！？；])\s*(?=(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
-      .replace(/(^|\n)\s*(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明)[:：]\s*/g, '$1$2：')
+      .replace(/\*\*/g, '')
+      .replace(/(^|\n)\s*[-*•—]+\s*/g, '$1')
+      .replace(/^(结论|依据|下一步)[:：]\s*/g, '')
+      .replace(/([。！？；])\s*(?=(建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
       .replace(/\n{3,}/g, '\n\n');
     return text;
   }

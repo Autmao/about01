@@ -60,7 +60,7 @@
           <button class="status-tab" data-status="pending_human">等待人工回复 <span class="status-tab__count" id="cnt-pending">0</span></button>
           <button class="status-tab" data-status="human_active">人工回复中 <span class="status-tab__count" id="cnt-human">0</span></button>
           <button class="status-tab" data-status="resolved">已解决 <span class="status-tab__count" id="cnt-resolved">0</span></button>
-          <button class="status-tab" data-status="bot">AI助手服务中 <span class="status-tab__count" id="cnt-bot">0</span></button>
+          <button class="status-tab" data-status="bot">招募助手服务中 <span class="status-tab__count" id="cnt-bot">0</span></button>
         </div>
 
         <!-- 对话列表 -->
@@ -101,7 +101,7 @@
         <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-2);">人工回复</div>
         <textarea class="form-input" id="reply-input" rows="3" placeholder="输入回复内容…..."></textarea>
         <div style="display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-3);">
-          <button class="btn btn--ghost" id="return-ai-btn" onclick="returnToAi()">转 AI 接待</button>
+          <button class="btn btn--ghost" id="return-ai-btn" onclick="returnToAi()">转招募助手接待</button>
           <button class="btn btn--ghost" id="resolve-btn" onclick="resolveSession()">标记已解决</button>
           <button class="btn btn--primary" id="reply-btn" onclick="sendReply()">发送回复</button>
         </div>

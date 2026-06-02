@@ -9,10 +9,11 @@ const { requireAdmin } = require('../middleware/auth');
 const { sendHumanChatNotificationEmail } = require('../lib/mailer');
 
 const AI_USER_MESSAGE_LIMIT = 3;
-const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
-const AI_LIMIT_GUIDANCE = `本轮 AI 咨询的 3 条额度已经用完啦。
+const AI_RETURN_NOTICE_LEGACY = '人工暂时搬砖中，AI助手继续服务。';
+const AI_RETURN_NOTICE = '人工暂时搬砖中，招募助手继续服务。';
+const AI_LIMIT_GUIDANCE = `本轮咨询的 3 条额度已经用完啦。
 
-我先把本轮信息收束到这里。建议你根据上面的结论核对岗位要求、整理投递材料，再决定是否提交申请。`;
+我先把本轮信息收束到这里。建议你根据上面的回复核对岗位要求、整理投递材料，再决定是否提交申请。`;
 
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
@@ -94,12 +95,13 @@ function buildSystemPrompt(job) {
 3. 不要编造岗位信息中没有的内容。
 4. 如果用户询问“我是否适合/作品够不够/能不能投”，先用岗位要求给出自查清单和建议，不要直接升级人工。
 5. 如果岗位信息没有明确写，先说明“当前岗位信息里没有明确写”，再给出基于已知信息的投递建议；不要因为信息缺失就升级。
-6. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
+6. 回答格式必须清晰自然：用两到四个短段落回答，每段之间空一行；不要固定用“结论：”“依据：”“下一步：”开头。
 7. 不要在正文中主动提示用户转人工、找工作人员、加微信、电话或邮件联系。
 8. 只有在问题确实涉及特殊审批（延期、错过截止、单独联系、合同/付款/版权的个人具体确认），或用户明确要求真人/工作人员回复时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
 9. 如果触发上面的确认场景，正文只说“这个点需要进一步确认”，不要解释后台流转方式。
-10. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
-11. 标记只用于系统识别，不要解释这个标记。`;
+10. 不要使用 Markdown 符号；不要用星号、短横线、长横线、加粗符号或项目符号。需要分点时，用自然短句或中文序号。
+11. 用户本轮最多只能向招募助手连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
+12. 标记只用于系统识别，不要解释这个标记。`;
 }
 
 function buildSystemPromptGeneral() {
@@ -111,11 +113,12 @@ about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Live
 1. 只回答与 about编辑部招募相关的问题。
 2. 能确定回答的问题直接答；如果用户询问“是否适合/能不能投”，先给出自查清单和建议，不要直接升级人工。
 3. 如果没有明确资料，先说明“当前招募信息里没有明确写”，再给出基于已知信息的投递建议；不要因为信息缺失就升级。
-4. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
+4. 回答格式必须清晰自然：用两到四个短段落回答，每段之间空一行；不要固定用“结论：”“依据：”“下一步：”开头。
 5. 不要在正文中主动提示用户转人工、找工作人员、加微信、电话或邮件联系。
 6. 只有在问题确实涉及特殊审批、单独联系、合同/付款/版权的个人具体确认，或用户明确要求真人/工作人员回复时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
 7. 如果触发上面的确认场景，正文只说“这个点需要进一步确认”，不要解释后台流转方式。
-8. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答。`;
+8. 不要使用 Markdown 符号；不要用星号、短横线、长横线、加粗符号或项目符号。需要分点时，用自然短句或中文序号。
+9. 用户本轮最多只能向招募助手连续提问 3 条，请尽量在当前回复中完整解答。`;
 }
 
 function adminName(row) {
@@ -205,8 +208,10 @@ function tidyAssistantReply(text) {
   if (!value) return '';
 
   value = value
-    .replace(/([。！？；])\s*(?=(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
-    .replace(/(^|\n)\s*(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明)[:：]\s*/g, '$1$2：')
+    .replace(/\*\*/g, '')
+    .replace(/(^|\n)\s*[-*•—]+\s*/g, '$1')
+    .replace(/^(结论|依据|下一步)[:：]\s*/g, '')
+    .replace(/([。！？；])\s*(?=(建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
     .replace(/\n{3,}/g, '\n\n');
 
   if (!value.includes('\n') && value.length > 120) {
@@ -237,7 +242,7 @@ function withHumanNotice(reply) {
 }
 
 function withLimitNotice(reply) {
-  const notice = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，我先帮你把能确认的信息收束在这里。建议你根据上面的结论核对岗位要求、整理投递材料。`;
+  const notice = `本轮咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，我先帮你把能确认的信息收束在这里。建议你根据上面的回复核对岗位要求、整理投递材料。`;
   if (!reply) return notice;
   return `${reply}\n\n${notice}`;
 }
@@ -258,7 +263,7 @@ function aiPhaseUserMessageCount(messages) {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (message.role === 'human_agent') break;
-    if (message.role === 'assistant' && message.content === AI_RETURN_NOTICE) break;
+    if (message.role === 'assistant' && (message.content === AI_RETURN_NOTICE || message.content === AI_RETURN_NOTICE_LEGACY)) break;
     if (message.role === 'user') count += 1;
   }
   return count;
@@ -514,7 +519,7 @@ router.post('/message', async (req, res) => {
     }
     if (!replyText) {
       replyText = aiUnavailable
-        ? 'AI助手暂时没有连接成功，请稍后再试。'
+        ? '招募助手暂时没有连接成功，请稍后再试。'
         : '这个问题需要编辑部同事确认后回复。';
     }
 

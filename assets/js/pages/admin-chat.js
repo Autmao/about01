@@ -19,7 +19,7 @@ function initSidebar() {
 }
 
 const STATUS_LABELS = {
-  bot: 'AI助手服务中',
+  bot: '招募助手服务中',
   pending_human: '等待人工回复',
   human_active: '人工回复中',
   resolved: '已解决',
@@ -178,7 +178,7 @@ function renderModalMessages(messages) {
       ? '候选人'
       : m.role === 'human_agent'
         ? `人工回复${m.authorAdminName ? ` · ${escHtml(m.authorAdminName)}` : ''}`
-        : 'AI助手';
+        : '招募助手';
     const [bg, color, border] = m.role === 'user'
       ? ['#fbf8f1', 'var(--color-text-primary)', '1px solid rgba(17,17,17,0.18)']
       : m.role === 'human_agent'
@@ -278,13 +278,13 @@ async function returnToAi() {
       },
     });
     if (!res.ok) throw new Error();
-    Utils.showToast('已转回 AI 助手', 'success');
+    Utils.showToast('已转回招募助手', 'success');
     await openSession(currentSessionId);
   } catch {
-    Utils.showToast('转回 AI 失败', 'error');
+    Utils.showToast('转回招募助手失败', 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = '转 AI 接待';
+    btn.textContent = '转招募助手接待';
   }
 }
 window.returnToAi = returnToAi;
