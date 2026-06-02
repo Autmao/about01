@@ -218,32 +218,86 @@ function downloadPoster() {
 }
 window.downloadPoster = downloadPoster;
 
-function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
-  const chars = text.split('');
+function posterFont(size, weight = 500, family = '"PingFang SC", "Noto Sans SC", sans-serif') {
+  return `${weight} ${size}px ${family}`;
+}
+
+function normalizePosterText(text) {
+  return String(text || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[•*]+/g, '')
+    .replace(/[—–-]{2,}/g, ' ')
+    .trim();
+}
+
+function ellipsizeText(ctx, text, maxWidth, force = false) {
+  let clipped = String(text || '').trim();
+  if (!force && ctx.measureText(clipped).width <= maxWidth) return clipped;
+  while (ctx.measureText(`${clipped}…`).width > maxWidth && clipped.length > 0) {
+    clipped = clipped.slice(0, -1);
+  }
+  return `${clipped || ''}…`;
+}
+
+function splitCanvasLines(ctx, text, maxWidth) {
+  const source = normalizePosterText(text);
+  if (!source) return [];
+  const lines = [];
   let line = '';
-  let currentY = y;
-  let lines = 0;
-  for (let i = 0; i < chars.length; i++) {
-    const testLine = line + chars[i];
+  for (const char of source.split('')) {
+    const testLine = line + char;
     if (ctx.measureText(testLine).width > maxWidth && line) {
-      if (lines + 1 >= maxLines) {
-        let clipped = line;
-        while (ctx.measureText(`${clipped}…`).width > maxWidth && clipped.length > 0) {
-          clipped = clipped.slice(0, -1);
-        }
-        ctx.fillText(`${clipped}…`, x, currentY);
-        return currentY;
-      }
-      ctx.fillText(line, x, currentY);
-      lines++;
-      line = chars[i];
-      currentY += lineHeight;
+      lines.push(line.trim());
+      line = char.trimStart();
     } else {
       line = testLine;
     }
   }
-  if (line) ctx.fillText(line, x, currentY);
-  return currentY;
+  if (line.trim()) lines.push(line.trim());
+  return lines;
+}
+
+function fitWrappedText(ctx, text, maxWidth, {
+  maxLines = 3,
+  maxHeight = Infinity,
+  minSize = 24,
+  maxSize = 72,
+  weight = 600,
+  lineRatio = 1.16,
+} = {}) {
+  for (let size = maxSize; size >= minSize; size -= 2) {
+    ctx.font = posterFont(size, weight);
+    const lineHeight = Math.round(size * lineRatio);
+    const lines = splitCanvasLines(ctx, text, maxWidth);
+    const height = lines.length ? (lines.length - 1) * lineHeight + size : 0;
+    if (lines.length <= maxLines && height <= maxHeight) {
+      return { size, lineHeight, lines };
+    }
+  }
+
+  ctx.font = posterFont(minSize, weight);
+  const lineHeight = Math.round(minSize * lineRatio);
+  const lines = splitCanvasLines(ctx, text, maxWidth).slice(0, maxLines);
+  if (lines.length) lines[lines.length - 1] = ellipsizeText(ctx, lines[lines.length - 1], maxWidth, true);
+  return { size: minSize, lineHeight, lines };
+}
+
+function drawTextLines(ctx, lines, x, y, lineHeight) {
+  lines.forEach((line, index) => ctx.fillText(line, x, y + index * lineHeight));
+  return lines.length ? y + (lines.length - 1) * lineHeight : y;
+}
+
+function drawFittedLine(ctx, text, x, y, maxWidth) {
+  ctx.fillText(ellipsizeText(ctx, normalizePosterText(text), maxWidth), x, y);
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
+  const allLines = splitCanvasLines(ctx, text, maxWidth);
+  const lines = allLines.slice(0, maxLines);
+  if (lines.length && allLines.length > maxLines) {
+    lines[lines.length - 1] = ellipsizeText(ctx, lines[lines.length - 1], maxWidth, true);
+  }
+  return drawTextLines(ctx, lines, x, y, lineHeight);
 }
 
 async function generateQRDataURL(url) {
@@ -274,6 +328,8 @@ async function generateQRDataURL(url) {
 async function drawPoster(job) {
   const canvas = document.getElementById('poster-canvas');
   const W = 900, H = 1200;
+  const contentX = 104;
+  const contentW = W - 208;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -314,56 +370,71 @@ async function drawPoster(job) {
 
   ctx.fillStyle = '#111111';
   ctx.textAlign = 'left';
-  ctx.font = '700 22px "SF Pro Display", "PingFang SC", sans-serif';
-  ctx.fillText('POSITION', 104, 188);
-  ctx.font = '500 22px "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.font = posterFont(22, 700, '"SF Pro Display", "PingFang SC", sans-serif');
+  ctx.fillText('POSITION', contentX, 188);
+  ctx.font = posterFont(22, 500);
   ctx.fillStyle = '#6f6a60';
-  ctx.fillText(`${job.department || 'about编辑部'} / ${cat.label}`, 104, 224);
+  drawFittedLine(ctx, `${job.department || 'about编辑部'} / ${cat.label}`, contentX, 224, contentW);
 
   ctx.fillStyle = '#111111';
   ctx.textAlign = 'left';
-  ctx.font = '760 72px "PingFang SC", "Noto Sans SC", sans-serif';
-  const titleY = wrapText(ctx, job.title, 104, 332, W - 208, 84, 4);
+  const title = fitWrappedText(ctx, job.title, contentW, {
+    maxLines: 5,
+    maxHeight: 260,
+    minSize: 38,
+    maxSize: 72,
+    weight: 760,
+    lineRatio: 1.14,
+  });
+  ctx.font = posterFont(title.size, 760);
+  const titleLastY = drawTextLines(ctx, title.lines, contentX, 320, title.lineHeight);
 
   ctx.strokeStyle = 'rgba(17,17,17,0.82)';
   ctx.lineWidth = 2;
+  const dividerY = Math.min(Math.max(titleLastY + 38, 438), 590);
   ctx.beginPath();
-  ctx.moveTo(104, titleY + 44);
-  ctx.lineTo(W - 104, titleY + 44);
+  ctx.moveTo(contentX, dividerY);
+  ctx.lineTo(W - contentX, dividerY);
   ctx.stroke();
 
-  const metaY = titleY + 106;
+  const metaY = dividerY + 58;
   const meta = [
     ['截止日期', dl.text],
     ['招募人数', `${job.slots || 1} 人`],
     ['稿费', fee],
     ['结算方式', Utils.feeTypeLabel(job.feeType)],
   ];
-  ctx.font = '500 20px "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.font = posterFont(20, 500);
   meta.forEach((item, i) => {
-    const x = 104 + (i % 2) * 338;
+    const x = contentX + (i % 2) * 338;
     const y = metaY + Math.floor(i / 2) * 82;
+    const valueW = 278;
     ctx.fillStyle = '#8a8377';
     ctx.fillText(item[0], x, y);
     ctx.fillStyle = '#111111';
-    ctx.font = '700 28px "PingFang SC", "Noto Sans SC", sans-serif';
-    ctx.fillText(String(item[1]), x, y + 36);
-    ctx.font = '500 20px "PingFang SC", "Noto Sans SC", sans-serif';
+    ctx.font = posterFont(28, 700);
+    drawFittedLine(ctx, String(item[1]), x, y + 36, valueW);
+    ctx.font = posterFont(20, 500);
   });
 
-  const descY = metaY + 204;
+  const descY = Math.min(metaY + 204, 848);
   ctx.fillStyle = '#3f3b34';
-  ctx.font = '28px "PingFang SC", "Noto Sans SC", sans-serif';
-  const descShort = String(job.description || '打开岗位详情，查看项目背景、具体要求与投递方式。')
-    .replace(/\n/g, ' ')
-    .slice(0, 86);
-  wrapText(ctx, descShort + (String(job.description || '').length > 86 ? '…' : ''), 104, descY, W - 208, 46, 3);
+  const desc = fitWrappedText(ctx, job.description || '打开岗位详情，查看项目背景、具体要求与投递方式。', contentW, {
+    maxLines: 3,
+    maxHeight: 118,
+    minSize: 22,
+    maxSize: 28,
+    weight: 400,
+    lineRatio: 1.5,
+  });
+  ctx.font = posterFont(desc.size, 400);
+  drawTextLines(ctx, desc.lines, contentX, descY, desc.lineHeight);
 
   ctx.fillStyle = '#111111';
   ctx.fillRect(64, H - 160, W - 128, 68);
   ctx.fillStyle = '#fbf8f1';
-  ctx.font = '700 24px "PingFang SC", "Noto Sans SC", sans-serif';
-  ctx.fillText('扫码查看岗位详情', 104, H - 118);
+  ctx.font = posterFont(24, 700);
+  ctx.fillText('扫码查看岗位详情', contentX, H - 118);
 
   try {
     const qrSrc = await generateQRDataURL(url);
@@ -375,13 +446,13 @@ async function drawPoster(job) {
   } catch (_) { /* QR 失败静默 */ }
 
   ctx.fillStyle = '#b84a36';
-  ctx.font = '700 22px "SF Pro Display", "PingFang SC", sans-serif';
+  ctx.font = posterFont(22, 700, '"SF Pro Display", "PingFang SC", sans-serif');
   ctx.textAlign = 'left';
-  ctx.fillText('CREATIVE PARTNER RECRUITMENT', 104, H - 204);
+  ctx.fillText('CREATIVE PARTNER RECRUITMENT', contentX, H - 204);
   ctx.fillStyle = 'rgba(17,17,17,0.48)';
-  ctx.font = '18px "SF Pro Display", "PingFang SC", sans-serif';
+  ctx.font = posterFont(18, 400, '"SF Pro Display", "PingFang SC", sans-serif');
   ctx.textAlign = 'left';
-  ctx.fillText('about editor desk open call', 104, H - 60);
+  ctx.fillText('about editor desk open call', contentX, H - 60);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
