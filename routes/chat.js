@@ -61,6 +61,18 @@ async function createAiReply({ systemPrompt, messages }) {
   return data.choices?.[0]?.message?.content || '';
 }
 
+function aiErrorDetail(error) {
+  const cause = error?.cause || {};
+  return [
+    error?.message,
+    cause.code ? `code=${cause.code}` : '',
+    cause.hostname ? `host=${cause.hostname}` : '',
+    cause.address ? `address=${cause.address}` : '',
+    cause.port ? `port=${cause.port}` : '',
+    cause.syscall ? `syscall=${cause.syscall}` : '',
+  ].filter(Boolean).join(' ');
+}
+
 function buildSystemPrompt(job) {
   const reqs = (job.requirements || []).join('\n- ');
   const feeType = FEE_TYPE_LABELS[job.fee_type] || job.fee_type || '';
@@ -424,7 +436,8 @@ router.post('/message', async (req, res) => {
     try {
       replyText = await createAiReply({ systemPrompt, messages: aiMessages });
     } catch (err) {
-      console.error('[chat] deepseek error:', err.message);
+      const config = getDeepSeekConfig();
+      console.error('[chat] deepseek error:', aiErrorDetail(err), `base=${config?.baseUrl || 'unset'}`, `model=${config?.model || 'unset'}`);
       aiUnavailable = true;
     }
     if (!replyText) {
@@ -434,7 +447,9 @@ router.post('/message', async (req, res) => {
     }
 
     // 检测是否需要人工介入。AI 暂不可用时，只有用户明确要求人工才转后台。
-    const inferred = inferHumanNeed(normalizedContent, replyText, chatJob);
+    const inferred = aiUnavailable
+      ? inferHumanNeed(normalizedContent, '', chatJob)
+      : inferHumanNeed(normalizedContent, replyText, chatJob);
     const reachedAiLimit = aiUserCount >= AI_USER_MESSAGE_LIMIT;
     const needHuman = inferred.needHuman;
     let cleanReply = cleanHumanMarker(replyText);
