@@ -80,7 +80,9 @@ PUBLIC_BASE_URL=https://你的正式域名
 ADMIN_EMAIL=your-admin-email@example.com
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
 RESEND_FROM=about编辑部 <noreply@yourdomain.com>
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxx
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
 ```
 
 ## 5. 迁移现有数据

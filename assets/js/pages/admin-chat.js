@@ -19,9 +19,9 @@ function initSidebar() {
 }
 
 const STATUS_LABELS = {
-  bot: 'AI 回复中',
-  pending_human: '待介入',
-  human_active: '人工跟进中',
+  bot: 'AI助手服务中',
+  pending_human: '等待人工回复',
+  human_active: '人工回复中',
   resolved: '已解决',
 };
 const STATUS_COLORS = {
@@ -38,6 +38,8 @@ let currentSessionId = null;
 let currentSession = null;
 let allSessions = [];
 let team = [];
+let adminPollTimer = null;
+const ADMIN_POLL_INTERVAL_MS = 4000;
 
 function escHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, ch => ({
@@ -146,6 +148,54 @@ function fillAssigneeSelect(session) {
   select.value = session.assignedAdminId || currentUser?.id || '';
 }
 
+function applySessionMeta(session) {
+  currentSession = session;
+  document.getElementById('modal-job-title').textContent = '对话详情';
+  const meta = [
+    session.jobTitle ? `岗位：${session.jobTitle}` : '通用咨询',
+    session.email ? `邮箱：${session.email}` : null,
+    `创建：${(session.createdAt || '').slice(0, 16).replace('T', ' ')}`,
+  ].filter(Boolean).join(' · ');
+  document.getElementById('modal-meta').textContent = meta;
+
+  const statusEl = document.getElementById('modal-status');
+  statusEl.textContent = STATUS_LABELS[session.status] || session.status;
+  statusEl.setAttribute('style', statusStyle(session.status));
+  const reasonEl = document.getElementById('modal-reason');
+  reasonEl.textContent = session.humanReason || '';
+  reasonEl.style.display = session.humanReason ? 'inline-flex' : 'none';
+
+  const replyArea = document.getElementById('reply-area');
+  replyArea.style.display = session.status === 'resolved' ? 'none' : 'block';
+  const returnAiBtn = document.getElementById('return-ai-btn');
+  if (returnAiBtn) returnAiBtn.style.display = session.status === 'bot' ? 'none' : '';
+}
+
+function renderModalMessages(messages) {
+  const msgEl = document.getElementById('modal-messages');
+  msgEl.innerHTML = messages.map(m => {
+    const roleLabel = m.role === 'user'
+      ? '候选人'
+      : m.role === 'human_agent'
+        ? `人工回复${m.authorAdminName ? ` · ${escHtml(m.authorAdminName)}` : ''}`
+        : 'AI助手';
+    const [bg, color, border] = m.role === 'user'
+      ? ['#fbf8f1', 'var(--color-text-primary)', '1px solid rgba(17,17,17,0.18)']
+      : m.role === 'human_agent'
+        ? ['#111111', '#fbf8f1', '1px solid #111111']
+        : ['#eef2f5', '#2c5f9f', '1px solid rgba(44,95,159,0.18)'];
+    const align = m.role === 'user' ? 'flex-start' : 'flex-end';
+    return `
+      <div style="display:flex;flex-direction:column;align-items:${align};gap:2px;">
+        <div style="font-size:10px;color:var(--color-text-muted);margin-bottom:1px;">${roleLabel}</div>
+        <div style="max-width:85%;padding:var(--space-2) var(--space-3);border-radius:var(--radius-lg);
+          font-size:var(--text-sm);line-height:var(--leading-normal);word-break:break-word;white-space:pre-wrap;
+          background:${bg};color:${color};border:${border};">${escHtml(m.content)}</div>
+      </div>`;
+  }).join('');
+  msgEl.scrollTop = msgEl.scrollHeight;
+}
+
 async function openSession(id) {
   currentSessionId = id;
   try {
@@ -154,49 +204,9 @@ async function openSession(id) {
     });
     if (!res.ok) throw new Error();
     const { session, messages } = await res.json();
-    currentSession = session;
-
-    document.getElementById('modal-job-title').textContent = '对话详情';
-    const meta = [
-      session.jobTitle ? `岗位：${session.jobTitle}` : '通用咨询',
-      session.email ? `邮箱：${session.email}` : null,
-      `创建：${(session.createdAt || '').slice(0, 16).replace('T', ' ')}`,
-    ].filter(Boolean).join(' · ');
-    document.getElementById('modal-meta').textContent = meta;
-
-    const statusEl = document.getElementById('modal-status');
-    statusEl.textContent = STATUS_LABELS[session.status] || session.status;
-    statusEl.setAttribute('style', statusStyle(session.status));
-    const reasonEl = document.getElementById('modal-reason');
-    reasonEl.textContent = session.humanReason || '';
-    reasonEl.style.display = session.humanReason ? 'inline-flex' : 'none';
+    applySessionMeta(session);
     fillAssigneeSelect(session);
-
-    const msgEl = document.getElementById('modal-messages');
-    msgEl.innerHTML = messages.map(m => {
-      const roleLabel = m.role === 'user'
-        ? '候选人'
-        : m.role === 'human_agent'
-          ? `负责人${m.authorAdminName ? ` · ${escHtml(m.authorAdminName)}` : ''}`
-          : 'about编辑部招募助手';
-      const [bg, color, border] = m.role === 'user'
-        ? ['#fbf8f1', 'var(--color-text-primary)', '1px solid rgba(17,17,17,0.18)']
-        : m.role === 'human_agent'
-          ? ['#111111', '#fbf8f1', '1px solid #111111']
-          : ['#eef2f5', '#2c5f9f', '1px solid rgba(44,95,159,0.18)'];
-      const align = m.role === 'user' ? 'flex-start' : 'flex-end';
-      return `
-      <div style="display:flex;flex-direction:column;align-items:${align};gap:2px;">
-        <div style="font-size:10px;color:var(--color-text-muted);margin-bottom:1px;">${roleLabel}</div>
-        <div style="max-width:85%;padding:var(--space-2) var(--space-3);border-radius:var(--radius-lg);
-          font-size:var(--text-sm);line-height:var(--leading-normal);word-break:break-word;white-space:pre-wrap;
-          background:${bg};color:${color};border:${border};">${escHtml(m.content)}</div>
-      </div>`;
-    }).join('');
-    msgEl.scrollTop = msgEl.scrollHeight;
-
-    const replyArea = document.getElementById('reply-area');
-    replyArea.style.display = session.status === 'resolved' ? 'none' : 'block';
+    renderModalMessages(messages);
     document.getElementById('reply-input').value = '';
 
     document.getElementById('chat-modal').style.display = 'flex';
@@ -254,6 +264,31 @@ async function sendReply() {
 }
 window.sendReply = sendReply;
 
+async function returnToAi() {
+  if (!currentSessionId) return;
+  const btn = document.getElementById('return-ai-btn');
+  btn.disabled = true;
+  btn.textContent = '切换中…';
+  try {
+    const res = await fetch(`/api/chat/sessions/${currentSessionId}/return-to-ai`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Token': sessionStorage.getItem('mgs_admin_token'),
+      },
+    });
+    if (!res.ok) throw new Error();
+    Utils.showToast('已转回 AI 助手', 'success');
+    await openSession(currentSessionId);
+  } catch {
+    Utils.showToast('转回 AI 失败', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '转 AI 接待';
+  }
+}
+window.returnToAi = returnToAi;
+
 async function resolveSession() {
   if (!currentSessionId) return;
   try {
@@ -274,6 +309,31 @@ async function resolveSession() {
   }
 }
 window.resolveSession = resolveSession;
+
+async function refreshCurrentSession() {
+  if (!currentSessionId || document.getElementById('chat-modal').style.display !== 'flex') return;
+  try {
+    const res = await fetch(`/api/chat/sessions/${currentSessionId}/messages`, {
+      headers: { 'X-Admin-Token': sessionStorage.getItem('mgs_admin_token') },
+    });
+    if (!res.ok) return;
+    const { session, messages } = await res.json();
+    applySessionMeta(session);
+    renderModalMessages(messages);
+  } catch {
+    // 静默刷新，避免打断正在输入的回复
+  }
+}
+
+function startAdminPolling() {
+  if (adminPollTimer) return;
+  adminPollTimer = setInterval(async () => {
+    if (currentSessionId && document.getElementById('chat-modal').style.display === 'flex') {
+      await refreshCurrentSession();
+    }
+    await loadSessions(currentStatus);
+  }, ADMIN_POLL_INTERVAL_MS);
+}
 
 function closeModal(e) {
   if (e && e.target !== document.getElementById('chat-modal')) return;
@@ -314,6 +374,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await loadSessions('all');
+  startAdminPolling();
   const targetSessionId = new URLSearchParams(window.location.search).get('session');
   if (targetSessionId) openSession(targetSessionId);
 });

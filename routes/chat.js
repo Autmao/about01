@@ -2,22 +2,62 @@
 
 const express = require('express');
 const router = express.Router();
-const Anthropic = require('@anthropic-ai/sdk');
 const { pool, createChatSession, getChatSession, listChatSessions,
   updateChatSessionStatus, setChatSessionHumanPending, assignChatSession,
   markChatSessionRead, addChatMessage, getChatMessages, genId, now } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { sendHumanChatNotificationEmail } = require('../lib/mailer');
 
+const AI_USER_MESSAGE_LIMIT = 3;
+const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
+
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
   per_day: '按天', co_creation: '共创', negotiable: '面议',
 };
 
-function getClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+function getDeepSeekConfig() {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) return null;
-  return new Anthropic({ apiKey });
+  return {
+    apiKey,
+    baseUrl: (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, ''),
+    model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
+  };
+}
+
+async function createAiReply({ systemPrompt, messages }) {
+  const config = getDeepSeekConfig();
+  if (!config) {
+    const err = new Error('DEEPSEEK_API_KEY not set');
+    err.code = 'AI_NOT_CONFIGURED';
+    throw err;
+  }
+
+  const response = await fetch(`${config.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: config.model,
+      max_tokens: 500,
+      temperature: 0.4,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`DeepSeek request failed: ${response.status} ${detail.slice(0, 240)}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
 }
 
 function buildSystemPrompt(job) {
@@ -38,7 +78,8 @@ function buildSystemPrompt(job) {
 2. 能从岗位信息直接回答的问题，直接给出简洁答案，不要升级人工。
 3. 不要编造岗位信息中没有的内容。
 4. 如果问题涉及个人是否匹配、合同/版权/发票/付款细节、面试安排、延期、岗位负责人联系方式，或超出岗位信息范围、需要团队成员人工确认，在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-5. 标记只用于系统识别，不要解释这个标记。`;
+5. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
+6. 标记只用于系统识别，不要解释这个标记。`;
 }
 
 function buildSystemPromptGeneral() {
@@ -48,7 +89,8 @@ about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Live
 
 规则：
 1. 只回答与 about编辑部招募相关的问题。
-2. 能确定回答的问题直接答；如果问题涉及人工联系、个人匹配判断、具体岗位细节、合同/付款/时间安排，或需要团队成员人工确认，在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。`;
+2. 能确定回答的问题直接答；如果问题涉及人工联系、个人匹配判断、具体岗位细节、合同/付款/时间安排，或需要团队成员人工确认，在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+3. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答。`;
 }
 
 function adminName(row) {
@@ -132,11 +174,39 @@ function cleanHumanMarker(text) {
   return String(text || '').replace(/\s*\[NEED_HUMAN\]\s*/gi, '').trim();
 }
 
-function withHumanNotice(reply, assigneeName) {
+function withHumanNotice(reply) {
   const notice = '您的问题已通知编辑部，请耐心等待，稍后会有回复。';
   if (!reply) return notice;
-  if (/同步给|人工|编辑部.*回复|工作人员/.test(reply)) return reply;
+  if (/已通知编辑部|同步给编辑部|请耐心等待|稍后会有回复/.test(reply)) return reply;
   return `${reply}\n\n${notice}`;
+}
+
+function withLimitNotice(reply) {
+  const notice = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，后续问题已转给编辑部。工作人员回复后，你可以继续沟通。`;
+  if (!reply) return notice;
+  return `${reply}\n\n${notice}`;
+}
+
+function publicMessage(message) {
+  if (!message) return null;
+  return {
+    id: message.id,
+    sessionId: message.sessionId,
+    role: message.role,
+    content: message.content,
+    createdAt: message.createdAt,
+  };
+}
+
+function aiPhaseUserMessageCount(messages) {
+  let count = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.role === 'human_agent') break;
+    if (message.role === 'assistant' && message.content === AI_RETURN_NOTICE) break;
+    if (message.role === 'user') count += 1;
+  }
+  return count;
 }
 
 function publicSession(session) {
@@ -235,7 +305,7 @@ router.post('/session', async (req, res) => {
     }
 
     const messages = await getChatMessages(session.id);
-    res.json({ sessionId: session.id, status: session.status, messages });
+    res.json({ sessionId: session.id, status: session.status, messages: messages.map(publicMessage) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -251,7 +321,7 @@ router.get('/session/:id/messages', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const messages = await getChatMessages(req.params.id);
-    res.json({ session: publicSession(session), messages });
+    res.json({ session: publicSession(session), messages: messages.map(publicMessage) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -267,10 +337,19 @@ router.post('/message', async (req, res) => {
     const session = await getChatSession(sessionId);
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
+    if (session.status === 'pending_human') {
+      return res.status(409).json({
+        error: 'waiting_human',
+        reply: '编辑部同事还没有回复，请稍等。对方回复后你可以继续发送。',
+        status: 'pending_human',
+        sessionId,
+      });
+    }
+
     // 存用户消息
     await addChatMessage({ sessionId, role: 'user', content: content.trim() });
 
-    if (session.status === 'pending_human' || session.status === 'human_active') {
+    if (session.status === 'human_active') {
       const assignee = await resolveAssignee(session);
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
@@ -281,15 +360,31 @@ router.post('/message', async (req, res) => {
         reason: '用户追加消息，等待人工回复',
         lastQuestion: content.trim(),
       });
-      const reply = assignee.name
-        ? `收到，我已把新消息同步给负责同事${assignee.name}，请稍等人工回复。`
-        : '收到，我已把新消息同步给编辑部，请稍等人工回复。';
+      const reply = '收到，我已把新消息同步给编辑部，请稍等人工回复。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
       return res.json({ reply, needHuman: true, status: 'pending_human', sessionId });
     }
 
     // 获取历史消息（最多20条，避免超 token）
     const history = await getChatMessages(sessionId);
+    const aiUserCount = aiPhaseUserMessageCount(history);
+    if (aiUserCount > AI_USER_MESSAGE_LIMIT) {
+      const assignee = await resolveAssignee(session);
+      const reason = 'AI 咨询已达到 3 条上限，转人工处理';
+      await setChatSessionHumanPending(sessionId, {
+        assignedAdminId: assignee.id,
+        assignedAdminName: assignee.name,
+        reason,
+      });
+      await notifyHumanAssignee(req, sessionId, assignee, {
+        reason,
+        lastQuestion: content.trim(),
+      });
+      const reply = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，后续问题已转给编辑部。工作人员回复后，你可以继续沟通。`;
+      await addChatMessage({ sessionId, role: 'assistant', content: reply });
+      return res.json({ reply, needHuman: true, status: 'pending_human', sessionId });
+    }
+
     const recent = history.slice(-20);
 
     // 构建 AI messages（人工回复按 assistant 角色纳入上下文）
@@ -307,24 +402,15 @@ router.post('/message', async (req, res) => {
       systemPrompt = buildSystemPromptGeneral();
     }
 
-    // 调用 Claude
-    const client = getClient();
+    // 调用 DeepSeek
     let replyText = '';
-    let aiUnavailable = !client;
+    let aiUnavailable = false;
 
-    if (client) {
-      try {
-        const response = await client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 500,
-          system: systemPrompt,
-          messages: aiMessages,
-        });
-        replyText = response.content[0]?.text || '';
-      } catch (err) {
-        console.error('[chat] anthropic error:', err.message);
-        aiUnavailable = true;
-      }
+    try {
+      replyText = await createAiReply({ systemPrompt, messages: aiMessages });
+    } catch (err) {
+      console.error('[chat] deepseek error:', err.message);
+      aiUnavailable = true;
     }
     if (!replyText) {
       replyText = '这个问题需要编辑部同事确认后回复。';
@@ -332,12 +418,17 @@ router.post('/message', async (req, res) => {
 
     // 检测是否需要人工介入
     const inferred = inferHumanNeed(content, replyText, chatJob);
-    const needHuman = aiUnavailable || inferred.needHuman;
+    const reachedAiLimit = aiUserCount >= AI_USER_MESSAGE_LIMIT;
+    const needHuman = aiUnavailable || inferred.needHuman || reachedAiLimit;
     let cleanReply = cleanHumanMarker(replyText);
 
     if (needHuman) {
       const assignee = await resolveAssignee(session);
-      const reason = aiUnavailable ? 'AI 暂不可用，转人工处理' : inferred.reason;
+      const reason = aiUnavailable
+        ? 'AI 暂不可用，转人工处理'
+        : reachedAiLimit
+          ? 'AI 咨询已达到 3 条上限，转人工处理'
+          : inferred.reason;
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
         assignedAdminName: assignee.name,
@@ -347,7 +438,7 @@ router.post('/message', async (req, res) => {
         reason,
         lastQuestion: content.trim(),
       });
-      cleanReply = withHumanNotice(cleanReply, assignee.name);
+      cleanReply = reachedAiLimit ? withLimitNotice(cleanReply) : withHumanNotice(cleanReply);
     }
 
     // 存 AI 回复
@@ -449,6 +540,38 @@ router.patch('/sessions/:id/assign', requireAdmin, async (req, res) => {
       assignedAdminName: adminName(target),
     });
     res.json(session);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* POST /api/chat/sessions/:id/return-to-ai */
+router.post('/sessions/:id/return-to-ai', requireAdmin, async (req, res) => {
+  try {
+    const session = await getChatSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Not found' });
+    if (req.adminUser.role !== 'superadmin' && session.assignedAdminId && session.assignedAdminId !== req.adminUser.id) {
+      return res.status(403).json({ error: 'Only the assignee can return this chat to AI' });
+    }
+
+    const ts = now();
+    const { rows } = await pool.query(
+      `UPDATE chat_sessions
+       SET status = 'bot',
+           human_reason = '',
+           unread_admin = FALSE,
+           updated_at = $2
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.id, ts]
+    );
+    const message = await addChatMessage({
+      sessionId: req.params.id,
+      role: 'assistant',
+      content: AI_RETURN_NOTICE,
+    });
+    res.json({ session: rows[0], message });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });

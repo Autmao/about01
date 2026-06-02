@@ -13,8 +13,10 @@
   let sessionId = null;
   let isSending = false;
   let pollTimer = null;
+  let currentStatus = 'bot';
   const renderedMessageIds = new Set();
   const pendingEchoes = [];
+  const POLL_INTERVAL_MS = 2500;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -146,11 +148,11 @@
   /* ── 发送消息 ── */
   window.__sendChatMessage = async function () {
     const content = inputEl.value.trim();
-    if (!content || isSending) return;
+    if (!content || isSending || currentStatus === 'pending_human') return;
     if (!sessionId) return;
 
     isSending = true;
-    sendBtn.disabled = true;
+    updateComposerState();
     inputEl.value = '';
     inputEl.style.height = 'auto';
 
@@ -168,6 +170,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, content }),
       });
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        typingEl.textContent = data.reply || '编辑部同事还没有回复，请稍等。';
+        typingEl.classList.remove('chat-msg--typing');
+        typingEl.classList.add('chat-msg--assistant');
+        updateHeader(data.status || 'pending_human');
+        startPolling();
+        scrollToBottom();
+        return;
+      }
       if (!res.ok) throw new Error('message failed');
       const data = await res.json();
 
@@ -190,7 +202,7 @@
       scrollToBottom();
     } finally {
       isSending = false;
-      sendBtn.disabled = false;
+      updateComposerState();
       inputEl.focus();
     }
   };
@@ -217,7 +229,7 @@
 
   function startPolling() {
     if (pollTimer) return;
-    pollTimer = setInterval(pollMessages, 8000);
+    pollTimer = setInterval(pollMessages, POLL_INTERVAL_MS);
   }
 
   function stopPolling() {
@@ -227,10 +239,25 @@
   }
 
   function updateHeader(status) {
-    if (status === 'pending_human') headerSub.textContent = '已转给编辑部同事，等待人工回复。';
-    else if (status === 'human_active') headerSub.textContent = '编辑部同事已介入，可继续沟通。';
-    else if (status === 'resolved') headerSub.textContent = '对话已解决，可以继续提问。';
-    else headerSub.textContent = selectedJobId ? '已选择岗位，可直接提问。' : '如有岗位相关疑问，欢迎咨询';
+    currentStatus = status || currentStatus || 'bot';
+    if (currentStatus === 'pending_human') headerSub.textContent = '等待人工回复';
+    else if (currentStatus === 'human_active') headerSub.textContent = '人工回复中，可继续补充';
+    else if (currentStatus === 'resolved') headerSub.textContent = '对话已解决，可以重新发起咨询';
+    else headerSub.textContent = selectedJobId ? 'AI助手服务中，可直接提问' : 'AI助手服务中，欢迎咨询';
+    updateComposerState();
+  }
+
+  function updateComposerState() {
+    const waitingHuman = currentStatus === 'pending_human';
+    inputEl.disabled = waitingHuman || isSending;
+    sendBtn.disabled = waitingHuman || isSending;
+    if (waitingHuman) {
+      inputEl.placeholder = '等待编辑部回复后可继续发送';
+    } else if (currentStatus === 'human_active') {
+      inputEl.placeholder = '继续补充给编辑部…...';
+    } else {
+      inputEl.placeholder = '输入你的问题…...';
+    }
   }
 
   async function loadJobOptions() {
