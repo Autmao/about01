@@ -10,6 +10,7 @@ const { sendHumanChatNotificationEmail } = require('../lib/mailer');
 
 const AI_USER_MESSAGE_LIMIT = 3;
 const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
+const AI_LIMIT_GUIDANCE = `本轮 AI 咨询已经收束。为了让编辑部高效处理，请把仍需人工确认的问题合并成一句话，并以“转人工：”开头发送。`;
 
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
@@ -77,9 +78,10 @@ function buildSystemPrompt(job) {
 1. 只回答与本岗位和 about编辑部投递流程相关的问题。
 2. 能从岗位信息直接回答的问题，直接给出简洁答案，不要升级人工。
 3. 不要编造岗位信息中没有的内容。
-4. 如果问题涉及个人是否匹配、合同/版权/发票/付款细节、面试安排、延期、岗位负责人联系方式，或超出岗位信息范围、需要团队成员人工确认，在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-5. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
-6. 标记只用于系统识别，不要解释这个标记。`;
+4. 如果用户询问“我是否适合/作品够不够/能不能投”，先用岗位要求给出自查清单和建议，不要直接升级人工。
+5. 只有在用户明确要求人工回复，或问题涉及特殊审批（延期、错过截止、单独联系、合同/付款/版权的个人具体确认）时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+6. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中用“结论 / 依据 / 下一步”完整解答，不要引导用户反复追问。
+7. 标记只用于系统识别，不要解释这个标记。`;
 }
 
 function buildSystemPromptGeneral() {
@@ -89,8 +91,9 @@ about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Live
 
 规则：
 1. 只回答与 about编辑部招募相关的问题。
-2. 能确定回答的问题直接答；如果问题涉及人工联系、个人匹配判断、具体岗位细节、合同/付款/时间安排，或需要团队成员人工确认，在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-3. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答。`;
+2. 能确定回答的问题直接答；如果用户询问“是否适合/能不能投”，先给出自查清单和建议，不要直接升级人工。
+3. 只有在用户明确要求人工回复，或问题涉及特殊审批、单独联系、合同/付款/版权的个人具体确认时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+4. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中用“结论 / 依据 / 下一步”完整解答。`;
 }
 
 function adminName(row) {
@@ -154,14 +157,13 @@ async function resolveAssignee(session) {
 function inferHumanNeed(content, replyText, job) {
   const text = `${content || ''}\n${replyText || ''}`;
   const checks = [
-    { re: /人工|真人|工作人员|编辑|负责.*人|联系|微信|电话|邮箱|加一下|拉群|沟通/i, reason: '用户请求人工联系' },
-    { re: /合同|发票|版权|署名|付款|打款|结算|税|保密/i, reason: '涉及合同、版权或结算细节' },
-    { re: /延期|延长|截止.*过|来得及|时间.*协调|面试|多久回复|进度|什么时候通知/i, reason: '涉及时间或流程确认' },
-    { re: /我.*(可以|适合|能投|能不能|行吗)|作品.*(够|符合|可以吗)|简历.*(够|适合)/i, reason: '需要人工判断个人匹配度' },
+    { re: /转人工|人工回复|真人|工作人员回复|联系.*(编辑部|负责人|工作人员)|加微信|电话沟通|邮件联系|拉群|有人.*回复/i, reason: '用户明确请求人工联系' },
+    { re: /延期|延长|错过截止|截止.*过|补交|晚交|特殊申请|破例|单独沟通/i, reason: '涉及特殊时间或流程审批' },
+    { re: /(我的|具体|这次|本次).*(合同|发票|版权|署名|付款|打款|结算|税|保密)|合同.*怎么签|什么时候.*打款|能否.*开发票/i, reason: '涉及合同、版权或结算的个人具体确认' },
     { re: /无法确认|需要.*确认|建议.*联系|请.*工作人员|NEED_HUMAN/i, reason: 'AI 判断需要人工确认' },
   ];
   const feeIsUnclear = job && (!job.fee || job.fee_type === 'negotiable' || /面议|待定|协商/.test(job.fee));
-  if (/薪酬|稿费|预算|报价|费用|多少钱/.test(content || '') && feeIsUnclear) {
+  if (/转人工|人工/.test(content || '') && /薪酬|稿费|预算|报价|费用|多少钱/.test(content || '') && feeIsUnclear) {
     return { needHuman: true, reason: '薪酬需要人工确认' };
   }
   for (const item of checks) {
@@ -182,7 +184,7 @@ function withHumanNotice(reply) {
 }
 
 function withLimitNotice(reply) {
-  const notice = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，后续问题已转给编辑部。工作人员回复后，你可以继续沟通。`;
+  const notice = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，我先帮你把能确认的信息收束在这里。若仍有必须人工确认的问题，请发送“转人工：”并用一句话写清楚要确认的点。`;
   if (!reply) return notice;
   return `${reply}\n\n${notice}`;
 }
@@ -336,6 +338,7 @@ router.post('/message', async (req, res) => {
 
     const session = await getChatSession(sessionId);
     if (!session) return res.status(404).json({ error: 'Session not found' });
+    const normalizedContent = content.trim();
 
     if (session.status === 'pending_human') {
       return res.status(409).json({
@@ -346,8 +349,20 @@ router.post('/message', async (req, res) => {
       });
     }
 
+    const historyBeforeMessage = await getChatMessages(sessionId);
+    const aiUserCountBefore = aiPhaseUserMessageCount(historyBeforeMessage);
+    const inferredFromUser = inferHumanNeed(normalizedContent, '', null);
+    if (session.status === 'bot' && aiUserCountBefore >= AI_USER_MESSAGE_LIMIT && !inferredFromUser.needHuman) {
+      return res.status(409).json({
+        error: 'ai_limit_reached',
+        reply: AI_LIMIT_GUIDANCE,
+        status: 'bot',
+        sessionId,
+      });
+    }
+
     // 存用户消息
-    await addChatMessage({ sessionId, role: 'user', content: content.trim() });
+    await addChatMessage({ sessionId, role: 'user', content: normalizedContent });
 
     if (session.status === 'human_active') {
       const assignee = await resolveAssignee(session);
@@ -358,7 +373,7 @@ router.post('/message', async (req, res) => {
       });
       await notifyHumanAssignee(req, sessionId, assignee, {
         reason: '用户追加消息，等待人工回复',
-        lastQuestion: content.trim(),
+        lastQuestion: normalizedContent,
       });
       const reply = '收到，我已把新消息同步给编辑部，请稍等人工回复。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
@@ -370,7 +385,7 @@ router.post('/message', async (req, res) => {
     const aiUserCount = aiPhaseUserMessageCount(history);
     if (aiUserCount > AI_USER_MESSAGE_LIMIT) {
       const assignee = await resolveAssignee(session);
-      const reason = 'AI 咨询已达到 3 条上限，转人工处理';
+      const reason = inferredFromUser.reason || '用户在 AI 收束后明确请求人工确认';
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
         assignedAdminName: assignee.name,
@@ -378,9 +393,9 @@ router.post('/message', async (req, res) => {
       });
       await notifyHumanAssignee(req, sessionId, assignee, {
         reason,
-        lastQuestion: content.trim(),
+        lastQuestion: normalizedContent,
       });
-      const reply = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，后续问题已转给编辑部。工作人员回复后，你可以继续沟通。`;
+      const reply = '收到，我已把需要人工确认的问题同步给编辑部，请耐心等待，稍后会有回复。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
       return res.json({ reply, needHuman: true, status: 'pending_human', sessionId });
     }
@@ -419,16 +434,14 @@ router.post('/message', async (req, res) => {
     // 检测是否需要人工介入
     const inferred = inferHumanNeed(content, replyText, chatJob);
     const reachedAiLimit = aiUserCount >= AI_USER_MESSAGE_LIMIT;
-    const needHuman = aiUnavailable || inferred.needHuman || reachedAiLimit;
+    const needHuman = aiUnavailable || inferred.needHuman;
     let cleanReply = cleanHumanMarker(replyText);
 
     if (needHuman) {
       const assignee = await resolveAssignee(session);
       const reason = aiUnavailable
         ? 'AI 暂不可用，转人工处理'
-        : reachedAiLimit
-          ? 'AI 咨询已达到 3 条上限，转人工处理'
-          : inferred.reason;
+        : inferred.reason;
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
         assignedAdminName: assignee.name,
@@ -436,9 +449,11 @@ router.post('/message', async (req, res) => {
       });
       await notifyHumanAssignee(req, sessionId, assignee, {
         reason,
-        lastQuestion: content.trim(),
+        lastQuestion: normalizedContent,
       });
-      cleanReply = reachedAiLimit ? withLimitNotice(cleanReply) : withHumanNotice(cleanReply);
+      cleanReply = withHumanNotice(cleanReply);
+    } else if (reachedAiLimit) {
+      cleanReply = withLimitNotice(cleanReply);
     }
 
     // 存 AI 回复
