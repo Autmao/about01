@@ -10,7 +10,9 @@ const { sendHumanChatNotificationEmail } = require('../lib/mailer');
 
 const AI_USER_MESSAGE_LIMIT = 3;
 const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
-const AI_LIMIT_GUIDANCE = `本轮 AI 咨询已经收束。为了让编辑部高效处理，请把仍需人工确认的问题合并成一句话，并以“转人工：”开头发送。`;
+const AI_LIMIT_GUIDANCE = `本轮 AI 咨询的 3 条额度已经用完啦。
+
+为了让编辑部高效处理，请把仍需人工确认的问题合并成一句话，并以“转人工：”开头发送。`;
 
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
@@ -91,9 +93,10 @@ function buildSystemPrompt(job) {
 2. 能从岗位信息直接回答的问题，直接给出简洁答案，不要升级人工。
 3. 不要编造岗位信息中没有的内容。
 4. 如果用户询问“我是否适合/作品够不够/能不能投”，先用岗位要求给出自查清单和建议，不要直接升级人工。
-5. 只有在用户明确要求人工回复，或问题涉及特殊审批（延期、错过截止、单独联系、合同/付款/版权的个人具体确认）时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-6. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中用“结论 / 依据 / 下一步”完整解答，不要引导用户反复追问。
-7. 标记只用于系统识别，不要解释这个标记。`;
+5. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
+6. 只有在用户明确要求人工回复，或问题涉及特殊审批（延期、错过截止、单独联系、合同/付款/版权的个人具体确认）时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+7. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
+8. 标记只用于系统识别，不要解释这个标记。`;
 }
 
 function buildSystemPromptGeneral() {
@@ -104,8 +107,9 @@ about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Live
 规则：
 1. 只回答与 about编辑部招募相关的问题。
 2. 能确定回答的问题直接答；如果用户询问“是否适合/能不能投”，先给出自查清单和建议，不要直接升级人工。
-3. 只有在用户明确要求人工回复，或问题涉及特殊审批、单独联系、合同/付款/版权的个人具体确认时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-4. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中用“结论 / 依据 / 下一步”完整解答。`;
+3. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
+4. 只有在用户明确要求人工回复，或问题涉及特殊审批、单独联系、合同/付款/版权的个人具体确认时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+5. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答。`;
 }
 
 function adminName(row) {
@@ -188,6 +192,35 @@ function cleanHumanMarker(text) {
   return String(text || '').replace(/\s*\[NEED_HUMAN\]\s*/gi, '').trim();
 }
 
+function tidyAssistantReply(text) {
+  let value = String(text || '').replace(/\r\n/g, '\n').trim();
+  if (!value) return '';
+
+  value = value
+    .replace(/([。！？；])\s*(?=(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
+    .replace(/(^|\n)\s*(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明)[:：]\s*/g, '$1$2：')
+    .replace(/\n{3,}/g, '\n\n');
+
+  if (!value.includes('\n') && value.length > 120) {
+    const sentences = value.match(/[^。！？]+[。！？]?/g) || [value];
+    const groups = [];
+    let current = '';
+    for (const sentence of sentences) {
+      const next = current ? current + sentence : sentence;
+      if (current && next.length > 80) {
+        groups.push(current);
+        current = sentence;
+      } else {
+        current = next;
+      }
+    }
+    if (current) groups.push(current);
+    value = groups.join('\n\n');
+  }
+
+  return value.trim();
+}
+
 function withHumanNotice(reply) {
   const notice = '您的问题已通知编辑部，请耐心等待，稍后会有回复。';
   if (!reply) return notice;
@@ -221,6 +254,13 @@ function aiPhaseUserMessageCount(messages) {
     if (message.role === 'user') count += 1;
   }
   return count;
+}
+
+function chatUsagePayload(messages) {
+  return {
+    aiLimit: AI_USER_MESSAGE_LIMIT,
+    aiUserCount: Math.min(aiPhaseUserMessageCount(messages || []), AI_USER_MESSAGE_LIMIT),
+  };
 }
 
 function publicSession(session) {
@@ -319,7 +359,12 @@ router.post('/session', async (req, res) => {
     }
 
     const messages = await getChatMessages(session.id);
-    res.json({ sessionId: session.id, status: session.status, messages: messages.map(publicMessage) });
+    res.json({
+      sessionId: session.id,
+      status: session.status,
+      messages: messages.map(publicMessage),
+      ...chatUsagePayload(messages),
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -335,7 +380,11 @@ router.get('/session/:id/messages', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const messages = await getChatMessages(req.params.id);
-    res.json({ session: publicSession(session), messages: messages.map(publicMessage) });
+    res.json({
+      session: publicSession(session),
+      messages: messages.map(publicMessage),
+      ...chatUsagePayload(messages),
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -353,11 +402,13 @@ router.post('/message', async (req, res) => {
     const normalizedContent = content.trim();
 
     if (session.status === 'pending_human') {
+      const messages = await getChatMessages(sessionId);
       return res.status(409).json({
         error: 'waiting_human',
         reply: '编辑部同事还没有回复，请稍等。对方回复后你可以继续发送。',
         status: 'pending_human',
         sessionId,
+        ...chatUsagePayload(messages),
       });
     }
 
@@ -370,6 +421,7 @@ router.post('/message', async (req, res) => {
         reply: AI_LIMIT_GUIDANCE,
         status: 'bot',
         sessionId,
+        ...chatUsagePayload(historyBeforeMessage),
       });
     }
 
@@ -389,7 +441,13 @@ router.post('/message', async (req, res) => {
       });
       const reply = '收到，我已把新消息同步给编辑部，请稍等人工回复。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
-      return res.json({ reply, needHuman: true, status: 'pending_human', sessionId });
+      return res.json({
+        reply,
+        needHuman: true,
+        status: 'pending_human',
+        sessionId,
+        ...chatUsagePayload(await getChatMessages(sessionId)),
+      });
     }
 
     // 获取历史消息（最多20条，避免超 token）
@@ -409,7 +467,13 @@ router.post('/message', async (req, res) => {
       });
       const reply = '收到，我已把需要人工确认的问题同步给编辑部，请耐心等待，稍后会有回复。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
-      return res.json({ reply, needHuman: true, status: 'pending_human', sessionId });
+      return res.json({
+        reply,
+        needHuman: true,
+        status: 'pending_human',
+        sessionId,
+        ...chatUsagePayload(await getChatMessages(sessionId)),
+      });
     }
 
     const recent = history.slice(-20);
@@ -452,7 +516,7 @@ router.post('/message', async (req, res) => {
       : inferHumanNeed(normalizedContent, replyText, chatJob);
     const reachedAiLimit = aiUserCount >= AI_USER_MESSAGE_LIMIT;
     const needHuman = inferred.needHuman;
-    let cleanReply = cleanHumanMarker(replyText);
+    let cleanReply = tidyAssistantReply(cleanHumanMarker(replyText));
 
     if (needHuman) {
       const assignee = await resolveAssignee(session);
@@ -474,7 +538,13 @@ router.post('/message', async (req, res) => {
     // 存 AI 回复
     await addChatMessage({ sessionId, role: 'assistant', content: cleanReply });
 
-    res.json({ reply: cleanReply, needHuman, status: needHuman ? 'pending_human' : 'bot', sessionId });
+    res.json({
+      reply: cleanReply,
+      needHuman,
+      status: needHuman ? 'pending_human' : 'bot',
+      sessionId,
+      ...chatUsagePayload(await getChatMessages(sessionId)),
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });

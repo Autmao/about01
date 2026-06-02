@@ -17,6 +17,9 @@
   const renderedMessageIds = new Set();
   const pendingEchoes = [];
   const POLL_INTERVAL_MS = 2500;
+  const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
+  let aiLimit = 3;
+  let aiUserCount = 0;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -48,6 +51,15 @@
           <option value="">不指定岗位</option>
         </select>
       </label>
+      <div class="chat-usage" id="chat-usage">
+        <div class="chat-usage__bar" aria-hidden="true">
+          <span id="chat-usage-fill"></span>
+        </div>
+        <div class="chat-usage__meta">
+          <span id="chat-usage-count">AI 咨询 0/3</span>
+          <span id="chat-usage-hint">请尽量一次说清楚，AI 最多回复 3 条</span>
+        </div>
+      </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
         <textarea class="chat-input" id="chat-input" rows="1"
@@ -66,6 +78,10 @@
   const sendBtn = document.getElementById('chat-send-btn');
   const headerSub = document.getElementById('chat-header-sub');
   const jobSelectEl = document.getElementById('chat-job-select');
+  const usageEl = document.getElementById('chat-usage');
+  const usageFillEl = document.getElementById('chat-usage-fill');
+  const usageCountEl = document.getElementById('chat-usage-count');
+  const usageHintEl = document.getElementById('chat-usage-hint');
 
   loadJobOptions();
 
@@ -77,6 +93,7 @@
     renderedMessageIds.clear();
     pendingEchoes.length = 0;
     messagesEl.innerHTML = '';
+    setAiUsage(0);
     updateHeader('bot');
     stopPolling();
     if (panel.classList.contains('open')) {
@@ -127,6 +144,7 @@
       if (!res.ok) throw new Error('session init failed');
       const data = await res.json();
       sessionId = data.sessionId;
+      setAiUsage(data.aiUserCount ?? computeAiUserCount(data.messages || []), data.aiLimit);
       updateHeader(data.status);
 
       // 恢复历史消息
@@ -135,8 +153,8 @@
       } else {
         // 欢迎语
         const welcome = selectedJobId
-          ? '你好，我是 about编辑部招募助手。关于这个岗位的职责、要求和投递方式，可以直接问我。我会尽量在 3 条内帮你问清楚；如果仍需人工确认，请发送“转人工：”加上具体问题。'
-          : '你好，我是 about编辑部招募助手。关于正在招募的岗位和投递流程，可以直接问我。我会尽量在 3 条内帮你问清楚；如果仍需人工确认，请发送“转人工：”加上具体问题。';
+          ? '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位职责、要求、投递方式等问题一次说清楚。\n\n如果 3 条后仍需人工确认，请发送“转人工：”加上具体问题。'
+          : '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位、投递流程、作品准备等问题一次说清楚。\n\n如果 3 条后仍需人工确认，请发送“转人工：”加上具体问题。';
         renderMessage('assistant', welcome);
       }
       scrollToBottom();
@@ -150,6 +168,15 @@
     const content = inputEl.value.trim();
     if (!content || isSending || currentStatus === 'pending_human') return;
     if (!sessionId) return;
+
+    if (currentStatus === 'bot' && aiUserCount >= aiLimit && !isHumanEscalation(content)) {
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+      renderNotice('本轮 AI 咨询的 3 条额度已经用完。若仍有必须人工确认的问题，请发送“转人工：”并用一句话写清楚要确认的点。');
+      scrollToBottom();
+      inputEl.focus();
+      return;
+    }
 
     isSending = true;
     updateComposerState();
@@ -172,22 +199,33 @@
       });
       if (res.status === 409) {
         const data = await res.json().catch(() => ({}));
-        typingEl.textContent = data.reply || '编辑部同事还没有回复，请稍等。';
+        setMessageContent(typingEl, 'assistant', data.reply || '编辑部同事还没有回复，请稍等。');
         typingEl.classList.remove('chat-msg--typing');
         typingEl.classList.add('chat-msg--assistant');
+        setAiUsage(data.aiUserCount, data.aiLimit);
         updateHeader(data.status || 'pending_human');
         startPolling();
         scrollToBottom();
         return;
       }
-      if (!res.ok) throw new Error('message failed');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMessageContent(typingEl, 'assistant', data.reply || '这条消息暂时没有发出去，请稍后再试。');
+        typingEl.classList.remove('chat-msg--typing');
+        typingEl.classList.add('chat-msg--assistant');
+        setAiUsage(data.aiUserCount, data.aiLimit);
+        updateHeader(data.status || currentStatus);
+        scrollToBottom();
+        return;
+      }
       const data = await res.json();
 
       // 替换打字动画为真实回复
-      typingEl.textContent = data.reply;
+      setMessageContent(typingEl, 'assistant', data.reply);
       typingEl.classList.remove('chat-msg--typing');
       typingEl.classList.add('chat-msg--assistant');
       rememberEcho('assistant', data.reply);
+      setAiUsage(data.aiUserCount, data.aiLimit);
       updateHeader(data.status);
 
       if (data.needHuman) {
@@ -196,7 +234,7 @@
       }
       scrollToBottom();
     } catch {
-      typingEl.textContent = '发送失败，请稍后重试。';
+      setMessageContent(typingEl, 'assistant', '网络有点不稳定，这条消息暂时没有送达。请稍后再试，或把必须人工确认的问题整理成“转人工：……”发送。');
       typingEl.classList.remove('chat-msg--typing');
       typingEl.classList.add('chat-msg--assistant');
       scrollToBottom();
@@ -213,6 +251,7 @@
       const res = await fetch(`/api/chat/session/${sessionId}/messages?visitorId=${encodeURIComponent(visitorId)}`);
       if (!res.ok) return;
       const data = await res.json();
+      setAiUsage(data.aiUserCount, data.aiLimit);
       updateHeader(data.session?.status);
       let added = false;
       (data.messages || []).forEach(m => {
@@ -243,6 +282,7 @@
     if (currentStatus === 'pending_human') headerSub.textContent = '等待人工回复';
     else if (currentStatus === 'human_active') headerSub.textContent = '人工回复中，可继续补充';
     else if (currentStatus === 'resolved') headerSub.textContent = '对话已解决，可以重新发起咨询';
+    else if (aiUserCount >= aiLimit) headerSub.textContent = 'AI 已完成 3 条回答，可转人工确认';
     else headerSub.textContent = selectedJobId ? 'AI助手服务中，可直接提问' : 'AI助手服务中，欢迎咨询';
     updateComposerState();
   }
@@ -255,9 +295,54 @@
       inputEl.placeholder = '等待编辑部回复后可继续发送';
     } else if (currentStatus === 'human_active') {
       inputEl.placeholder = '继续补充给编辑部…...';
+    } else if (aiUserCount >= aiLimit) {
+      inputEl.placeholder = '如需人工，请输入“转人工：具体问题”';
     } else {
       inputEl.placeholder = '输入你的问题…...';
     }
+  }
+
+  function setAiUsage(count, limit) {
+    if (Number.isFinite(Number(limit)) && Number(limit) > 0) aiLimit = Number(limit);
+    const nextCount = Number.isFinite(Number(count)) ? Number(count) : aiUserCount;
+    aiUserCount = Math.max(0, Math.min(nextCount, aiLimit));
+    const ratio = aiLimit ? aiUserCount / aiLimit : 0;
+    usageFillEl.style.width = `${Math.min(100, ratio * 100)}%`;
+    usageCountEl.textContent = `AI 咨询 ${aiUserCount}/${aiLimit}`;
+    usageHintEl.textContent = aiUserCount >= aiLimit
+      ? 'AI 额度已用完，可用“转人工：”提交必须确认的问题'
+      : `还可向 AI 咨询 ${Math.max(aiLimit - aiUserCount, 0)} 条`;
+    usageEl.dataset.state = aiUserCount >= aiLimit ? 'limit' : 'active';
+    updateComposerState();
+  }
+
+  function computeAiUserCount(messages) {
+    let count = 0;
+    for (let i = (messages || []).length - 1; i >= 0; i -= 1) {
+      const message = messages[i];
+      if (message.role === 'human_agent') break;
+      if (message.role === 'assistant' && message.content === AI_RETURN_NOTICE) break;
+      if (message.role === 'user') count += 1;
+    }
+    return Math.min(count, aiLimit);
+  }
+
+  function isHumanEscalation(text) {
+    return /转人工|人工/.test(text || '');
+  }
+
+  function formatChatText(role, content) {
+    let text = String(content || '').replace(/\r\n/g, '\n').trim();
+    if (role !== 'assistant') return text;
+    text = text
+      .replace(/([。！？；])\s*(?=(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
+      .replace(/(^|\n)\s*(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明)[:：]\s*/g, '$1$2：')
+      .replace(/\n{3,}/g, '\n\n');
+    return text;
+  }
+
+  function setMessageContent(el, role, content) {
+    el.textContent = formatChatText(role, content);
   }
 
   async function loadJobOptions() {
@@ -310,7 +395,7 @@
   function renderMessage(role, content, isTyping = false) {
     const el = document.createElement('div');
     el.className = 'chat-msg ' + (isTyping ? 'chat-msg--typing' : `chat-msg--${role}`);
-    el.textContent = content;
+    setMessageContent(el, role, content);
     messagesEl.appendChild(el);
     return el;
   }
