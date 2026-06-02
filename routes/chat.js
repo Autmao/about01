@@ -428,20 +428,20 @@ router.post('/message', async (req, res) => {
       aiUnavailable = true;
     }
     if (!replyText) {
-      replyText = '这个问题需要编辑部同事确认后回复。';
+      replyText = aiUnavailable
+        ? 'AI助手暂时没有连接成功，请稍后再试。若这个问题必须人工确认，请发送“转人工：”并用一句话写清楚要确认的点。'
+        : '这个问题需要编辑部同事确认后回复。';
     }
 
-    // 检测是否需要人工介入
-    const inferred = inferHumanNeed(content, replyText, chatJob);
+    // 检测是否需要人工介入。AI 暂不可用时，只有用户明确要求人工才转后台。
+    const inferred = inferHumanNeed(normalizedContent, replyText, chatJob);
     const reachedAiLimit = aiUserCount >= AI_USER_MESSAGE_LIMIT;
-    const needHuman = aiUnavailable || inferred.needHuman;
+    const needHuman = inferred.needHuman;
     let cleanReply = cleanHumanMarker(replyText);
 
     if (needHuman) {
       const assignee = await resolveAssignee(session);
-      const reason = aiUnavailable
-        ? 'AI 暂不可用，转人工处理'
-        : inferred.reason;
+      const reason = inferred.reason;
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
         assignedAdminName: assignee.name,
