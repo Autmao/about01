@@ -12,7 +12,7 @@ const AI_USER_MESSAGE_LIMIT = 3;
 const AI_RETURN_NOTICE = '人工暂时搬砖中，AI助手继续服务。';
 const AI_LIMIT_GUIDANCE = `本轮 AI 咨询的 3 条额度已经用完啦。
 
-为了让编辑部高效处理，请把仍需人工确认的问题合并成一句话，并以“转人工：”开头发送。`;
+我先把本轮信息收束到这里。建议你根据上面的结论核对岗位要求、整理投递材料，再决定是否提交申请。`;
 
 const FEE_TYPE_LABELS = {
   per_project: '按项目', per_word: '按字数',
@@ -93,10 +93,13 @@ function buildSystemPrompt(job) {
 2. 能从岗位信息直接回答的问题，直接给出简洁答案，不要升级人工。
 3. 不要编造岗位信息中没有的内容。
 4. 如果用户询问“我是否适合/作品够不够/能不能投”，先用岗位要求给出自查清单和建议，不要直接升级人工。
-5. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
-6. 只有在用户明确要求人工回复，或问题涉及特殊审批（延期、错过截止、单独联系、合同/付款/版权的个人具体确认）时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-7. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
-8. 标记只用于系统识别，不要解释这个标记。`;
+5. 如果岗位信息没有明确写，先说明“当前岗位信息里没有明确写”，再给出基于已知信息的投递建议；不要因为信息缺失就升级。
+6. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
+7. 不要在正文中主动提示用户转人工、找工作人员、加微信、电话或邮件联系。
+8. 只有在问题确实涉及特殊审批（延期、错过截止、单独联系、合同/付款/版权的个人具体确认），或用户明确要求真人/工作人员回复时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+9. 如果触发上面的确认场景，正文只说“这个点需要进一步确认”，不要解释后台流转方式。
+10. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答，不要引导用户反复追问。
+11. 标记只用于系统识别，不要解释这个标记。`;
 }
 
 function buildSystemPromptGeneral() {
@@ -107,9 +110,12 @@ about编辑部是小红书于2021年创立的内容品牌，延续 "Inspire Live
 规则：
 1. 只回答与 about编辑部招募相关的问题。
 2. 能确定回答的问题直接答；如果用户询问“是否适合/能不能投”，先给出自查清单和建议，不要直接升级人工。
-3. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
-4. 只有在用户明确要求人工回复，或问题涉及特殊审批、单独联系、合同/付款/版权的个人具体确认时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
-5. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答。`;
+3. 如果没有明确资料，先说明“当前招募信息里没有明确写”，再给出基于已知信息的投递建议；不要因为信息缺失就升级。
+4. 回答格式必须清晰：优先用“结论：”“你可以这样做：”“需要注意：”等短小段落，每个段落之间空一行；不要输出一整大段。
+5. 不要在正文中主动提示用户转人工、找工作人员、加微信、电话或邮件联系。
+6. 只有在问题确实涉及特殊审批、单独联系、合同/付款/版权的个人具体确认，或用户明确要求真人/工作人员回复时，才在回复正文末尾另起一行，单独输出标记：[NEED_HUMAN]。
+7. 如果触发上面的确认场景，正文只说“这个点需要进一步确认”，不要解释后台流转方式。
+8. 用户本轮最多只能向 AI 连续提问 3 条，请尽量在当前回复中完整解答。`;
 }
 
 function adminName(row) {
@@ -171,19 +177,21 @@ async function resolveAssignee(session) {
 }
 
 function inferHumanNeed(content, replyText, job) {
-  const text = `${content || ''}\n${replyText || ''}`;
+  const userText = content || '';
+  const aiText = replyText || '';
+  const text = `${userText}\n${aiText}`;
   const checks = [
-    { re: /转人工|人工回复|真人|工作人员回复|联系.*(编辑部|负责人|工作人员)|加微信|电话沟通|邮件联系|拉群|有人.*回复/i, reason: '用户明确请求人工联系' },
+    { re: /转人工|人工回复|真人|工作人员回复|联系.*(编辑部|负责人|工作人员)|加微信|电话沟通|邮件联系|拉群|有人.*回复/i, reason: '用户明确请求人工联系', target: userText },
     { re: /延期|延长|错过截止|截止.*过|补交|晚交|特殊申请|破例|单独沟通/i, reason: '涉及特殊时间或流程审批' },
     { re: /(我的|具体|这次|本次).*(合同|发票|版权|署名|付款|打款|结算|税|保密)|合同.*怎么签|什么时候.*打款|能否.*开发票/i, reason: '涉及合同、版权或结算的个人具体确认' },
-    { re: /无法确认|需要.*确认|建议.*联系|请.*工作人员|NEED_HUMAN/i, reason: 'AI 判断需要人工确认' },
+    { re: /NEED_HUMAN|无法确认|不能确认|无法判断|不确定|需要(编辑部|工作人员|负责人).*确认|需要进一步确认/i, reason: 'AI 判断需要进一步确认', target: aiText },
   ];
   const feeIsUnclear = job && (!job.fee || job.fee_type === 'negotiable' || /面议|待定|协商/.test(job.fee));
-  if (/转人工|人工/.test(content || '') && /薪酬|稿费|预算|报价|费用|多少钱/.test(content || '') && feeIsUnclear) {
+  if (/转人工|人工|真人|工作人员/.test(userText) && /薪酬|稿费|预算|报价|费用|多少钱/.test(userText) && feeIsUnclear) {
     return { needHuman: true, reason: '薪酬需要人工确认' };
   }
   for (const item of checks) {
-    if (item.re.test(text)) return { needHuman: true, reason: item.reason };
+    if (item.re.test(item.target || text)) return { needHuman: true, reason: item.reason };
   }
   return { needHuman: false, reason: '' };
 }
@@ -222,14 +230,14 @@ function tidyAssistantReply(text) {
 }
 
 function withHumanNotice(reply) {
-  const notice = '您的问题已通知编辑部，请耐心等待，稍后会有回复。';
+  const notice = '这个问题需要进一步确认。收到回复后，你可以继续补充。';
   if (!reply) return notice;
-  if (/已通知编辑部|同步给编辑部|请耐心等待|稍后会有回复/.test(reply)) return reply;
+  if (/进一步确认|收到回复后/.test(reply)) return reply;
   return `${reply}\n\n${notice}`;
 }
 
 function withLimitNotice(reply) {
-  const notice = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，我先帮你把能确认的信息收束在这里。若仍有必须人工确认的问题，请发送“转人工：”并用一句话写清楚要确认的点。`;
+  const notice = `本轮 AI 咨询已达到 ${AI_USER_MESSAGE_LIMIT} 条，我先帮你把能确认的信息收束在这里。建议你根据上面的结论核对岗位要求、整理投递材料。`;
   if (!reply) return notice;
   return `${reply}\n\n${notice}`;
 }
@@ -439,7 +447,7 @@ router.post('/message', async (req, res) => {
         reason: '用户追加消息，等待人工回复',
         lastQuestion: normalizedContent,
       });
-      const reply = '收到，我已把新消息同步给编辑部，请稍等人工回复。';
+      const reply = '收到，我已同步你的补充信息。收到回复后，你可以继续补充。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
       return res.json({
         reply,
@@ -455,7 +463,7 @@ router.post('/message', async (req, res) => {
     const aiUserCount = aiPhaseUserMessageCount(history);
     if (aiUserCount > AI_USER_MESSAGE_LIMIT) {
       const assignee = await resolveAssignee(session);
-      const reason = inferredFromUser.reason || '用户在 AI 收束后明确请求人工确认';
+      const reason = inferredFromUser.reason || '用户在 AI 收束后触发进一步确认';
       await setChatSessionHumanPending(sessionId, {
         assignedAdminId: assignee.id,
         assignedAdminName: assignee.name,
@@ -465,7 +473,7 @@ router.post('/message', async (req, res) => {
         reason,
         lastQuestion: normalizedContent,
       });
-      const reply = '收到，我已把需要人工确认的问题同步给编辑部，请耐心等待，稍后会有回复。';
+      const reply = '这个问题需要进一步确认。我已帮你同步，收到回复后你可以继续补充。';
       await addChatMessage({ sessionId, role: 'assistant', content: reply });
       return res.json({
         reply,
@@ -506,7 +514,7 @@ router.post('/message', async (req, res) => {
     }
     if (!replyText) {
       replyText = aiUnavailable
-        ? 'AI助手暂时没有连接成功，请稍后再试。若这个问题必须人工确认，请发送“转人工：”并用一句话写清楚要确认的点。'
+        ? 'AI助手暂时没有连接成功，请稍后再试。'
         : '这个问题需要编辑部同事确认后回复。';
     }
 

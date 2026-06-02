@@ -153,8 +153,8 @@
       } else {
         // 欢迎语
         const welcome = selectedJobId
-          ? '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位职责、要求、投递方式等问题一次说清楚。\n\n如果 3 条后仍需人工确认，请发送“转人工：”加上具体问题。'
-          : '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位、投递流程、作品准备等问题一次说清楚。\n\n如果 3 条后仍需人工确认，请发送“转人工：”加上具体问题。';
+          ? '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位职责、要求、投递方式等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。'
+          : '你好，我是 about编辑部招募助手。\n\n本轮 AI 最多回复 3 条，请尽量把岗位、投递流程、作品准备等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。';
         renderMessage('assistant', welcome);
       }
       scrollToBottom();
@@ -169,10 +169,10 @@
     if (!content || isSending || currentStatus === 'pending_human') return;
     if (!sessionId) return;
 
-    if (currentStatus === 'bot' && aiUserCount >= aiLimit && !isHumanEscalation(content)) {
+    if (currentStatus === 'bot' && aiUserCount >= aiLimit && !shouldSubmitAfterLimit(content)) {
       inputEl.value = '';
       inputEl.style.height = 'auto';
-      renderNotice('本轮 AI 咨询的 3 条额度已经用完。若仍有必须人工确认的问题，请发送“转人工：”并用一句话写清楚要确认的点。');
+      renderNotice('本轮 AI 咨询的 3 条额度已经用完。建议你根据上面的结论核对岗位要求、整理投递材料。');
       scrollToBottom();
       inputEl.focus();
       return;
@@ -229,12 +229,12 @@
       updateHeader(data.status);
 
       if (data.needHuman) {
-        renderNotice('您的问题已通知编辑部，请耐心等待，稍后会有回复。');
+        renderNotice('这个问题需要进一步确认。收到回复后，你可以继续补充。');
         startPolling();
       }
       scrollToBottom();
     } catch {
-      setMessageContent(typingEl, 'assistant', '网络有点不稳定，这条消息暂时没有送达。请稍后再试，或把必须人工确认的问题整理成“转人工：……”发送。');
+      setMessageContent(typingEl, 'assistant', '网络有点不稳定，这条消息暂时没有送达。请稍后再试。');
       typingEl.classList.remove('chat-msg--typing');
       typingEl.classList.add('chat-msg--assistant');
       scrollToBottom();
@@ -279,10 +279,10 @@
 
   function updateHeader(status) {
     currentStatus = status || currentStatus || 'bot';
-    if (currentStatus === 'pending_human') headerSub.textContent = '等待人工回复';
-    else if (currentStatus === 'human_active') headerSub.textContent = '人工回复中，可继续补充';
+    if (currentStatus === 'pending_human') headerSub.textContent = '正在进一步确认';
+    else if (currentStatus === 'human_active') headerSub.textContent = '可继续补充';
     else if (currentStatus === 'resolved') headerSub.textContent = '对话已解决，可以重新发起咨询';
-    else if (aiUserCount >= aiLimit) headerSub.textContent = 'AI 已完成 3 条回答，可转人工确认';
+    else if (aiUserCount >= aiLimit) headerSub.textContent = 'AI 已完成本轮回答';
     else headerSub.textContent = selectedJobId ? 'AI助手服务中，可直接提问' : 'AI助手服务中，欢迎咨询';
     updateComposerState();
   }
@@ -292,11 +292,11 @@
     inputEl.disabled = waitingHuman || isSending;
     sendBtn.disabled = waitingHuman || isSending;
     if (waitingHuman) {
-      inputEl.placeholder = '等待编辑部回复后可继续发送';
+      inputEl.placeholder = '正在进一步确认，收到回复后可继续发送';
     } else if (currentStatus === 'human_active') {
-      inputEl.placeholder = '继续补充给编辑部…...';
+      inputEl.placeholder = '继续补充你的问题…...';
     } else if (aiUserCount >= aiLimit) {
-      inputEl.placeholder = '如需人工，请输入“转人工：具体问题”';
+      inputEl.placeholder = '本轮 AI 咨询已完成';
     } else {
       inputEl.placeholder = '输入你的问题…...';
     }
@@ -310,7 +310,7 @@
     usageFillEl.style.width = `${Math.min(100, ratio * 100)}%`;
     usageCountEl.textContent = `AI 咨询 ${aiUserCount}/${aiLimit}`;
     usageHintEl.textContent = aiUserCount >= aiLimit
-      ? 'AI 额度已用完，可用“转人工：”提交必须确认的问题'
+      ? '本轮 AI 咨询已完成'
       : `还可向 AI 咨询 ${Math.max(aiLimit - aiUserCount, 0)} 条`;
     usageEl.dataset.state = aiUserCount >= aiLimit ? 'limit' : 'active';
     updateComposerState();
@@ -327,12 +327,13 @@
     return Math.min(count, aiLimit);
   }
 
-  function isHumanEscalation(text) {
-    return /转人工|人工/.test(text || '');
+  function shouldSubmitAfterLimit(text) {
+    return /转人工|人工|真人|工作人员|延期|延长|错过截止|截止.*过|补交|晚交|特殊申请|破例|单独沟通|加微信|电话沟通|邮件联系|拉群|合同|发票|版权|署名|付款|打款|结算|税|保密/i.test(text || '');
   }
 
   function formatChatText(role, content) {
     let text = String(content || '').replace(/\r\n/g, '\n').trim();
+    if (role === 'assistant' && text === AI_RETURN_NOTICE) return 'AI助手继续服务。';
     if (role !== 'assistant') return text;
     text = text
       .replace(/([。！？；])\s*(?=(结论|依据|下一步|建议|需要注意|你可以这样做|补充说明|如果|若|另外|同时)[:：])/g, '$1\n\n')
