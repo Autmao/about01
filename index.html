@@ -12,7 +12,9 @@
 <body class="home-v2">
 
   <nav class="home-nav" aria-label="主导航">
-    <a class="home-nav__brand" href="index.html">about编辑部</a>
+    <a class="home-nav__brand" href="index.html" aria-label="about编辑部首页">
+      <img src="assets/images/brand/about-logo-en.png" alt="about" width="900" height="218">
+    </a>
     <a class="home-nav__cta" id="home-auth-link" href="login.html">登录</a>
   </nav>
 
@@ -33,56 +35,41 @@
         </p>
       </div>
 
-      <div class="home-hero__object" aria-label="about 多项目招募入口">
-        <div class="home-project-board" id="open-calls">
+      <div class="home-hero__object" aria-label="about 多项目招募展示">
+        <div class="home-project-board">
           <div class="home-project-board__rail">
-            <span>OPEN CALL INDEX</span>
-            <button type="button" class="home-project-all is-active" data-department="">全部</button>
+            <span>OPEN CALL DESK</span>
+            <span>2026</span>
           </div>
-          <div class="home-project-tabs" aria-label="筛选招募项目">
-          <button type="button" class="home-project-card home-project-card--publication" data-department="about出版物">
-            <div>
-              <span class="home-project-card__kicker">about出版物</span>
-              <strong>撰稿 / 编辑 / 排版设计......</strong>
+          <article class="home-project-card home-project-card--publication">
+            <div class="home-project-card__copy">
+              <strong>《about关于》纸质出版物</strong>
+              <p>季度更新的 MOOK 杂志书，以泛生活 / 文化 / 艺术为主题，关注能唤起好奇心的兴趣和知识、多元鲜活的个体故事，也关注广泛的社会价值与全人类共通的情感。</p>
             </div>
-            <div class="home-project-card__covers" aria-hidden="true">
+            <div class="home-project-card__media home-project-card__covers" aria-hidden="true">
+              <img src="assets/images/magazines/about-06.webp" alt="" width="780" height="980" decoding="async">
+              <img src="assets/images/magazines/about-07.webp" alt="" width="780" height="980" decoding="async">
               <img src="assets/images/magazines/about-10.webp" alt="" width="780" height="980" decoding="async">
-              <img src="assets/images/magazines/about-05.webp" alt="" width="724" height="980" decoding="async">
             </div>
-          </button>
-          <button type="button" class="home-project-card home-project-card--audio" data-department="about热水频道">
-            <div>
-              <span class="home-project-card__kicker">about热水频道</span>
-              <strong>播客策划 / 剪辑后期......</strong>
+          </article>
+          <article class="home-project-card home-project-card--audio">
+            <div class="home-project-card__copy">
+              <strong>about热水频道</strong>
+              <p>品牌自制播客节目，每期围绕一个兴趣生活关键词聊聊天，一起打开那些不曾看见的世界图层。</p>
             </div>
-            <div class="home-waveform" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <div class="home-project-card__media home-project-card__media--logo" aria-hidden="true">
+              <img src="assets/images/brand/warm-water-logo.png" alt="" width="520" height="523" decoding="async">
             </div>
-          </button>
-          <button type="button" class="home-project-card home-project-card--field" data-department="about/CCC">
-            <div>
-              <span class="home-project-card__kicker">about/CCC</span>
-              <strong>创新合作 / 线下活动......</strong>
+          </article>
+          <article class="home-project-card home-project-card--field">
+            <div class="home-project-card__copy">
+              <strong>about/CCC</strong>
+              <p>品牌创新实验室，用 “Creativity + Collaboration + Connection” 的理念，探索富有想象力和多样性的创新内容形态，和伙伴们一起做点好玩的。</p>
             </div>
-            <div class="home-field-map" aria-hidden="true">
-              <span></span><span></span><span></span><span></span>
+            <div class="home-project-card__media home-project-card__media--photo" aria-hidden="true">
+              <img src="assets/images/brand/ccc-blue-lab-cutout.png" alt="" width="623" height="620" decoding="async">
             </div>
-          </button>
-          </div>
-
-          <div class="home-filter-bar">
-            <label class="home-search">
-              <span>Search</span>
-              <span class="home-search__icon" aria-hidden="true"></span>
-              <input type="search" id="search-input" placeholder="搜索岗位或关键词">
-            </label>
-          </div>
-
-          <div class="home-job-list" id="jobs-list"></div>
-          <div class="home-empty" id="empty-state" style="display:none;">
-            <strong>暂时没有匹配的岗位。</strong>
-            <span>可以换一个筛选条件，或稍后再来看看新的招募。</span>
-          </div>
+          </article>
         </div>
       </div>
     </div>
@@ -100,12 +87,50 @@
       </div>
       <div class="home-ticker" aria-hidden="true">
         <div class="home-ticker__track">
-          <span>WRITING<em>/</em>PHOTOGRAPHY<em>/</em>AUDIO<em>/</em>DESIGN<em>/</em>EVENTS<em>/</em>EDITORIAL<em>/</em>WRITING<em>/</em>PHOTOGRAPHY<em>/</em>AUDIO<em>/</em>DESIGN<em>/</em>EVENTS<em>/</em>EDITORIAL<em>/</em>WRITING<em>/</em>PHOTOGRAPHY<em>/</em>AUDIO<em>/</em>DESIGN<em>/</em>EVENTS<em>/</em>EDITORIAL<em>/</em></span>
-          <span>WRITING<em>/</em>PHOTOGRAPHY<em>/</em>AUDIO<em>/</em>DESIGN<em>/</em>EVENTS<em>/</em>EDITORIAL<em>/</em>WRITING<em>/</em>PHOTOGRAPHY<em>/</em>AUDIO<em>/</em>DESIGN<em>/</em>EVENTS<em>/</em>EDITORIAL<em>/</em>WRITING<em>/</em>PHOTOGRAPHY<em>/</em>AUDIO<em>/</em>DESIGN<em>/</em>EVENTS<em>/</em>EDITORIAL<em>/</em></span>
+          <span>writing<em>/</em>photography<em>/</em>audio<em>/</em>design<em>/</em>events<em>/</em>editorial<em>/</em>writing<em>/</em>photography<em>/</em>audio<em>/</em>design<em>/</em>events<em>/</em>editorial<em>/</em></span>
+          <span>writing<em>/</em>photography<em>/</em>audio<em>/</em>design<em>/</em>events<em>/</em>editorial<em>/</em>writing<em>/</em>photography<em>/</em>audio<em>/</em>design<em>/</em>events<em>/</em>editorial<em>/</em></span>
         </div>
       </div>
     </div>
   </header>
+
+  <main>
+    <section class="home-section home-roles" id="open-calls">
+      <div class="home-section__head">
+        <div>
+          <div class="home-kicker">Current Calls</div>
+          <h2>项目合作招募。</h2>
+        </div>
+        <p>
+          这是编辑部正在推进的出版物、播客、线下项目，每个岗位都是一个具体的创作入口。
+        </p>
+      </div>
+
+      <div class="home-call-sheet">
+        <div class="home-jobs-panel">
+          <div class="home-filter-bar">
+            <label class="home-search">
+              <span>Search</span>
+              <span class="home-search__icon" aria-hidden="true"></span>
+              <input type="search" id="search-input" placeholder="搜索岗位或关键词">
+            </label>
+          </div>
+
+          <div class="home-job-list" id="jobs-list"></div>
+          <div class="home-empty" id="empty-state" style="display:none;">
+            <strong>暂时没有匹配的岗位。</strong>
+            <span>可以换一个筛选条件，或稍后再来看看新的招募。</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <strong>about<br>Open Call</strong>
+    <span>关于创作的邀请。</span>
+  </footer>
 
   <script src="assets/js/store.js"></script>
   <script src="assets/js/utils.js"></script>

@@ -1,8 +1,6 @@
 /* ===== HOME.JS ===== */
 
 let currentKeyword = '';
-let currentDepartment = '';
-let cachedJobs = [];
 
 function esc(value) {
   return Utils.escapeHtml(value);
@@ -20,22 +18,22 @@ function shortDescription(text) {
 
 function jobEditorialLabel(category) {
   const labels = {
-    writing: 'WRITING',
-    editing: 'EDITING',
-    illustration: 'ILLUSTRATION',
-    design: 'DESIGN',
-    photography: 'PHOTO',
-    photo_video: 'PHOTO / VIDEO',
-    podcast: 'PODCAST',
-    audio_editing: 'AUDIO',
-    audio_editor: 'AUDIO',
-    planning: 'EVENT',
-    event_planner: 'EVENT',
-    interview: 'INTERVIEW',
-    x: 'X',
-    other: 'OPEN CALL',
+    writing: 'writing',
+    editing: 'editing',
+    illustration: 'illustration',
+    design: 'design',
+    photography: 'photo',
+    photo_video: 'photo / video',
+    podcast: 'podcast',
+    audio_editing: 'audio',
+    audio_editor: 'audio',
+    planning: 'event',
+    event_planner: 'event',
+    interview: 'interview',
+    x: 'x',
+    other: 'open call',
   };
-  return labels[category] || 'OPEN CALL';
+  return labels[category] || 'open call';
 }
 
 function safeCssColor(value, fallback) {
@@ -50,6 +48,7 @@ function renderJobItem(job, index) {
   const dl = Utils.deadlineText(job.deadline);
   const effectiveStatus = Utils.isPastDeadline(job.deadline) ? 'closed' : job.status;
   const statusInfo = Utils.jobStatusMap[effectiveStatus] || { label: effectiveStatus, cls: '' };
+  const statusClass = effectiveStatus === 'open' ? 'home-job-item--open' : 'home-job-item--closed';
   const fee = job.fee
     ? `¥${job.fee}`
     : job.feeType === 'negotiable'
@@ -58,71 +57,50 @@ function renderJobItem(job, index) {
   const href = `job-detail.html?id=${encodeURIComponent(job.id)}`;
 
   return `
-    <article class="home-job-item" style="--job-accent:${accent};" onclick="window.location.href='${href}'">
+    <article class="home-job-item ${statusClass}" style="--job-accent:${accent};" onclick="window.location.href='${href}'">
       <div class="home-job-item__mark">
         <span class="home-job-item__no">${twoDigit(index + 1)}</span>
         <span class="home-job-item__label">${jobEditorialLabel(job.category)}</span>
+        <span class="home-job-item__status">${esc(statusInfo.label)}</span>
       </div>
       <div>
         <h3>${esc(job.title)}</h3>
         <p>${esc(shortDescription(job.description) || '这是一份正在招募中的创作岗位，欢迎打开详情了解项目背景与投递要求。')}</p>
       </div>
       <div class="home-job-meta">
-        <strong>${esc(statusInfo.label)}</strong>
-        <span>${esc(job.department || 'about编辑部')}</span>
         <span>${esc(cat.label)} / 招募 ${job.slots || 1} 人</span>
         <span>${esc(dl.text)}</span>
+        <span>${esc(fee)}</span>
       </div>
     </article>`;
 }
 
-function matchesCurrentFilters(job) {
-  const keyword = currentKeyword.toLowerCase();
-  const haystack = [
-    job.title,
-    job.department,
-    Utils.getCategoryInfo(job.category).label,
-    job.description,
-    ...(job.tags || []),
-  ].join(' ').toLowerCase();
-  const keywordOk = !keyword || haystack.includes(keyword);
-  const departmentOk = !currentDepartment || job.department === currentDepartment;
-  return keywordOk && departmentOk;
-}
-
-function renderGrid() {
-  const list = document.getElementById('jobs-list');
-  const empty = document.getElementById('empty-state');
-  const jobs = cachedJobs.filter(matchesCurrentFilters);
-
-  if (jobs.length === 0) {
-    list.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-  list.innerHTML = jobs.map(renderJobItem).join('');
-
-  list.querySelectorAll('.home-job-item').forEach((item, i) => {
-    item.style.opacity = '0';
-    item.style.transform = 'translateY(8px)';
-    item.style.transition = `opacity 240ms ease ${i * 32}ms, transform 240ms ease ${i * 32}ms`;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      item.style.opacity = '1';
-      item.style.transform = 'translateY(0)';
-    }));
-  });
-}
-
-async function loadJobs() {
+async function renderGrid() {
   const list = document.getElementById('jobs-list');
   const empty = document.getElementById('empty-state');
   list.innerHTML = '<div class="home-loading">正在整理当前招募中的岗位......</div>';
+
   try {
-    cachedJobs = await Store.getJobs({ status: 'all' });
-    renderGrid();
+    const jobs = await Store.getJobs({ status: 'all', keyword: currentKeyword });
+
+    if (jobs.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = jobs.map(renderJobItem).join('');
+
+    list.querySelectorAll('.home-job-item').forEach((item, i) => {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(12px)';
+      item.style.transition = `opacity 280ms ease ${i * 45}ms, transform 280ms ease ${i * 45}ms`;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+      }));
+    });
   } catch {
-    cachedJobs = [];
     list.innerHTML = '';
     empty.style.display = 'block';
     empty.querySelector('strong').textContent = '暂时无法载入招募岗位';
@@ -146,14 +124,6 @@ function bindEvents() {
     currentKeyword = e.target.value.trim();
     renderGrid();
   }, 300));
-
-  document.querySelectorAll('[data-department]').forEach(button => {
-    button.addEventListener('click', () => {
-      currentDepartment = button.dataset.department || '';
-      document.querySelectorAll('[data-department]').forEach(item => item.classList.toggle('is-active', item === button));
-      renderGrid();
-    });
-  });
 }
 
 function updateHomeAuthLink() {
@@ -179,6 +149,6 @@ function updateHomeAuthLink() {
 document.addEventListener('DOMContentLoaded', async () => {
   updateHomeAuthLink();
   await Store.seedDemoData();
-  await Promise.all([updateHeroCount(), loadJobs()]);
+  await Promise.all([updateHeroCount(), renderGrid()]);
   bindEvents();
 });
