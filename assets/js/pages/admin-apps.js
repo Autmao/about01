@@ -32,13 +32,13 @@ const safeUrl = value => Utils.safeUrl(value);
 function decisionEmailDefaults(app, status) {
   if (status === 'hired') {
     return {
-      subject: `您的投递已通过审核 — about编辑部`,
-      body: `您好，${app.name}：\n\n恭喜！您投递的「${app.jobTitle || '相关'}」岗位已通过审核，我们会尽快联系您确认合作细节。\n\n期待与您合作。\n\nabout编辑部`,
+      subject: `您的投递已通过审核 — about编辑部 项目合作招募`,
+      body: `您好，${app.name}：\n\n恭喜！您投递的「${app.jobTitle || '相关'}」岗位已通过审核。\n我们将在近期与您联系，进一步确认合作细节，请保持联系畅通。\n期待与您合作。\n\nabout编辑部`,
     };
   }
   return {
     subject: `关于您的投递 — about编辑部`,
-    body: `您好，${app.name}：\n\n感谢您投递「${app.jobTitle || '相关'}」岗位。本次暂未通过，欢迎关注我们后续的岗位发布。\n\nabout编辑部`,
+    body: `您好，${app.name}：\n\n感谢您投递「${app.jobTitle || '相关'}」岗位。以及您为此付出的时间与心思。\n经过编辑部的仔细评估，遗憾地通知您，本次我们未能选择与您合作。这并不代表对您能力的否定，而是与当前项目的具体需求有关。\n我们会持续发布新的岗位需求，欢迎您关注并在合适的时候再次投递。\n谢谢您对about编辑部的关注。`,
   };
 }
 
