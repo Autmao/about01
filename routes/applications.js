@@ -260,12 +260,7 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
     const actor = req.adminUser.displayName || req.adminUser.username || '';
     const history = [...(app.statusHistory || []), { from: app.status, to: status, at: ts, note, actor }];
 
-    const { rows } = await pool.query(
-      `UPDATE applications SET status = $1, status_history = $2, updated_at = $3 WHERE id = $4 RETURNING *`,
-      [status, JSON.stringify(history), ts, req.params.id]
-    );
-
-    // 只有最终结果才发邮件；已读/待处理是后台内部状态。
+    // 最终结果需要先确认通知邮件可以发出；失败时保留原状态，避免后台与候选人通知不一致。
     if (status === 'hired' || status === 'rejected') {
       await sendStatusEmail(app.email, app.name, app.jobTitle, status, {
         subject: emailSubject,
@@ -273,9 +268,20 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       });
     }
 
+    const { rows } = await pool.query(
+      `UPDATE applications SET status = $1, status_history = $2, updated_at = $3 WHERE id = $4 RETURNING *`,
+      [status, JSON.stringify(history), ts, req.params.id]
+    );
+
     res.json(mapApp(rows[0]));
   } catch (e) {
-    console.error(e);
+    console.error('[applications] status update error:', e.message || e);
+    if (e.code === 'email_not_configured' || e.code === 'email_send_failed') {
+      return res.status(502).json({
+        error: e.code,
+        message: '通知邮件发送失败，候选人状态暂未修改。请检查 Resend Key、发件人域名和公网访问后再重试。',
+      });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 });

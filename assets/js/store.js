@@ -58,7 +58,7 @@ async function _patch(url, data) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `PATCH ${url} failed: ${res.status}`);
+    throw new Error(err.message || err.error || `PATCH ${url} failed: ${res.status}`);
   }
   return res.json();
 }
