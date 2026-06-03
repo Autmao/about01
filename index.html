@@ -34,12 +34,13 @@
       </div>
 
       <div class="home-hero__object" aria-label="about 多项目招募入口">
-        <div class="home-project-board">
+        <div class="home-project-board" id="open-calls">
           <div class="home-project-board__rail">
-            <span>OPEN CALL DESK</span>
-            <span>2026</span>
+            <span>OPEN CALL INDEX</span>
+            <button type="button" class="home-project-all is-active" data-department="">全部</button>
           </div>
-          <article class="home-project-card home-project-card--publication">
+          <div class="home-project-tabs" aria-label="筛选招募项目">
+          <button type="button" class="home-project-card home-project-card--publication" data-department="about出版物">
             <div>
               <span class="home-project-card__kicker">about出版物</span>
               <strong>撰稿 / 编辑 / 排版设计......</strong>
@@ -48,8 +49,8 @@
               <img src="assets/images/magazines/about-10.webp" alt="" width="780" height="980" decoding="async">
               <img src="assets/images/magazines/about-05.webp" alt="" width="724" height="980" decoding="async">
             </div>
-          </article>
-          <article class="home-project-card home-project-card--audio">
+          </button>
+          <button type="button" class="home-project-card home-project-card--audio" data-department="about热水频道">
             <div>
               <span class="home-project-card__kicker">about热水频道</span>
               <strong>播客策划 / 剪辑后期......</strong>
@@ -57,8 +58,8 @@
             <div class="home-waveform" aria-hidden="true">
               <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
             </div>
-          </article>
-          <article class="home-project-card home-project-card--field">
+          </button>
+          <button type="button" class="home-project-card home-project-card--field" data-department="about/CCC">
             <div>
               <span class="home-project-card__kicker">about/CCC</span>
               <strong>创新合作 / 线下活动......</strong>
@@ -66,7 +67,22 @@
             <div class="home-field-map" aria-hidden="true">
               <span></span><span></span><span></span><span></span>
             </div>
-          </article>
+          </button>
+          </div>
+
+          <div class="home-filter-bar">
+            <label class="home-search">
+              <span>Search</span>
+              <span class="home-search__icon" aria-hidden="true"></span>
+              <input type="search" id="search-input" placeholder="搜索岗位或关键词">
+            </label>
+          </div>
+
+          <div class="home-job-list" id="jobs-list"></div>
+          <div class="home-empty" id="empty-state" style="display:none;">
+            <strong>暂时没有匹配的岗位。</strong>
+            <span>可以换一个筛选条件，或稍后再来看看新的招募。</span>
+          </div>
         </div>
       </div>
     </div>
@@ -90,44 +106,6 @@
       </div>
     </div>
   </header>
-
-  <main>
-    <section class="home-section home-roles" id="open-calls">
-      <div class="home-section__head">
-        <div>
-          <div class="home-kicker">Current Calls</div>
-          <h2>我们等待你的加入。</h2>
-        </div>
-        <p>
-          这是编辑部正在推进的出版物、播客、线下项目，每个岗位都是一个具体的创作入口。
-        </p>
-      </div>
-
-      <div class="home-call-sheet">
-        <div class="home-jobs-panel">
-          <div class="home-filter-bar">
-            <label class="home-search">
-              <span>Search</span>
-              <span class="home-search__icon" aria-hidden="true"></span>
-              <input type="search" id="search-input" placeholder="搜索岗位或关键词">
-            </label>
-          </div>
-
-          <div class="home-job-list" id="jobs-list"></div>
-          <div class="home-empty" id="empty-state" style="display:none;">
-            <strong>暂时没有匹配的岗位。</strong>
-            <span>可以换一个筛选条件，或稍后再来看看新的招募。</span>
-          </div>
-
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="home-footer">
-    <strong>about<br>Open Call</strong>
-    <span>关于创作的邀请。</span>
-  </footer>
 
   <script src="assets/js/store.js"></script>
   <script src="assets/js/utils.js"></script>

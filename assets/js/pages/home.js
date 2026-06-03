@@ -1,6 +1,8 @@
 /* ===== HOME.JS ===== */
 
 let currentKeyword = '';
+let currentDepartment = '';
+let cachedJobs = [];
 
 function esc(value) {
   return Utils.escapeHtml(value);
@@ -67,39 +69,60 @@ function renderJobItem(job, index) {
       </div>
       <div class="home-job-meta">
         <strong>${esc(statusInfo.label)}</strong>
+        <span>${esc(job.department || 'about编辑部')}</span>
         <span>${esc(cat.label)} / 招募 ${job.slots || 1} 人</span>
         <span>${esc(dl.text)}</span>
-        <span>${esc(fee)}</span>
       </div>
     </article>`;
 }
 
-async function renderGrid() {
+function matchesCurrentFilters(job) {
+  const keyword = currentKeyword.toLowerCase();
+  const haystack = [
+    job.title,
+    job.department,
+    Utils.getCategoryInfo(job.category).label,
+    job.description,
+    ...(job.tags || []),
+  ].join(' ').toLowerCase();
+  const keywordOk = !keyword || haystack.includes(keyword);
+  const departmentOk = !currentDepartment || job.department === currentDepartment;
+  return keywordOk && departmentOk;
+}
+
+function renderGrid() {
+  const list = document.getElementById('jobs-list');
+  const empty = document.getElementById('empty-state');
+  const jobs = cachedJobs.filter(matchesCurrentFilters);
+
+  if (jobs.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = jobs.map(renderJobItem).join('');
+
+  list.querySelectorAll('.home-job-item').forEach((item, i) => {
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(8px)';
+    item.style.transition = `opacity 240ms ease ${i * 32}ms, transform 240ms ease ${i * 32}ms`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      item.style.opacity = '1';
+      item.style.transform = 'translateY(0)';
+    }));
+  });
+}
+
+async function loadJobs() {
   const list = document.getElementById('jobs-list');
   const empty = document.getElementById('empty-state');
   list.innerHTML = '<div class="home-loading">正在整理当前招募中的岗位......</div>';
-
   try {
-    const jobs = await Store.getJobs({ status: 'all', keyword: currentKeyword });
-
-    if (jobs.length === 0) {
-      list.innerHTML = '';
-      empty.style.display = 'block';
-      return;
-    }
-    empty.style.display = 'none';
-    list.innerHTML = jobs.map(renderJobItem).join('');
-
-    list.querySelectorAll('.home-job-item').forEach((item, i) => {
-      item.style.opacity = '0';
-      item.style.transform = 'translateY(12px)';
-      item.style.transition = `opacity 280ms ease ${i * 45}ms, transform 280ms ease ${i * 45}ms`;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        item.style.opacity = '1';
-        item.style.transform = 'translateY(0)';
-      }));
-    });
+    cachedJobs = await Store.getJobs({ status: 'all' });
+    renderGrid();
   } catch {
+    cachedJobs = [];
     list.innerHTML = '';
     empty.style.display = 'block';
     empty.querySelector('strong').textContent = '暂时无法载入招募岗位';
@@ -123,6 +146,14 @@ function bindEvents() {
     currentKeyword = e.target.value.trim();
     renderGrid();
   }, 300));
+
+  document.querySelectorAll('[data-department]').forEach(button => {
+    button.addEventListener('click', () => {
+      currentDepartment = button.dataset.department || '';
+      document.querySelectorAll('[data-department]').forEach(item => item.classList.toggle('is-active', item === button));
+      renderGrid();
+    });
+  });
 }
 
 function updateHomeAuthLink() {
@@ -148,6 +179,6 @@ function updateHomeAuthLink() {
 document.addEventListener('DOMContentLoaded', async () => {
   updateHomeAuthLink();
   await Store.seedDemoData();
-  await Promise.all([updateHeroCount(), renderGrid()]);
+  await Promise.all([updateHeroCount(), loadJobs()]);
   bindEvents();
 });

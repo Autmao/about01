@@ -16,7 +16,8 @@
   --home-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Noto Sans SC", sans-serif;
   background: var(--home-paper);
   color: var(--home-ink);
-  overflow-x: hidden;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
 @keyframes homeFadeUp {
@@ -129,14 +130,15 @@
 }
 
 .home-hero {
-  min-height: auto;
+  height: 100dvh;
+  min-height: 680px;
   color: var(--home-ink);
   background:
     linear-gradient(90deg, rgba(23,27,24,0.035) 1px, transparent 1px),
     linear-gradient(180deg, rgba(23,27,24,0.035) 1px, transparent 1px),
     linear-gradient(135deg, #fbfaf5 0%, #edf4ef 52%, #f5f1e8 100%);
   background-size: 64px 64px, 64px 64px, auto;
-  padding: 104px clamp(24px, 5vw, 72px) 30px;
+  padding: 96px clamp(24px, 5vw, 72px) 24px;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0;
@@ -151,8 +153,9 @@
   grid-template-columns: minmax(420px, 0.82fr) minmax(420px, 1fr);
   gap: clamp(42px, 7vw, 116px);
   align-items: center;
-  min-height: clamp(600px, 78svh, 760px);
-  padding: clamp(42px, 5.5vh, 72px) 0 clamp(34px, 5vh, 64px);
+  min-height: 0;
+  height: 100%;
+  padding: clamp(28px, 4vh, 52px) 0 clamp(24px, 3.6vh, 44px);
 }
 .home-hero__object {
   position: relative;
@@ -160,6 +163,7 @@
   width: min(100%, 770px);
   justify-self: end;
   align-self: center;
+  min-height: 0;
 }
 .home-cover-shelf {
   position: relative;
@@ -213,11 +217,15 @@
 .home-project-board {
   position: relative;
   display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 14px;
   padding: clamp(14px, 2vw, 22px);
   border: 1px solid rgba(23,27,24,0.72);
   background: rgba(255,253,247,0.58);
   box-shadow: 0 28px 70px rgba(36,48,38,0.12);
+  height: min(680px, calc(100dvh - 184px));
+  min-height: 0;
+  overflow: hidden;
 }
 .home-project-board__rail {
   display: flex;
@@ -231,22 +239,52 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
+.home-project-all {
+  min-height: 28px;
+  border: 1px solid rgba(23,27,24,0.28);
+  background: rgba(255,253,247,0.48);
+  color: rgba(23,27,24,0.62);
+  padding: 0 10px;
+  font: inherit;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+.home-project-all:hover,
+.home-project-all.is-active {
+  background: var(--home-ink);
+  border-color: var(--home-ink);
+  color: var(--home-paper-soft);
+}
+.home-project-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
 .home-project-card {
-  min-height: clamp(132px, 14vw, 172px);
+  appearance: none;
+  min-width: 0;
+  min-height: clamp(96px, 10vw, 126px);
   border: 1px solid rgba(23,27,24,0.18);
   background: var(--card-bg, #fffdf7);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(112px, 0.44fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   align-items: end;
-  padding: clamp(18px, 2vw, 24px);
+  padding: clamp(14px, 1.5vw, 18px);
   overflow: hidden;
-  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 220ms ease, box-shadow 220ms ease, background 220ms ease;
 }
 .home-project-card:hover {
-  transform: translateY(-2px);
   border-color: rgba(23,27,24,0.42);
   box-shadow: 0 16px 34px rgba(36,48,38,0.08);
+}
+.home-project-card.is-active {
+  border-color: rgba(23,27,24,0.74);
+  box-shadow: inset 0 0 0 1px rgba(23,27,24,0.28);
 }
 .home-project-card--publication { --card-bg: #f7f0e6; }
 .home-project-card--audio { --card-bg: #e9f1f4; }
@@ -261,26 +299,27 @@
 .home-project-card strong {
   display: block;
   color: var(--home-ink);
-  font-size: clamp(22px, 2.4vw, 34px);
-  line-height: 1.08;
+  font-size: clamp(15px, 1.55vw, 21px);
+  line-height: 1.18;
   font-weight: 720;
   text-wrap: balance;
 }
 .home-project-card__covers {
   position: relative;
-  min-height: 116px;
+  min-height: 40px;
   align-self: stretch;
+  opacity: 0.62;
 }
 .home-project-card__covers img {
   position: absolute;
-  bottom: -34px;
-  width: clamp(70px, 8vw, 104px);
+  bottom: -52px;
+  width: clamp(48px, 5.5vw, 76px);
   height: auto;
   border: 1px solid rgba(23,27,24,0.18);
   box-shadow: 0 18px 26px rgba(36,48,38,0.16);
 }
 .home-project-card__covers img:first-child {
-  right: 44px;
+  right: 38px;
   transform: rotate(-5deg);
 }
 .home-project-card__covers img:last-child {
@@ -288,14 +327,14 @@
   transform: rotate(4deg);
 }
 .home-waveform {
-  height: 94px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
 }
 .home-waveform i {
-  width: 7px;
+  width: 5px;
   height: var(--wave-h, 42px);
   background: var(--home-blue);
   border-radius: 999px;
@@ -309,7 +348,7 @@
 .home-waveform i:nth-child(7) { --wave-h: 30px; opacity: 0.58; }
 .home-field-map {
   position: relative;
-  height: 104px;
+  height: 42px;
   border: 1px solid rgba(23,27,24,0.2);
   background:
     linear-gradient(90deg, rgba(23,27,24,0.08) 1px, transparent 1px),
@@ -338,8 +377,8 @@
 }
 .home-field-map span {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--home-green);
   box-shadow: 0 0 0 5px rgba(65,111,84,0.12);
@@ -370,11 +409,11 @@
   position: relative;
   z-index: 2;
   max-width: 680px;
-  min-height: clamp(430px, 54vh, 590px);
+  min-height: 0;
   display: grid;
   grid-template-rows: auto auto auto;
   align-content: center;
-  row-gap: clamp(28px, 5.2vh, 64px);
+  row-gap: clamp(24px, 4.6vh, 52px);
   animation: homeFadeUp 700ms ease both;
 }
 .home-eyebrow {
@@ -682,8 +721,30 @@
   font-size: 14px;
 }
 .home-search input::placeholder { color: rgba(17,17,17,0.42); }
+.home-project-board .home-filter-bar {
+  grid-template-columns: 1fr;
+  justify-content: stretch;
+  margin: 0;
+}
+.home-project-board .home-search {
+  min-height: 36px;
+  background: rgba(255,255,255,0.34);
+}
 .home-job-list {
   border-top: 1px solid var(--home-line-strong);
+  min-height: 0;
+}
+.home-project-board .home-job-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(23,27,24,0.28) transparent;
+}
+.home-project-board .home-job-list::-webkit-scrollbar {
+  width: 6px;
+}
+.home-project-board .home-job-list::-webkit-scrollbar-thumb {
+  background: rgba(23,27,24,0.24);
 }
 .home-job-item {
   position: relative;
@@ -698,6 +759,37 @@
   cursor: pointer;
   overflow: hidden;
   transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+.home-project-board .home-job-item {
+  grid-template-columns: 56px minmax(0, 1fr) minmax(106px, auto);
+  gap: 14px;
+  padding: 16px 8px;
+  margin: 0;
+}
+.home-project-board .home-job-item h3 {
+  font-size: clamp(18px, 1.8vw, 27px);
+  line-height: 1.08;
+  margin-bottom: 7px;
+}
+.home-project-board .home-job-item p {
+  font-size: 12px;
+  line-height: 1.48;
+  -webkit-line-clamp: 1;
+  max-width: 420px;
+}
+.home-project-board .home-job-item__no {
+  font-size: 18px;
+}
+.home-project-board .home-job-item__label {
+  font-size: 8px;
+}
+.home-project-board .home-job-meta {
+  min-width: 104px;
+  font-size: 11px;
+  line-height: 1.48;
+}
+.home-project-board .home-job-meta span:last-child {
+  display: none;
 }
 .home-job-item::before {
   content: "";
@@ -793,6 +885,13 @@
   border-top: 1px solid var(--home-line-strong);
   border-bottom: 1px solid var(--home-line-strong);
 }
+.home-project-board .home-empty {
+  grid-row: 4;
+  align-self: stretch;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 0;
+}
 .home-empty strong {
   display: block;
   font-size: 24px;
@@ -850,13 +949,18 @@
     display: none;
   }
   .home-hero {
-    min-height: auto;
-    grid-template-rows: auto auto;
-    padding-bottom: 30px;
+    height: 100dvh;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding-bottom: 18px;
   }
   .home-hero__stage {
-    display: block;
-    min-height: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 20px;
+    height: 100%;
+    min-height: 0;
     padding: 0;
     border-top: 0;
   }
@@ -864,6 +968,7 @@
     max-width: 100%;
     min-height: 0;
     display: block;
+    align-content: start;
   }
   .home-eyebrow {
     margin-bottom: 18px;
@@ -875,16 +980,23 @@
     position: relative;
     right: auto;
     top: auto;
-    width: min(100%, 520px);
-    margin-top: 30px;
+    width: 100%;
+    margin-top: 0;
     opacity: 1;
     justify-self: start;
+    align-self: stretch;
+    min-height: 0;
   }
   .home-project-board {
+    height: 100%;
+    min-height: 0;
     padding: 14px;
   }
+  .home-project-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .home-project-card {
-    min-height: 126px;
+    min-height: 88px;
   }
   .home-hero__footer {
     grid-template-columns: 1fr;
@@ -938,7 +1050,14 @@
   .home-job-item {
     grid-template-columns: 48px minmax(0, 1fr);
   }
+  .home-project-board .home-job-item {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
   .home-job-meta {
+    grid-column: 2;
+    text-align: left;
+  }
+  .home-project-board .home-job-meta {
     grid-column: 2;
     text-align: left;
   }
@@ -974,15 +1093,18 @@
     white-space: nowrap;
   }
   .home-hero {
-    min-height: auto;
-    padding: 72px 18px max(24px, env(safe-area-inset-bottom));
-    gap: 18px;
+    height: 100dvh;
+    min-height: 0;
+    padding: 66px 14px max(12px, env(safe-area-inset-bottom));
+    gap: 10px;
   }
   .home-hero__stage {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     min-height: 0;
-    flex-direction: column;
-    justify-content: flex-start;
+    height: 100%;
+    gap: 14px;
     align-items: stretch;
   }
   .home-eyebrow {
@@ -1001,6 +1123,10 @@
     margin: 16px 0 0;
     overflow-wrap: anywhere;
     word-break: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .home-hero__actions {
     gap: 10px;
@@ -1012,12 +1138,15 @@
   }
   .home-hero__object {
     width: 100%;
-    margin-top: 18px;
+    margin-top: 0;
     justify-self: center;
+    min-height: 0;
   }
   .home-project-board {
-    gap: 10px;
-    padding: 12px;
+    height: 100%;
+    min-height: 0;
+    gap: 9px;
+    padding: 10px;
     box-shadow: none;
   }
   .home-project-board__rail {
@@ -1025,13 +1154,13 @@
     padding-bottom: 10px;
   }
   .home-project-card {
-    min-height: 104px;
-    grid-template-columns: minmax(0, 1fr) 82px;
-    gap: 10px;
-    padding: 14px;
+    min-height: 70px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 10px;
   }
   .home-project-card strong {
-    font-size: 18px;
+    font-size: 13px;
     line-height: 1.16;
   }
   .home-project-card__kicker {
@@ -1039,31 +1168,28 @@
     margin-bottom: 7px;
   }
   .home-project-card__covers {
-    min-height: 86px;
+    min-height: 24px;
   }
   .home-project-card__covers img {
-    width: 54px;
-    bottom: -24px;
+    width: 38px;
+    bottom: -34px;
   }
   .home-project-card__covers img:first-child {
     right: 28px;
   }
   .home-waveform {
-    height: 72px;
+    height: 24px;
     gap: 5px;
   }
   .home-waveform i {
     width: 5px;
   }
   .home-field-map {
-    height: 74px;
+    height: 26px;
     background-size: 18px 18px;
   }
   .home-hero__footer {
-    gap: 10px;
-    padding-top: 10px;
-    align-self: end;
-    width: 100%;
+    display: none;
   }
   .home-hero__recruit {
     display: grid;
@@ -1192,15 +1318,21 @@
     font-size: 9px;
     letter-spacing: 0.1em;
   }
+  .home-project-board .home-job-item__label {
+    display: none;
+  }
+  .home-project-board .home-job-item__mark {
+    align-items: start;
+  }
   .home-job-item h3 {
-    font-size: clamp(24px, 7vw, 30px);
+    font-size: clamp(19px, 5.8vw, 26px);
     line-height: 1.08;
     margin-bottom: 10px;
   }
   .home-job-item p {
     font-size: 13px;
     line-height: 1.65;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
   }
   .home-job-meta {
     grid-column: auto;
