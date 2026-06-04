@@ -137,7 +137,7 @@ function renderSessions(sessions) {
 function fillAssigneeSelect(session) {
   const select = document.getElementById('assign-select');
   const currentUser = Store.getCurrentUser();
-  let options = Store.isSuperAdmin() ? team : team.filter(u => u.id === currentUser?.id);
+  let options = team.length ? [...team] : [];
   if (!options.length && currentUser) options = [currentUser];
   if (session.assignedAdminId && !options.some(u => u.id === session.assignedAdminId)) {
     options = [{ id: session.assignedAdminId, displayName: session.assignedAdminName || '当前负责人', username: '' }, ...options];
@@ -169,6 +169,10 @@ function applySessionMeta(session) {
   replyArea.style.display = session.status === 'resolved' ? 'none' : 'block';
   const returnAiBtn = document.getElementById('return-ai-btn');
   if (returnAiBtn) returnAiBtn.style.display = session.status === 'bot' ? 'none' : '';
+  const assignHint = document.getElementById('assign-hint');
+  if (assignHint) assignHint.textContent = session.status === 'bot'
+    ? '负责人用于后续人工介入时通知。'
+    : '如果通知给错人，可以改派给正确负责人。';
 }
 
 function renderModalMessages(messages) {

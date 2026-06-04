@@ -642,9 +642,8 @@ router.patch('/sessions/:id/assign', requireAdmin, async (req, res) => {
   try {
     const { adminUserId } = req.body;
     if (!adminUserId) return res.status(400).json({ error: 'adminUserId required' });
-    if (req.adminUser.role !== 'superadmin' && adminUserId !== req.adminUser.id) {
-      return res.status(403).json({ error: 'Only superadmin can assign to other members' });
-    }
+    const existingSession = await getChatSession(req.params.id);
+    if (!existingSession) return res.status(404).json({ error: 'Not found' });
     const { rows } = await pool.query('SELECT id, display_name, username FROM admin_users WHERE id = $1', [adminUserId]);
     const target = rows[0];
     if (!target) return res.status(404).json({ error: 'Admin user not found' });
@@ -652,6 +651,17 @@ router.patch('/sessions/:id/assign', requireAdmin, async (req, res) => {
       assignedAdminId: target.id,
       assignedAdminName: adminName(target),
     });
+    if (
+      existingSession.assignedAdminId !== target.id &&
+      ['pending_human', 'human_active'].includes(existingSession.status)
+    ) {
+      const messages = await getChatMessages(req.params.id);
+      const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+      await notifyHumanAssignee(req, req.params.id, { id: target.id, name: adminName(target) }, {
+        reason: '人工咨询已重新指派给你',
+        lastQuestion: lastUserMessage?.content || '',
+      });
+    }
     res.json(session);
   } catch (e) {
     console.error(e);

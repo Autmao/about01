@@ -9,6 +9,24 @@ const { requireAdmin, requireSuperAdmin } = require('./middleware/auth');
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 
+function shouldRedirectToHttps(req) {
+  if (!isProd) return false;
+  if (req.path === '/health' || req.path === '/api/health') return false;
+  const publicBase = (process.env.PUBLIC_BASE_URL || '').trim();
+  if (!publicBase.startsWith('https://')) return false;
+  const host = req.headers['x-forwarded-host'] || req.headers.host || '';
+  if (!host || /^localhost(:|$)|^127\.0\.0\.1(:|$)/.test(host)) return false;
+  if (!req.headers['x-forwarded-proto']) return false;
+  const proto = String(req.headers['x-forwarded-proto']).split(',')[0].trim();
+  return proto === 'http';
+}
+
+app.use((req, res, next) => {
+  if (!shouldRedirectToHttps(req)) return next();
+  const publicBase = process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
+  return res.redirect(308, `${publicBase}${req.originalUrl || req.url}`);
+});
+
 app.get(['/health', '/api/health'], (req, res) => {
   res.json({
     ok: true,
@@ -23,6 +41,9 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  if (isProd) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   next();
 });
 

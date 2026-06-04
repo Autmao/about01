@@ -95,6 +95,21 @@
 }
 .admin-page-title { font-size: var(--text-2xl); font-weight: 720; color: #111111; letter-spacing: 0; }
 .admin-content { padding: var(--space-8); }
+.admin-session-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.admin-session-actions__user {
+  color: rgba(17,17,17,0.56);
+  font-size: var(--text-xs);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .admin-layout .btn--primary,
 .auth-page .btn--primary {
@@ -563,7 +578,8 @@
   .admin-sidebar__footer { display: none; }
   .admin-main { margin-left: 0; padding-bottom: 72px; }
   .admin-content { padding: var(--space-4); }
-  .admin-topbar { padding: var(--space-4); }
+  .admin-topbar { padding: var(--space-4); gap: var(--space-2); }
+  .admin-session-actions__user { display: none; }
   .stat-cards { grid-template-columns: 1fr 1fr; }
   .collab-grid { grid-template-columns: 1fr 1fr; }
 }

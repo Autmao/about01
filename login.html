@@ -124,6 +124,37 @@
       font-size: 14px;
       line-height: 1.65;
     }
+    .login-session-status {
+      display: none;
+      border: 1px solid rgba(17,17,17,0.16);
+      background: rgba(255,253,247,0.58);
+      backdrop-filter: blur(16px);
+      padding: 16px 18px;
+      color: var(--login-muted);
+      font-size: 14px;
+      line-height: 1.55;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+    .login-session-status.is-visible {
+      display: flex;
+    }
+    .login-session-status strong {
+      color: var(--login-ink);
+      font-weight: 680;
+    }
+    .login-session-status__actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .login-session-status .btn {
+      min-height: 34px;
+      padding: 0 13px;
+      font-size: 13px;
+    }
     .login-page[data-role="choice"] .login-panels,
     .login-page:not([data-role]) .login-panels {
       display: none;
@@ -254,6 +285,13 @@
       .login-panel {
         width: 100%;
       }
+      .login-session-status {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .login-session-status__actions {
+        justify-content: flex-start;
+      }
       .login-kicker {
         font-size: 12px;
         margin-bottom: 14px;
@@ -299,6 +337,14 @@
       <div class="login-kicker">Open Call Login</div>
       <h1 id="login-title"><span>选择你的</span><span>登录入口。</span></h1>
       <p id="login-desc"></p>
+    </section>
+
+    <section class="login-session-status" id="login-session-status" aria-live="polite">
+      <div id="login-session-text"></div>
+      <div class="login-session-status__actions">
+        <button type="button" class="btn btn--ghost" id="logout-current-btn">退出当前身份</button>
+        <button type="button" class="btn btn--ghost" id="logout-all-btn">全部退出</button>
+      </div>
     </section>
 
     <section class="login-choice" aria-label="选择登录身份">
@@ -389,6 +435,36 @@
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
+    function renderSessionStatus() {
+      const status = document.getElementById('login-session-status');
+      const text = document.getElementById('login-session-text');
+      const admin = Store.getCurrentUser();
+      const applicantEmail = Store.getApplicantEmail();
+      const pieces = [];
+
+      if (admin) pieces.push(`工作人员：${admin.displayName || admin.username || '已登录'}`);
+      if (applicantEmail) pieces.push(`创作伙伴：${applicantEmail}`);
+
+      if (!pieces.length) {
+        status.classList.remove('is-visible');
+        return;
+      }
+
+      text.textContent = `当前浏览器已登录 ${pieces.join('；')}。如果要换身份，可以先退出。`;
+      status.classList.add('is-visible');
+    }
+
+    function logoutCurrentIdentity() {
+      if (selectedRole === 'staff') {
+        Store.adminLogout();
+      } else if (selectedRole === 'applicant') {
+        Store.applicantLogout();
+      } else {
+        Store.logoutAllIdentities();
+      }
+      window.location.href = from ? `login.html?from=${encodeURIComponent(from)}` : 'login.html';
+    }
+
     const OTP_COUNTDOWN_SECONDS = 60;
     let otpCountdownTimer = null;
 
@@ -448,6 +524,12 @@
         document.getElementById('applicant-email').value = currentEmail;
         document.getElementById('applicant-note').textContent = `当前已登录：${currentEmail}`;
       }
+      renderSessionStatus();
+      document.getElementById('logout-current-btn').addEventListener('click', logoutCurrentIdentity);
+      document.getElementById('logout-all-btn').addEventListener('click', () => {
+        Store.logoutAllIdentities();
+        window.location.href = from ? `login.html?from=${encodeURIComponent(from)}` : 'login.html';
+      });
     });
 
     document.getElementById('send-code-btn').addEventListener('click', async () => {

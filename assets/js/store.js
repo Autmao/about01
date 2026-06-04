@@ -330,6 +330,11 @@ const Store = {
     sessionStorage.removeItem('mgs_applicant_token');
     sessionStorage.removeItem('mgs_applicant_email');
   },
+  logoutAllIdentities() {
+    this.adminLogout();
+    this.applicantLogout();
+    this.userLogout();
+  },
   async getApplicantApplications() {
     const token = sessionStorage.getItem('mgs_applicant_token');
     if (!token) throw new Error('Not logged in');
@@ -441,3 +446,44 @@ const Store = {
 };
 
 window.Store = Store;
+
+function initAdminSessionControls() {
+  const topbar = document.querySelector('.admin-topbar');
+  if (!topbar || document.getElementById('admin-session-actions')) return;
+  const user = Store.getCurrentUser();
+  if (!user) return;
+
+  const actions = document.createElement('div');
+  actions.className = 'admin-session-actions';
+  actions.id = 'admin-session-actions';
+
+  const name = document.createElement('span');
+  name.className = 'admin-session-actions__user';
+  name.textContent = user.displayName || user.username || '工作人员';
+
+  const switchLink = document.createElement('a');
+  switchLink.className = 'btn btn--ghost btn--sm';
+  switchLink.href = `../login.html?from=${encodeURIComponent(Store.currentRelativePath('admin/index.html'))}`;
+  switchLink.textContent = '切换身份';
+  switchLink.addEventListener('click', () => {
+    Store.adminLogout();
+  });
+
+  const logoutBtn = document.createElement('button');
+  logoutBtn.type = 'button';
+  logoutBtn.className = 'btn btn--ghost btn--sm';
+  logoutBtn.textContent = '退出登录';
+  logoutBtn.addEventListener('click', () => {
+    Store.adminLogout();
+    window.location.href = Store.adminLoginUrl(Store.currentRelativePath('admin/index.html'));
+  });
+
+  actions.append(name, switchLink, logoutBtn);
+  topbar.appendChild(actions);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAdminSessionControls);
+} else {
+  initAdminSessionControls();
+}
