@@ -1,0 +1,31 @@
+{
+  "name": "about编辑部 项目合作招募",
+  "short_name": "about招募",
+  "description": "about编辑部项目合作招募平台",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#B8EF72",
+  "theme_color": "#B8EF72",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/icons/about-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/about-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/about-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
