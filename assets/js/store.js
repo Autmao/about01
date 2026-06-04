@@ -461,14 +461,6 @@ function initAdminSessionControls() {
   name.className = 'admin-session-actions__user';
   name.textContent = user.displayName || user.username || '工作人员';
 
-  const switchLink = document.createElement('a');
-  switchLink.className = 'btn btn--ghost btn--sm';
-  switchLink.href = `../login.html?from=${encodeURIComponent(Store.currentRelativePath('admin/index.html'))}`;
-  switchLink.textContent = '切换身份';
-  switchLink.addEventListener('click', () => {
-    Store.adminLogout();
-  });
-
   const logoutBtn = document.createElement('button');
   logoutBtn.type = 'button';
   logoutBtn.className = 'btn btn--ghost btn--sm';
@@ -478,7 +470,7 @@ function initAdminSessionControls() {
     window.location.href = Store.adminLoginUrl(Store.currentRelativePath('admin/index.html'));
   });
 
-  actions.append(name, switchLink, logoutBtn);
+  actions.append(name, logoutBtn);
   topbar.appendChild(actions);
 }
 
