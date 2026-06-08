@@ -300,6 +300,15 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
   return drawTextLines(ctx, lines, x, y, lineHeight);
 }
 
+function loadPosterImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
 async function generateQRDataURL(url) {
   return new Promise((resolve, reject) => {
     const div = document.createElement('div');
@@ -330,15 +339,11 @@ async function drawPoster(job) {
   const W = 900, H = 1200;
   const contentX = 104;
   const contentW = W - 208;
-  const footerTop = H - 160;
-  const contentBottom = H - 286;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  const cat = Utils.getCategoryInfo(job.category);
   const dl = Utils.deadlineText(job.deadline);
-  const fee = job.fee ? `¥${job.fee}` : '面议';
   const url = window.location.href;
 
   ctx.fillStyle = '#f5f1e8';
@@ -352,115 +357,87 @@ async function drawPoster(job) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  ctx.fillStyle = '#111111';
-  ctx.fillRect(0, 0, W, 92);
-  ctx.fillStyle = '#fbf8f1';
-  ctx.font = '700 26px "PingFang SC", "Noto Sans SC", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('about编辑部', 64, 58);
-  ctx.font = '600 18px "SF Pro Display", "PingFang SC", sans-serif';
-  ctx.fillStyle = 'rgba(251,248,241,0.64)';
-  ctx.textAlign = 'right';
-  ctx.fillText('about recruit', W - 64, 58);
-
-  ctx.strokeStyle = '#111111';
+  ctx.strokeStyle = 'rgba(17,17,17,0.88)';
   ctx.lineWidth = 2;
-  ctx.strokeRect(64, 132, W - 128, H - 224);
+  ctx.strokeRect(56, 56, W - 112, H - 112);
 
-  ctx.fillStyle = '#b84a36';
-  ctx.fillRect(64, 132, 12, H - 224);
+  try {
+    const logo = await loadPosterImage('/assets/images/brand/about-logo-en.png');
+    const logoW = 214;
+    const logoH = Math.round(logoW * (logo.height / logo.width));
+    ctx.drawImage(logo, contentX, 116, logoW, logoH);
+  } catch (_) {
+    ctx.fillStyle = '#111111';
+    ctx.font = posterFont(34, 800, '"SF Pro Display", "PingFang SC", sans-serif');
+    ctx.fillText('about', contentX, 156);
+  }
 
-  ctx.fillStyle = '#111111';
+  ctx.strokeStyle = 'rgba(17,17,17,0.84)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(contentX, 244);
+  ctx.lineTo(W - contentX, 244);
+  ctx.stroke();
+
+  ctx.fillStyle = '#8a8377';
   ctx.textAlign = 'left';
-  ctx.font = posterFont(22, 700, '"SF Pro Display", "PingFang SC", sans-serif');
-  ctx.fillText('项目', contentX, 188);
-  ctx.font = posterFont(22, 500);
-  ctx.fillStyle = '#6f6a60';
-  drawFittedLine(ctx, `${job.department || 'about编辑部'} / ${cat.label}`, contentX, 224, contentW);
+  ctx.font = posterFont(24, 600);
+  ctx.fillText('项目名称', contentX, 310);
 
   ctx.fillStyle = '#111111';
   ctx.textAlign = 'left';
   const title = fitWrappedText(ctx, job.title, contentW, {
-    maxLines: 6,
-    maxHeight: 288,
-    minSize: 30,
-    maxSize: 72,
+    maxLines: 5,
+    maxHeight: 330,
+    minSize: 40,
+    maxSize: 76,
     weight: 760,
     lineRatio: 1.12,
   });
   ctx.font = posterFont(title.size, 760);
-  const titleLastY = drawTextLines(ctx, title.lines, contentX, 320, title.lineHeight);
+  drawTextLines(ctx, title.lines, contentX, 388, title.lineHeight);
 
-  ctx.strokeStyle = 'rgba(17,17,17,0.82)';
+  const metaTop = 712;
+  ctx.strokeStyle = 'rgba(17,17,17,0.84)';
   ctx.lineWidth = 2;
-  const dividerY = Math.min(Math.max(titleLastY + 34, 430), 618);
   ctx.beginPath();
-  ctx.moveTo(contentX, dividerY);
-  ctx.lineTo(W - contentX, dividerY);
+  ctx.moveTo(contentX, metaTop - 58);
+  ctx.lineTo(W - contentX, metaTop - 58);
   ctx.stroke();
 
-  const metaY = dividerY + 50;
-  const metaColumnWidth = 286;
+  const metaColumnWidth = 270;
   const metaColumnGap = contentW - metaColumnWidth * 2;
-  const metaRowGap = 74;
   const meta = [
     ['截止日期', dl.text],
     ['招募数量', `${job.slots || 1} 人`],
-    ['稿费', fee],
-    ['结算方式', Utils.feeTypeLabel(job.feeType)],
   ];
-  ctx.font = posterFont(20, 500);
+  ctx.font = posterFont(24, 500);
   meta.forEach((item, i) => {
-    const x = contentX + (i % 2) * (metaColumnWidth + metaColumnGap);
-    const y = metaY + Math.floor(i / 2) * metaRowGap;
+    const x = contentX + i * (metaColumnWidth + metaColumnGap);
+    const y = metaTop;
     ctx.fillStyle = '#8a8377';
     ctx.fillText(item[0], x, y);
     ctx.fillStyle = '#111111';
-    ctx.font = posterFont(26, 700);
-    drawFittedLine(ctx, String(item[1]), x, y + 34, metaColumnWidth);
-    ctx.font = posterFont(20, 500);
+    ctx.font = posterFont(42, 760);
+    drawFittedLine(ctx, String(item[1]), x, y + 64, metaColumnWidth);
+    ctx.font = posterFont(24, 500);
   });
 
-  const descY = metaY + metaRowGap * 2 + 48;
-  const descHeight = Math.max(0, contentBottom - descY);
-  if (descHeight >= 30) {
-    const maxDescLines = Math.max(1, Math.min(4, Math.floor(descHeight / 32)));
-    ctx.fillStyle = '#3f3b34';
-    const desc = fitWrappedText(ctx, job.description || '打开项目详情，查看项目背景、具体要求与投递方式。', contentW, {
-      maxLines: maxDescLines,
-      maxHeight: descHeight,
-      minSize: 18,
-      maxSize: 25,
-      weight: 400,
-      lineRatio: 1.42,
-    });
-    ctx.font = posterFont(desc.size, 400);
-    drawTextLines(ctx, desc.lines, contentX, descY, desc.lineHeight);
-  }
-
-  ctx.fillStyle = '#111111';
-  ctx.fillRect(64, footerTop, W - 128, 68);
+  ctx.fillStyle = 'rgba(17,17,17,0.9)';
+  ctx.fillRect(contentX, 894, 360, 72);
   ctx.fillStyle = '#fbf8f1';
-  ctx.font = posterFont(24, 700);
-  ctx.fillText('扫码查看创作项目详情', contentX, H - 118);
+  ctx.font = posterFont(26, 700);
+  ctx.fillText('扫码查看项目详情', contentX + 28, 940);
 
   try {
     const qrSrc = await generateQRDataURL(url);
     const qrImg = new Image();
     await new Promise(res => { qrImg.onload = res; qrImg.onerror = res; qrImg.src = qrSrc; });
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(W - 236, H - 256, 172, 172);
-    ctx.drawImage(qrImg, W - 226, H - 246, 152, 152);
+    ctx.fillRect(W - 318, 840, 214, 214);
+    ctx.drawImage(qrImg, W - 304, 854, 186, 186);
   } catch (_) { /* QR 失败静默 */ }
 
-  ctx.fillStyle = '#b84a36';
-  ctx.font = posterFont(22, 700, '"SF Pro Display", "PingFang SC", sans-serif');
-  ctx.textAlign = 'left';
-  ctx.fillText('about recruit', contentX, H - 204);
-  ctx.fillStyle = 'rgba(17,17,17,0.48)';
-  ctx.font = posterFont(18, 400, '"SF Pro Display", "PingFang SC", sans-serif');
-  ctx.textAlign = 'left';
-  ctx.fillText('about编辑部', contentX, H - 60);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
