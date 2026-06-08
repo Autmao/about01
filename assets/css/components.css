@@ -447,9 +447,9 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.75);
   z-index: 1000;
-  display: flex; align-items: flex-start; justify-content: center;
-  overflow-y: auto;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  display: block;
+  overflow: visible;
+  padding: 0;
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s;
 }
@@ -462,14 +462,27 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   padding: var(--space-6);
   display: flex; flex-direction: column; align-items: center;
   gap: var(--space-4);
-  max-width: 420px; width: 90%;
-  max-height: 90vh; overflow-y: auto;
-  position: relative;
+  width: min(90vw, 420px);
+  max-height: min(92dvh, 860px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   box-shadow: var(--shadow-hover);
   box-sizing: border-box;
+  min-width: 0;
 }
 .poster-modal canvas {
-  width: 100%; border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  max-height: min(66dvh, 720px);
+  object-fit: contain;
+  flex: 0 0 auto;
+  border-radius: var(--radius-lg);
   display: block;
 }
 .poster-close {
@@ -777,21 +790,22 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   color: #b84a36;
 }
 .poster-overlay {
-  align-items: flex-start;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  display: block;
+  padding: 0;
 }
 .poster-modal {
-  max-height: calc(100vh - 36px);
   gap: 12px;
   padding: 20px;
+  max-height: min(92dvh, 860px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 .poster-modal canvas {
-  width: auto;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   height: auto;
-  max-height: min(68vh, 720px);
+  max-height: min(66dvh, 720px);
   object-fit: contain;
   flex: 0 0 auto;
 }
@@ -872,15 +886,15 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
     width: 100%;
   }
   .poster-overlay {
-    padding: 12px 10px max(12px, env(safe-area-inset-bottom));
+    padding: 0;
   }
   .poster-modal {
-    width: min(100%, 420px);
+    width: min(calc(100vw - 24px), 360px);
     padding: 14px;
-    max-height: calc(100vh - 24px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 24px - env(safe-area-inset-bottom));
   }
   .poster-modal canvas {
-    max-height: 60vh;
+    max-height: 58dvh;
   }
   .detail-page .related-section {
     margin-top: 24px;

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'about-open-call-v5-20260608';
+const CACHE_VERSION = 'about-open-call-v6-20260608';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

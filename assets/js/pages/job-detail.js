@@ -193,14 +193,12 @@ function openPoster() {
   if (!_currentJob) return;
   closeShareMenu();
   document.getElementById('poster-overlay').classList.add('active');
-  document.body.style.overflow = 'hidden';
   drawPoster(_currentJob);
 }
 window.openPoster = openPoster;
 
 function closePosterBtn() {
   document.getElementById('poster-overlay').classList.remove('active');
-  document.body.style.overflow = '';
 }
 window.closePosterBtn = closePosterBtn;
 
