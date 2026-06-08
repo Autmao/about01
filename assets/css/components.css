@@ -781,14 +781,19 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
 }
 .poster-modal {
-  max-height: none;
+  max-height: calc(100vh - 36px);
   gap: 12px;
   padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .poster-modal canvas {
   width: auto;
   max-width: 100%;
-  max-height: min(70vh, 720px);
+  height: auto;
+  max-height: min(68vh, 720px);
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 @media (max-width: 860px) {
   .detail-page .container {
@@ -872,9 +877,10 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   .poster-modal {
     width: min(100%, 420px);
     padding: 14px;
+    max-height: calc(100vh - 24px - env(safe-area-inset-bottom));
   }
   .poster-modal canvas {
-    max-height: 62vh;
+    max-height: 60vh;
   }
   .detail-page .related-section {
     margin-top: 24px;

@@ -269,7 +269,7 @@ function fitWrappedText(ctx, text, maxWidth, {
     ctx.font = posterFont(size, weight);
     const lineHeight = Math.round(size * lineRatio);
     const lines = splitCanvasLines(ctx, text, maxWidth);
-    const height = lines.length ? (lines.length - 1) * lineHeight + size : 0;
+    const height = lines.length * lineHeight;
     if (lines.length <= maxLines && height <= maxHeight) {
       return { size, lineHeight, lines };
     }
@@ -330,6 +330,8 @@ async function drawPoster(job) {
   const W = 900, H = 1200;
   const contentX = 104;
   const contentW = W - 208;
+  const footerTop = H - 160;
+  const contentBottom = H - 286;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -379,25 +381,28 @@ async function drawPoster(job) {
   ctx.fillStyle = '#111111';
   ctx.textAlign = 'left';
   const title = fitWrappedText(ctx, job.title, contentW, {
-    maxLines: 5,
-    maxHeight: 260,
-    minSize: 38,
+    maxLines: 6,
+    maxHeight: 288,
+    minSize: 30,
     maxSize: 72,
     weight: 760,
-    lineRatio: 1.14,
+    lineRatio: 1.12,
   });
   ctx.font = posterFont(title.size, 760);
   const titleLastY = drawTextLines(ctx, title.lines, contentX, 320, title.lineHeight);
 
   ctx.strokeStyle = 'rgba(17,17,17,0.82)';
   ctx.lineWidth = 2;
-  const dividerY = Math.min(Math.max(titleLastY + 38, 438), 590);
+  const dividerY = Math.min(Math.max(titleLastY + 34, 430), 618);
   ctx.beginPath();
   ctx.moveTo(contentX, dividerY);
   ctx.lineTo(W - contentX, dividerY);
   ctx.stroke();
 
-  const metaY = dividerY + 58;
+  const metaY = dividerY + 50;
+  const metaColumnWidth = 286;
+  const metaColumnGap = contentW - metaColumnWidth * 2;
+  const metaRowGap = 74;
   const meta = [
     ['截止日期', dl.text],
     ['招募数量', `${job.slots || 1} 人`],
@@ -406,32 +411,35 @@ async function drawPoster(job) {
   ];
   ctx.font = posterFont(20, 500);
   meta.forEach((item, i) => {
-    const x = contentX + (i % 2) * 338;
-    const y = metaY + Math.floor(i / 2) * 82;
-    const valueW = 278;
+    const x = contentX + (i % 2) * (metaColumnWidth + metaColumnGap);
+    const y = metaY + Math.floor(i / 2) * metaRowGap;
     ctx.fillStyle = '#8a8377';
     ctx.fillText(item[0], x, y);
     ctx.fillStyle = '#111111';
-    ctx.font = posterFont(28, 700);
-    drawFittedLine(ctx, String(item[1]), x, y + 36, valueW);
+    ctx.font = posterFont(26, 700);
+    drawFittedLine(ctx, String(item[1]), x, y + 34, metaColumnWidth);
     ctx.font = posterFont(20, 500);
   });
 
-  const descY = Math.min(metaY + 204, 848);
-  ctx.fillStyle = '#3f3b34';
-  const desc = fitWrappedText(ctx, job.description || '打开项目详情，查看项目背景、具体要求与投递方式。', contentW, {
-    maxLines: 3,
-    maxHeight: 118,
-    minSize: 22,
-    maxSize: 28,
-    weight: 400,
-    lineRatio: 1.5,
-  });
-  ctx.font = posterFont(desc.size, 400);
-  drawTextLines(ctx, desc.lines, contentX, descY, desc.lineHeight);
+  const descY = metaY + metaRowGap * 2 + 48;
+  const descHeight = Math.max(0, contentBottom - descY);
+  if (descHeight >= 30) {
+    const maxDescLines = Math.max(1, Math.min(4, Math.floor(descHeight / 32)));
+    ctx.fillStyle = '#3f3b34';
+    const desc = fitWrappedText(ctx, job.description || '打开项目详情，查看项目背景、具体要求与投递方式。', contentW, {
+      maxLines: maxDescLines,
+      maxHeight: descHeight,
+      minSize: 18,
+      maxSize: 25,
+      weight: 400,
+      lineRatio: 1.42,
+    });
+    ctx.font = posterFont(desc.size, 400);
+    drawTextLines(ctx, desc.lines, contentX, descY, desc.lineHeight);
+  }
 
   ctx.fillStyle = '#111111';
-  ctx.fillRect(64, H - 160, W - 128, 68);
+  ctx.fillRect(64, footerTop, W - 128, 68);
   ctx.fillStyle = '#fbf8f1';
   ctx.font = posterFont(24, 700);
   ctx.fillText('扫码查看创作项目详情', contentX, H - 118);
