@@ -800,10 +800,10 @@ async function updateAdminUserRole(id, role) {
 /* ===== member_notes CRUD ===== */
 async function getMemberNote(adminUserId, appId) {
   const { rows } = await pool.query(
-    'SELECT note FROM member_notes WHERE admin_user_id = $1 AND app_id = $2',
+    'SELECT note, updated_at FROM member_notes WHERE admin_user_id = $1 AND app_id = $2',
     [adminUserId, appId]
   );
-  return { note: rows[0]?.note || '' };
+  return { note: rows[0]?.note || '', updatedAt: rows[0]?.updated_at || null };
 }
 async function getAllMemberNotesByAppId(appId) {
   const { rows } = await pool.query(

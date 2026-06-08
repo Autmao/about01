@@ -2,7 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool, genId, now, mapCollab, getAllMemberNotesByAppId } = require('../db');
+const { pool, genId, now, mapCollab, mapApp, getMemberNote } = require('../db');
+const { decorateApplicationFiles } = require('../lib/storage');
 
 /* GET /api/collaborators */
 router.get('/', async (req, res) => {
@@ -53,24 +54,44 @@ router.get('/:id/activity', async (req, res) => {
     if (!collabRows[0]) return res.status(404).json({ error: 'Not found' });
     const email = collabRows[0].email;
 
-    // 查该邮箱所有投递
+    // 查该邮箱所有投递。档案详情里的材料、备注和投递历史均以投递记录为准。
     const { rows: appRows } = await pool.query(
-      'SELECT id, job_title, status_history FROM applications WHERE email = $1 ORDER BY submitted_at ASC',
+      `SELECT * FROM applications
+       WHERE LOWER(email) = LOWER($1)
+       ORDER BY submitted_at DESC`,
       [email]
     );
 
-    // 聚合成员备注（按 admin_user 分组）
-    const notesByMember = {};
+    const applications = [];
+    const sharedNotes = [];
+    const myNotes = [];
     for (const app of appRows) {
-      const notes = await getAllMemberNotesByAppId(app.id);
-      for (const n of notes) {
-        if (!notesByMember[n.adminUserId]) {
-          notesByMember[n.adminUserId] = { displayName: n.displayName, notes: [] };
-        }
-        notesByMember[n.adminUserId].notes.push({
-          note: n.note,
-          jobTitle: app.job_title,
-          updatedAt: n.updatedAt,
+      const mapped = decorateApplicationFiles(mapApp(app));
+      applications.push({
+        id: mapped.id,
+        jobId: mapped.jobId,
+        jobTitle: mapped.jobTitle,
+        jobCategory: mapped.jobCategory,
+        status: mapped.status,
+        portfolioLinks: mapped.portfolioLinks || [],
+        resumeUrl: mapped.resumeUrl || '',
+        portfolioFiles: mapped.portfolioFiles || [],
+        submittedAt: mapped.submittedAt,
+        updatedAt: mapped.updatedAt,
+      });
+
+      if (app.admin_note) {
+        sharedNotes.push({
+          note: app.admin_note,
+          updatedAt: app.updated_at,
+        });
+      }
+
+      const ownNote = await getMemberNote(req.adminUser.id, app.id);
+      if (ownNote.note) {
+        myNotes.push({
+          note: ownNote.note,
+          updatedAt: ownNote.updatedAt || app.updated_at,
         });
       }
     }
@@ -97,7 +118,10 @@ router.get('/:id/activity', async (req, res) => {
     actionLog.sort((a, b) => new Date(b.at) - new Date(a.at));
 
     res.json({
-      memberNotes: Object.values(notesByMember),
+      applications,
+      sharedNotes,
+      myNotes,
+      memberNotes: [],
       actionLog,
     });
   } catch (e) {

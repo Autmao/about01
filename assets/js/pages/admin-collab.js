@@ -21,6 +21,12 @@ let currentSort = 'recent';
 let currentKeyword = '';
 const esc = value => Utils.escapeHtml(value);
 const safeUrl = value => Utils.safeUrl(value);
+const STATUS_LABELS = {
+  pending: '待处理',
+  read: '已读',
+  hired: '录用',
+  rejected: '未通过',
+};
 
 function renderStars(rating, collabId) {
   return [1,2,3,4,5].map(n => `
@@ -47,6 +53,98 @@ function renderCollabCard(collab) {
       </div>
       ${tags ? `<div class="collab-card__tags">${tags}</div>` : ''}
     </div>`;
+}
+
+function statusLabel(status) {
+  return STATUS_LABELS[status] || status || '—';
+}
+
+function noteDate(value) {
+  return value ? String(value).slice(0, 10) : '';
+}
+
+function collectApplicationMaterials(applications) {
+  const seen = new Set();
+  const files = [];
+  (applications || []).forEach(app => {
+    (app.portfolioFiles || []).forEach(file => {
+      const url = String(file?.url || '').trim();
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      files.push({ url, name: file.name || '未命名材料' });
+    });
+    const resumeUrl = String(app.resumeUrl || '').trim();
+    if (resumeUrl && !seen.has(resumeUrl)) {
+      seen.add(resumeUrl);
+      files.push({ url: resumeUrl, name: '简历材料' });
+    }
+  });
+  return files;
+}
+
+function collectPortfolioLinks(applications, fallbackLinks = []) {
+  const seen = new Set();
+  const links = [];
+  const addLink = (link, index) => {
+    const url = String(link?.url || '').trim();
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    links.push({
+      url,
+      name: link.label || `作品链接 ${link.index || index + 1}`,
+    });
+  };
+  (applications || []).forEach(app => (app.portfolioLinks || []).forEach(addLink));
+  if (!links.length) (fallbackLinks || []).forEach(addLink);
+  return links;
+}
+
+function renderResourceRows(items, labelPrefix) {
+  return items.map((item, index) => `
+    <div class="admin-resource-item">
+      <span class="admin-resource-index">${esc(labelPrefix)} ${index + 1}</span>
+      <a href="${safeUrl(item.url)}" target="_blank" rel="noopener">${esc(item.name || '未命名')}</a>
+    </div>
+  `).join('');
+}
+
+function renderResourceSection(title, items, labelPrefix) {
+  if (!items.length) return '';
+  return `
+    <div class="admin-resource-section">
+      <div class="admin-resource-title">${esc(title)}</div>
+      <div class="admin-resource-list">${renderResourceRows(items, labelPrefix)}</div>
+    </div>`;
+}
+
+function renderSubmissionHistory(applications) {
+  if (!(applications || []).length) {
+    return `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无投递记录</p>`;
+  }
+  return `
+    <div class="timeline">
+      ${applications.map(app => `
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            ${esc(app.jobTitle || '未知项目')}
+            <div class="timeline-date">筛选状态：${esc(statusLabel(app.status))}${app.submittedAt ? ` · ${esc(String(app.submittedAt).slice(0, 7))}` : ''}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function renderNoteList(notes) {
+  if (!(notes || []).length) {
+    return `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无备注</p>`;
+  }
+  return notes.map(note => `
+    <div class="collab-member-note-item">
+      <span class="collab-member-note-item__text">${esc(note.note)}</span>
+      <span class="collab-member-note-item__time">${esc(noteDate(note.updatedAt))}</span>
+    </div>
+  `).join('');
 }
 
 async function renderGrid() {
@@ -80,35 +178,19 @@ async function openModal(collabId) {
   const avatar = Utils.getAvatarInfo(collab.name);
   const cats = (collab.categories || []).map(c => {
     const info = Utils.getCategoryInfo(c);
-    return `<span class="tag tag--category">${info.icon} ${info.label}</span>`;
+    return `<span class="tag tag--category">${esc(info.label)}</span>`;
   }).join(' ');
 
-  const links = (collab.portfolioLinks || []).map(l =>
-    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener" style="display:block;color:var(--color-brand-light);font-size:var(--text-sm);margin-bottom:var(--space-2);">作品链接 · ${esc(l.label || '未命名')}</a>`
-  ).join('');
-
-  const history = (collab.cooperationHistory || []).map(h => `
-    <div class="timeline-item">
-      <div class="timeline-dot"></div>
-      <div class="timeline-content">
-        ${esc(h.jobTitle || '未知岗位')}
-        <div class="timeline-date">${esc(h.date || '')}</div>
-      </div>
-    </div>`).join('');
-
-  // 成员备注区块
-  const memberNotesHtml = (activity.memberNotes || []).length
-    ? (activity.memberNotes || []).map(m => `
-        <div class="collab-member-notes">
-          <div class="collab-member-notes__name">${esc(m.displayName)}</div>
-          ${m.notes.map(n => `
-            <div class="collab-member-note-item">
-              <span class="collab-member-note-item__job">${esc(n.jobTitle || '')}</span>
-              <span class="collab-member-note-item__text">${esc(n.note)}</span>
-              <span class="collab-member-note-item__time">${esc(n.updatedAt ? n.updatedAt.slice(0,10) : '')}</span>
-            </div>`).join('')}
-        </div>`).join('')
-    : `<p style="font-size:var(--text-sm);color:var(--color-text-muted);">暂无成员备注</p>`;
+  const submissions = activity.applications || [];
+  const materials = collectApplicationMaterials(submissions);
+  const portfolioLinks = collectPortfolioLinks(submissions, collab.portfolioLinks || []);
+  const resourceHtml = [
+    renderResourceSection('简历和作品集', materials, '材料'),
+    renderResourceSection('作品链接', portfolioLinks, '作品链接'),
+  ].join('');
+  const submissionHistory = renderSubmissionHistory(submissions);
+  const sharedNotesHtml = renderNoteList(activity.sharedNotes || []);
+  const myNotesHtml = renderNoteList(activity.myNotes || []);
 
   // 操作记录区块
   const ACTION_LABELS = { pending:'待处理', read:'已读', hired:'录用', rejected:'婉拒' };
@@ -150,18 +232,23 @@ async function openModal(collabId) {
       <p style="font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-loose);">${esc(collab.bio)}</p>
     </div>` : ''}
 
-    ${links ? `<div class="modal-section">
-      <div class="modal-section-title">作品集</div>${links}
-    </div>` : ''}
-
-    ${history ? `<div class="modal-section">
-      <div class="modal-section-title">合作历史</div>
-      <div class="timeline">${history}</div>
-    </div>` : ''}
+    ${resourceHtml ? `<div class="modal-section admin-resource-block">${resourceHtml}</div>` : ''}
 
     <div class="modal-section">
-      <div class="modal-section-title">成员备注</div>
-      ${memberNotesHtml}
+      <div class="modal-section-title">投递历史</div>
+      ${submissionHistory}
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">备注</div>
+      <div class="collab-member-notes">
+        <div class="collab-member-notes__name">共享备注 · 所有成员可见</div>
+        ${sharedNotesHtml}
+      </div>
+      <div class="collab-member-notes">
+        <div class="collab-member-notes__name">我的备注 · 仅自己可见</div>
+        ${myNotesHtml}
+      </div>
     </div>
 
     <div class="modal-section">

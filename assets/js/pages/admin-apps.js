@@ -77,22 +77,64 @@ function renderActionHistory(history) {
   return `<div class="action-log">${items.join('')}</div>`;
 }
 
+function getApplicationMaterials(app) {
+  const seen = new Set();
+  const files = [];
+  (app.portfolioFiles || []).forEach(file => {
+    const url = String(file?.url || '').trim();
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    files.push({
+      url,
+      name: file.name || '未命名材料',
+    });
+  });
+  const resumeUrl = String(app.resumeUrl || '').trim();
+  if (resumeUrl && !seen.has(resumeUrl)) {
+    files.unshift({ url: resumeUrl, name: '简历材料' });
+  }
+  return files;
+}
+
+function renderResourceRows(items, labelPrefix) {
+  return items.map((item, index) => `
+    <div class="admin-resource-item">
+      <span class="admin-resource-index">${esc(labelPrefix)} ${index + 1}</span>
+      <a href="${safeUrl(item.url)}" target="_blank" rel="noopener">${esc(item.name || '未命名')}</a>
+    </div>
+  `).join('');
+}
+
+function renderApplicationResources(app) {
+  const materials = getApplicationMaterials(app);
+  const portfolioLinks = (app.portfolioLinks || [])
+    .filter(link => String(link?.url || '').trim())
+    .map((link, index) => ({
+      url: link.url,
+      name: link.label || `作品链接 ${link.index || index + 1}`,
+    }));
+
+  if (!materials.length && !portfolioLinks.length) return '';
+  return `
+    <div class="app-detail__links admin-resource-block">
+      ${materials.length ? `
+        <div class="admin-resource-section">
+          <div class="admin-resource-title">简历和作品集</div>
+          <div class="admin-resource-list">${renderResourceRows(materials, '材料')}</div>
+        </div>` : ''}
+      ${portfolioLinks.length ? `
+        <div class="admin-resource-section">
+          <div class="admin-resource-title">作品链接</div>
+          <div class="admin-resource-list">${renderResourceRows(portfolioLinks, '作品链接')}</div>
+        </div>` : ''}
+    </div>`;
+}
+
 function renderAppCard(app) {
   const avatar = Utils.getAvatarInfo(app.name);
   const statusInfo = Utils.getStatusInfo(app.status);
   const archived = isArchived(app);
-  const materialUrls = new Set();
-  const portfolioFileLinks = (app.portfolioFiles || []).map((f, i) => {
-    materialUrls.add(f.url);
-    return `<a href="${safeUrl(f.url)}" target="_blank" rel="noopener">材料 ${i + 1} · ${esc(f.name || '未命名')}</a>`;
-  }).join('');
-  const resumeLink = app.resumeUrl && !materialUrls.has(app.resumeUrl)
-    ? `<a href="${safeUrl(app.resumeUrl)}" target="_blank" rel="noopener">简历材料</a>`
-    : '';
-  const links = (app.portfolioLinks || []).map((l, i) =>
-    `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">作品链接 ${l.index || i + 1} · ${esc(l.label || '未命名')}</a>`
-  ).join('');
-  const allLinks = resumeLink + portfolioFileLinks + links;
+  const resourcesHtml = renderApplicationResources(app);
 
   const hiredActive   = app.status === 'hired';
   const rejectedActive = app.status === 'rejected';
@@ -138,7 +180,7 @@ function renderAppCard(app) {
       </div>
       <div class="app-detail" id="detail-${app.id}">
         ${app.bio ? `<div class="app-detail__bio">${esc(app.bio)}</div>` : ''}
-        ${allLinks ? `<div class="app-detail__links">${allLinks}</div>` : ''}
+        ${resourcesHtml}
         ${app.portfolioNote ? `<p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-3);">${esc(app.portfolioNote)}</p>` : ''}
         <div class="app-detail__actions">
           <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;">

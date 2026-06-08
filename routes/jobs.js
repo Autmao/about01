@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
     }
     if (keyword) {
       params.push(`%${keyword.toLowerCase()}%`);
-      q += ` AND (LOWER(title) LIKE $${params.length} OR LOWER(COALESCE(department,'')) LIKE $${params.length} OR tags::text ILIKE $${params.length})`;
+      q += ` AND (LOWER(title) LIKE $${params.length} OR LOWER(COALESCE(description,'')) LIKE $${params.length} OR LOWER(COALESCE(department,'')) LIKE $${params.length} OR tags::text ILIKE $${params.length})`;
     }
 
     q += ` ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, display_order ASC NULLS LAST, created_at DESC`;
@@ -74,7 +74,7 @@ router.get('/admin', requireAdmin, async (req, res) => {
     }
     if (keyword) {
       params.push(`%${keyword.toLowerCase()}%`);
-      q += ` AND (LOWER(j.title) LIKE $${params.length} OR LOWER(COALESCE(j.department,'')) LIKE $${params.length})`;
+      q += ` AND (LOWER(j.title) LIKE $${params.length} OR LOWER(COALESCE(j.description,'')) LIKE $${params.length} OR LOWER(COALESCE(j.department,'')) LIKE $${params.length} OR j.tags::text ILIKE $${params.length})`;
     }
 
     q += ` ORDER BY j.display_order ASC NULLS LAST, j.created_at DESC`;
