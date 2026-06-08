@@ -169,6 +169,70 @@
       font-size: 14px;
       margin-top: 9px;
     }
+    .query-app-card__actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .query-detail-toggle {
+      border: 1px solid var(--home-line);
+      background: rgba(251,248,241,0.72);
+      color: var(--home-ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .query-detail-toggle:hover {
+      background: #fffdf8;
+      border-color: var(--home-line-strong);
+    }
+    .query-app-detail {
+      grid-column: 1 / -1;
+      display: none;
+      margin-top: 4px;
+      padding: 22px 0 4px;
+      border-top: 1px solid var(--home-line);
+      color: var(--home-ink);
+    }
+    .query-app-card.is-open .query-app-detail {
+      display: block;
+    }
+    .query-detail-grid {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 14px 24px;
+      font-size: 14px;
+      line-height: 1.78;
+    }
+    .query-detail-label {
+      color: var(--home-accent);
+      font-weight: 720;
+    }
+    .query-detail-value {
+      color: #3d3a34;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .query-detail-links {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .query-detail-link {
+      color: var(--home-ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      word-break: break-all;
+    }
+    .query-detail-empty {
+      color: var(--home-muted);
+    }
     .app-status-badge {
       flex-shrink: 0;
       font-size: var(--text-xs);
@@ -196,6 +260,8 @@
       .query-wrap { grid-template-columns: 1fr; align-items: start; }
       .apps-header { align-items: flex-start; flex-direction: column; }
       .query-app-card { grid-template-columns: 1fr; }
+      .query-app-card__actions { justify-content: flex-start; }
+      .query-detail-grid { grid-template-columns: 1fr; gap: 6px; }
     }
   </style>
 </head>
@@ -249,7 +315,72 @@
     let currentEmail = '';
 
     function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(s ?? '')
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+    }
+
+    function jsArg(value) {
+      return JSON.stringify(String(value ?? '')).replace(/</g, '\\u003C');
+    }
+
+    function safeUrl(raw) {
+      const value = String(raw || '').trim();
+      if (!value) return '#';
+      if (value.startsWith('/') && !value.startsWith('//')) return value;
+      try {
+        const url = new URL(value);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : '#';
+      } catch {
+        return '#';
+      }
+    }
+
+    function formatSize(bytes) {
+      const n = Number(bytes || 0);
+      if (!Number.isFinite(n) || n <= 0) return '';
+      if (n < 1024) return `${n}B`;
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
+      return `${(n / (1024 * 1024)).toFixed(1)}MB`;
+    }
+
+    function renderDetailLinks(app) {
+      const materialLinks = (app.portfolioFiles || [])
+        .map((file, index) => {
+          const name = file.name || '未命名材料';
+          const size = formatSize(file.size);
+          return `<a class="query-detail-link" href="${escHtml(safeUrl(file.url))}" target="_blank" rel="noopener">材料 ${index + 1} · ${escHtml(name)}${size ? ` · ${size}` : ''}</a>`;
+        })
+        .join('');
+      const externalLinks = (app.portfolioLinks || [])
+        .map((link, index) => {
+          const label = link.label || `作品链接 ${link.index || index + 1}`;
+          return `<a class="query-detail-link" href="${escHtml(safeUrl(link.url))}" target="_blank" rel="noopener">链接 ${link.index || index + 1} · ${escHtml(label)}</a>`;
+        })
+        .join('');
+      const allLinks = `${materialLinks}${externalLinks}`;
+      return allLinks ? `<div class="query-detail-links">${allLinks}</div>` : '<span class="query-detail-empty">未填写</span>';
+    }
+
+    function renderApplicationDetail(app) {
+      return `
+        <div class="query-detail-grid">
+          <div class="query-detail-label">姓名</div>
+          <div class="query-detail-value">${escHtml(app.name || '未填写')}</div>
+          <div class="query-detail-label">联系方式</div>
+          <div class="query-detail-value">
+            邮箱：${escHtml(app.email || '未填写')}<br>
+            手机：${escHtml(app.phone || '未填写')}<br>
+            微信：${escHtml(app.wechat || '未填写')}
+          </div>
+          <div class="query-detail-label">个人介绍</div>
+          <div class="query-detail-value">${escHtml(app.bio || '未填写')}</div>
+          <div class="query-detail-label">简历 / 作品集</div>
+          <div class="query-detail-value">${renderDetailLinks(app)}</div>
+        </div>`;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -286,14 +417,26 @@
         const statusText = STATUS_LABELS[a.status] || a.status;
         const date = a.submittedAt ? a.submittedAt.slice(0, 10) : '';
         return `
-        <article class="query-app-card">
+        <article class="query-app-card" id="app-${escHtml(a.id)}">
           <div>
             <div class="query-app-card__title">${escHtml(a.jobTitle || '未知岗位')}</div>
             <div class="query-app-card__meta">投递于 ${date || '—'}</div>
           </div>
-          <span class="app-status-badge ${statusClass}">${statusText}</span>
+          <div class="query-app-card__actions">
+            <span class="app-status-badge ${statusClass}">${statusText}</span>
+            <button class="query-detail-toggle" type="button" aria-expanded="false" onclick="toggleApplicationDetail(${jsArg(a.id)}, this)">查看投递内容</button>
+          </div>
+          <div class="query-app-detail">${renderApplicationDetail(a)}</div>
         </article>`;
       }).join('');
+    }
+
+    function toggleApplicationDetail(id, button) {
+      const card = document.getElementById(`app-${id}`);
+      if (!card) return;
+      const isOpen = card.classList.toggle('is-open');
+      button.setAttribute('aria-expanded', String(isOpen));
+      button.textContent = isOpen ? '收起投递内容' : '查看投递内容';
     }
 
     function resetQuery() {

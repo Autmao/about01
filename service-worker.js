@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'about-open-call-v7-20260608';
+const CACHE_VERSION = 'about-open-call-v8-20260608';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   '/assets/js/pwa-register.js',
   '/assets/js/pages/home.js',
   '/assets/js/pages/job-detail.js',
+  '/assets/js/pages/apply.js',
   '/assets/js/pages/chat-widget.js',
   '/assets/images/brand/about-logo-en.png',
   '/assets/images/brand/warm-water-logo.png',

@@ -34,6 +34,10 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
+function esc(value) {
+  return Utils.escapeHtml(value);
+}
+
 function setUploading(zoneId, text) {
   const zone = document.getElementById(zoneId);
   let el = zone.querySelector('.upload-uploading');
@@ -90,6 +94,7 @@ window.removeMaterialFile = removeMaterialFile;
 
 function renderMaterialFilePreviews() {
   const container = document.getElementById('materials-files-preview');
+  if (!container) return;
   container.innerHTML = uploadedMaterialFiles.map((f, i) => `
     <div class="upload-file-item">
       <span class="upload-file-item__name">材料 ${i + 1} · ${esc(f.name)}</span>

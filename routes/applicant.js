@@ -3,8 +3,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { pool, createOtp, verifyOtp } = require('../db');
+const { pool, createOtp, verifyOtp, mapApp } = require('../db');
 const { sendOtpEmail } = require('../lib/mailer');
+const { decorateApplicationFiles } = require('../lib/storage');
 
 function getSecret() {
   return process.env.JWT_SECRET || process.env.ADMIN_PASSWORD || 'dev-secret';
@@ -73,19 +74,32 @@ router.post('/verify-otp', async (req, res) => {
 router.get('/me/applications', requireApplicant, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, job_id, job_title, job_category, status, submitted_at, updated_at
-       FROM applications WHERE email = $1 ORDER BY submitted_at DESC`,
+      `SELECT *
+       FROM applications
+       WHERE LOWER(email) = $1
+       ORDER BY submitted_at DESC`,
       [req.applicantEmail]
     );
-    res.json(rows.map(r => ({
-      id: r.id,
-      jobId: r.job_id,
-      jobTitle: r.job_title,
-      jobCategory: r.job_category,
-      status: r.status,
-      submittedAt: r.submitted_at,
-      updatedAt: r.updated_at,
-    })));
+    res.json(rows.map(row => {
+      const app = decorateApplicationFiles(mapApp(row));
+      return {
+        id: app.id,
+        jobId: app.jobId,
+        jobTitle: app.jobTitle,
+        jobCategory: app.jobCategory,
+        name: app.name,
+        email: app.email,
+        phone: app.phone,
+        wechat: app.wechat,
+        bio: app.bio,
+        portfolioLinks: app.portfolioLinks || [],
+        resumeUrl: app.resumeUrl || '',
+        portfolioFiles: app.portfolioFiles || [],
+        status: app.status,
+        submittedAt: app.submittedAt,
+        updatedAt: app.updatedAt,
+      };
+    }));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
