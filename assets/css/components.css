@@ -982,7 +982,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
   position: fixed;
   left: 24px;
   bottom: 24px;
-  z-index: 140;
+  z-index: 160;
   color: #171b18;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Noto Sans SC", sans-serif;
 }

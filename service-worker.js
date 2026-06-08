@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'about-open-call-v6-20260608';
+const CACHE_VERSION = 'about-open-call-v7-20260608';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -7,7 +7,9 @@ const STATIC_ASSETS = [
   '/index.html',
   '/login.html',
   '/job-detail.html',
+  '/apply.html',
   '/my-applications.html',
+  '/user-login.html',
   '/assets/css/base.css',
   '/assets/css/layout.css',
   '/assets/css/components.css',

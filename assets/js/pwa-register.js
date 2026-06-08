@@ -54,8 +54,8 @@
         label: '安全访问',
         title: '请用安全链接打开',
         steps: [
-          '使用 https://join.aboutmgz.com 打开页面。',
-          '回到这里后，再添加到手机主屏幕或电脑桌面。',
+          '先复制当前页面链接，并用 Safari、Chrome 或系统浏览器打开。',
+          '使用 https://join.aboutmgz.com 访问后，再添加到手机主屏幕或电脑桌面。',
         ],
       };
     }
@@ -64,7 +64,8 @@
         label: 'iPhone / iPad',
         title: '在手机主屏幕保留入口',
         steps: [
-          '点击浏览器底部的分享按钮。',
+          '先用 Safari 打开当前页面；如果正在微信、小红书等应用内，请选择“在浏览器打开”。',
+          '点击 Safari 底部的分享按钮。',
           '选择“添加到主屏幕”。',
           '确认名称为 about recruit 后保存。',
         ],
@@ -75,7 +76,8 @@
         label: 'Android',
         title: '添加到手机桌面',
         steps: [
-          '点击浏览器右上角菜单。',
+          '先用 Chrome 或系统浏览器打开当前页面；如果正在其他应用内，请选择“在浏览器打开”。',
+          '点击浏览器右上角菜单，或使用页面出现的安装提示。',
           '选择“安装应用”或“添加到主屏幕”。',
           '确认后即可从桌面进入。',
         ],
@@ -127,7 +129,7 @@
             <strong>把 about recruit 放到桌面</strong>
           </div>
         </div>
-        <p class="pwa-install__desc">之后可以更快查看创作项目、投递进度和咨询记录。</p>
+        <p class="pwa-install__desc">先在系统浏览器打开，再把入口放到桌面，之后可以更快查看创作项目、投递进度和咨询记录。</p>
         <div class="pwa-install__actions">
           <button class="pwa-install__primary" type="button">添加到桌面</button>
           <button class="pwa-install__secondary" type="button">稍后</button>

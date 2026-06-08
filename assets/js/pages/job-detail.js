@@ -6,22 +6,22 @@ const esc = value => Utils.escapeHtml(value);
 
 function jobEditorialLabel(category) {
   const labels = {
-    writing: 'WRITING',
-    editing: 'EDITING',
-    illustration: 'ILLUSTRATION',
-    design: 'DESIGN',
-    photography: 'PHOTO',
-    photo_video: 'PHOTO / VIDEO',
-    podcast: 'PODCAST',
-    audio_editing: 'AUDIO',
-    audio_editor: 'AUDIO',
-    planning: 'EVENT',
-    event_planner: 'EVENT',
-    interview: 'INTERVIEW',
-    x: 'X',
-    other: 'PROJECT',
+    writing: 'writer',
+    editing: 'editor',
+    illustration: 'illustrator',
+    design: 'designer',
+    photography: 'photographer',
+    photo_video: 'photographer',
+    podcast: 'podcast producer',
+    audio_editing: 'podcast producer',
+    audio_editor: 'podcast producer',
+    planning: 'event planner',
+    event_planner: 'event planner',
+    interview: 'interviewer',
+    x: 'open call',
+    other: 'open call',
   };
-  return labels[category] || 'PROJECT';
+  return labels[category] || 'open call';
 }
 
 function safeCssColor(value, fallback) {
