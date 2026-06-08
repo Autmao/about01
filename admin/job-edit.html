@@ -6,9 +6,9 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#B8EF72">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="about招募">
+  <meta name="apple-mobile-web-app-title" content="about recruit">
   <link rel="apple-touch-icon" href="/assets/icons/about-icon-192.png">
-  <title>发布岗位 | 管理后台</title>
+  <title>发布项目 | 管理后台</title>
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/components.css">
@@ -24,7 +24,7 @@
     <div class="admin-sidebar__user" id="sidebar-user"></div>
     <nav class="admin-nav">
       <a href="index.html" class="admin-nav-item active">
-        <span class="admin-nav-item__icon">01</span> 岗位管理
+        <span class="admin-nav-item__icon">01</span> 项目管理
       </a>
       <a href="applications.html" class="admin-nav-item">
         <span class="admin-nav-item__icon">02</span> 投递管理
@@ -46,7 +46,7 @@
 
   <main class="admin-main page-enter">
     <div class="admin-topbar">
-      <h1 class="admin-page-title" id="page-title">发布新岗位</h1>
+      <h1 class="admin-page-title" id="page-title">发布新项目</h1>
       <button class="btn btn--ghost" onclick="history.back()">返回</button>
     </div>
 
@@ -58,13 +58,13 @@
           <div class="form-section">
             <h2 class="form-section__title">基本信息</h2>
             <div class="form-field">
-              <label class="form-label">岗位名称 <span class="form-required">*</span></label>
-              <input type="text" class="form-input" id="f-title" placeholder="如：城市切面专题摄影师">
+              <label class="form-label">项目名称 <span class="form-required">*</span></label>
+              <input type="text" class="form-input" id="f-title" placeholder="如：xx项目专题摄影师">
               <span class="form-error" id="err-title"></span>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <label class="form-label">岗位所属 <span class="form-required">*</span></label>
+                <label class="form-label">项目所属 <span class="form-required">*</span></label>
                 <select class="form-input" id="f-department">
                   <option value="">请选择</option>
                   <option value="about出版物">about出版物</option>
@@ -74,7 +74,7 @@
                 <span class="form-error" id="err-department"></span>
               </div>
               <div class="form-field">
-                <label class="form-label">岗位类型 <span class="form-required">*</span></label>
+                <label class="form-label">项目类型 <span class="form-required">*</span></label>
                 <select class="form-input" id="f-category">
                   <option value="">请选择</option>
                   <option value="writing">撰稿人</option>
@@ -85,23 +85,23 @@
                   <option value="podcast">播客制作人</option>
                   <option value="audio_editing">音/视频剪辑师</option>
                   <option value="planning">活动策划</option>
-                  <option value="x">X</option>
+                  <option value="other">其他</option>
                 </select>
                 <span class="form-error" id="err-category"></span>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field" id="owner-field" style="display:none;">
-                <label class="form-label">岗位负责人</label>
+                <label class="form-label">项目负责人</label>
                 <select class="form-input" id="f-owner"></select>
               </div>
               <div class="form-field">
-                <label class="form-label">招募人数</label>
+                <label class="form-label">招募数量</label>
                 <input type="number" class="form-input" id="f-slots" min="1" max="99" value="1">
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">岗位描述 <span class="form-required">*</span> <span class="form-optional">每行一条</span></label>
+              <label class="form-label">项目描述 <span class="form-required">*</span> <span class="form-optional">每行一条</span></label>
               <textarea class="form-input" id="f-desc" rows="6"
                 placeholder="如：策划选题&#10;邀约嘉宾&#10;撰写稿件"></textarea>
               <span class="form-error" id="err-desc"></span>
@@ -146,7 +146,7 @@
           <div class="form-actions" style="padding-top:var(--space-6);">
             <button type="button" class="btn btn--ghost" onclick="history.back()">取消</button>
             <button type="submit" class="btn btn--ghost" id="draft-btn">存为草稿</button>
-            <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">发布岗位</button>
+            <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">发布项目</button>
           </div>
         </div>
       </form>

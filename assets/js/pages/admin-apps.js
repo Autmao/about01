@@ -33,19 +33,19 @@ function decisionEmailDefaults(app, status) {
   if (status === 'hired') {
     return {
       subject: `您的投递已通过审核 — about编辑部 项目合作招募`,
-      body: `您好，${app.name}：\n\n恭喜！您投递的「${app.jobTitle || '相关'}」岗位已通过审核。\n我们将在近期与您联系，进一步确认合作细节，请保持联系畅通。\n期待与您合作。\n\nabout编辑部`,
+      body: `您好，${app.name}：\n\n恭喜！您投递的「${app.jobTitle || '相关'}」项目已通过审核。\n我们将在近期与您联系，进一步确认合作细节，请保持联系畅通。\n期待与您合作。\n\nabout编辑部`,
     };
   }
   return {
-    subject: `关于您的投递 — about编辑部`,
-    body: `您好，${app.name}：\n\n感谢您投递「${app.jobTitle || '相关'}」岗位。以及您为此付出的时间与心思。\n经过编辑部的仔细评估，遗憾地通知您，本次我们未能选择与您合作。这并不代表对您能力的否定，而是与当前项目的具体需求有关。\n我们会持续发布新的岗位需求，欢迎您关注并在合适的时候再次投递。\n谢谢您对about编辑部的关注。`,
+    subject: `关于您的投递 — about编辑部 项目合作招募`,
+    body: `您好，${app.name}：\n\n感谢您投递「${app.jobTitle || '相关'}」项目。以及您为此付出的时间与心思。\n经过编辑部的仔细评估，遗憾地通知您，本次我们未能选择与您合作。这并不代表对您能力的否定，而是与当前项目的具体需求有关。\n我们会持续发布新的项目需求，欢迎您关注并在合适的时候再次投递。\n谢谢您对about编辑部的关注。`,
   };
 }
 
 async function renderJobSelector() {
   const selector = document.getElementById('job-selector');
   const jobs = await Store.getAllJobsAdmin({});
-  selector.innerHTML = `<option value="">全部岗位</option>` +
+  selector.innerHTML = `<option value="">全部项目</option>` +
     jobs.map(j => `<option value="${j.id}" ${j.id === currentJobId ? 'selected' : ''}>${esc(j.title)}</option>`).join('');
 }
 
@@ -123,7 +123,7 @@ function renderAppCard(app) {
         <div class="app-card__info">
           <div class="app-card__name">${esc(app.name)}</div>
           <div class="app-card__meta">
-            ${app.jobTitle ? `<span>岗位：${esc(app.jobTitle)}</span>` : ''}
+            ${app.jobTitle ? `<span>项目：${esc(app.jobTitle)}</span>` : ''}
             <span>邮箱：${esc(app.email)}</span>
             <span>手机：${esc(app.phone)}</span>
             ${app.wechat ? `<span>微信：${esc(app.wechat)}</span>` : ''}
@@ -152,13 +152,13 @@ function renderAppCard(app) {
             <div style="display:flex;flex-direction:column;gap:var(--space-2);">
               <div>
                 <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">共享备注 · 所有成员可见</div>
-                <input type="text" class="app-note-input" placeholder="添加共享备注..."
+                <input type="text" class="app-note-input" placeholder="添加共享备注"
                   value="${esc(app.adminNote || '')}"
                   onblur="saveNote('${app.id}', this.value)">
               </div>
               <div>
                 <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:3px;">我的备注 · 仅自己可见</div>
-                <input type="text" class="app-note-input" id="my-note-${app.id}" placeholder="添加私人备注..."
+                <input type="text" class="app-note-input" id="my-note-${app.id}" placeholder="添加私人备注"
                   onblur="saveMyNote('${app.id}', this.value)">
               </div>
             </div>

@@ -171,6 +171,7 @@ router.post('/', requireApplicant, async (req, res) => {
     const normalizedEmail = req.applicantEmail;
     const submittedEmail = String(email || '').toLowerCase().trim();
     const normalizedPhone = String(phone).trim();
+    const normalizedWechat = String(wechat || '').trim();
     const normalizedBio = String(bio || '').trim();
     const rawPortfolioFiles = Array.isArray(portfolioFiles) ? portfolioFiles : [];
     const normalizedPortfolioFiles = rawPortfolioFiles.map(normalizeUploadedFile).filter(Boolean);
@@ -182,6 +183,9 @@ router.post('/', requireApplicant, async (req, res) => {
     }
     if (!/^1[3-9]\d{9}$/.test(normalizedPhone)) {
       return res.status(400).json({ error: 'valid phone required' });
+    }
+    if (!normalizedWechat) {
+      return res.status(400).json({ error: 'wechat required' });
     }
     if (!normalizedBio || normalizedBio.length > MAX_BIO_LENGTH) {
       return res.status(400).json({ error: 'bio required and max 200 chars' });
@@ -205,11 +209,11 @@ router.post('/', requireApplicant, async (req, res) => {
     );
     if (dupRows[0]) return res.status(409).json({ error: 'Already applied', appId: dupRows[0].id });
 
-    // 检查职位存在且仍可投递
+    // 检查项目存在且仍可投递
     const { rows: jobRows } = await pool.query('SELECT title, category, status, deadline FROM jobs WHERE id = $1', [jobId]);
     if (!jobRows[0]) return res.status(404).json({ error: 'Job not found' });
     if (jobRows[0].status !== 'open' || isPastDeadline(jobRows[0].deadline)) {
-      return res.status(400).json({ error: '该岗位已截止，暂不接受新的投递' });
+      return res.status(400).json({ error: '该项目已截止，暂不接受新的投递' });
     }
 
     const ts = now();
@@ -222,7 +226,7 @@ router.post('/', requireApplicant, async (req, res) => {
         status,status_history,admin_note,user_id,submitted_at,updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [id, jobId, jobRows[0].title, jobRows[0].category,
-       normalizedName, normalizedEmail, normalizedPhone, wechat, normalizedBio, portfolioNote, JSON.stringify(normalizedPortfolioLinks),
+       normalizedName, normalizedEmail, normalizedPhone, normalizedWechat, normalizedBio, portfolioNote, JSON.stringify(normalizedPortfolioLinks),
        normalizedPortfolioFiles[0]?.url || '', JSON.stringify(normalizedPortfolioFiles),
        'pending', history, '', null, ts, ts]
     );

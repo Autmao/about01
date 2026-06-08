@@ -728,7 +728,7 @@
 .home-search {
   border: 1px solid var(--home-line-strong);
   display: grid;
-  grid-template-columns: auto 14px minmax(0, 1fr);
+  grid-template-columns: 14px minmax(0, 1fr);
   align-items: center;
   min-height: 38px;
   padding: 0 12px;
@@ -1332,13 +1332,7 @@
   .home-filter-bar {
     grid-template-columns: 1fr;
   }
-  .home-search {
-    grid-template-columns: 14px minmax(0, 1fr);
-    padding: 11px 13px;
-  }
-  .home-search > span:first-child {
-    display: none;
-  }
+  .home-search { padding: 11px 13px; }
   .home-job-item {
     grid-template-columns: 1fr;
     gap: 10px;

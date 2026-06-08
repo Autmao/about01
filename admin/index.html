@@ -6,9 +6,9 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#B8EF72">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="about招募">
+  <meta name="apple-mobile-web-app-title" content="about recruit">
   <link rel="apple-touch-icon" href="/assets/icons/about-icon-192.png">
-  <title>岗位管理 | 管理后台</title>
+  <title>项目管理 | 管理后台</title>
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/components.css">
@@ -26,7 +26,7 @@
       <div class="admin-sidebar__user" id="sidebar-user"></div>
       <nav class="admin-nav">
         <a href="index.html" class="admin-nav-item active">
-          <span class="admin-nav-item__icon">01</span> 岗位管理
+          <span class="admin-nav-item__icon">01</span> 项目管理
         </a>
         <a href="applications.html" class="admin-nav-item">
           <span class="admin-nav-item__icon">02</span> 投递管理
@@ -50,8 +50,8 @@
     <main class="admin-main page-enter">
       <div class="admin-topbar">
         <div class="admin-page-heading">
-          <h1 class="admin-page-title">岗位管理</h1>
-          <a href="job-edit.html" class="btn btn--primary admin-page-heading__action">+ 发布新岗位</a>
+          <h1 class="admin-page-title">项目管理</h1>
+          <a href="job-edit.html" class="btn btn--primary admin-page-heading__action">+ 发布新项目</a>
         </div>
       </div>
 
@@ -59,7 +59,7 @@
         <!-- 统计卡片 -->
         <div class="stat-cards" id="stat-cards">
           <div class="stat-card">
-            <div class="stat-card__label">招募中岗位</div>
+            <div class="stat-card__label">招募中项目</div>
             <div class="stat-card__value" id="stat-open">—</div>
           </div>
           <div class="stat-card">
@@ -76,7 +76,7 @@
           </div>
         </div>
 
-        <!-- 岗位表格 -->
+        <!-- 项目表格 -->
         <div class="data-table-wrap">
           <div class="table-toolbar">
             <div class="status-tabs" id="status-tabs">
@@ -86,13 +86,13 @@
               <button class="status-tab" data-status="draft">草稿 <span class="status-tab__count" id="count-draft">0</span></button>
             </div>
             <div class="table-search">
-              <input type="search" placeholder="搜索岗位名称......" id="table-search">
+              <input type="search" placeholder="搜索项目名称......" id="table-search">
             </div>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>岗位名称</th>
+                <th>项目名称</th>
                 <th>所属</th>
                 <th>类型</th>
                 <th>负责人</th>
@@ -107,7 +107,7 @@
             <tbody id="jobs-tbody"></tbody>
           </table>
           <div class="admin-empty" id="jobs-empty" style="display:none;">
-            <div class="admin-empty__text">暂无岗位，<a href="job-edit.html" style="color:var(--color-brand);">立即发布</a></div>
+            <div class="admin-empty__text">暂无项目，<a href="job-edit.html" style="color:var(--color-brand);">立即发布</a></div>
           </div>
         </div>
       </div>

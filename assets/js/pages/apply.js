@@ -56,21 +56,21 @@ async function handleMaterialsChange(e) {
 
   const nextTotal = uploadedMaterialsSize() + files.reduce((sum, file) => sum + file.size, 0);
   if (nextTotal > MAX_TOTAL_UPLOAD_SIZE) {
-    Utils.showToast('所有上传文件合计不能超过 50MB', 'warning', 4000);
+    Utils.showToast('所有上传文件合计不能超过50MB', 'warning', 4000);
     e.target.value = '';
     return;
   }
 
-  setUploading('materials-zone', `上传中… (0/${files.length})`);
+  setUploading('materials-zone', `上传中…… (0/${files.length})`);
   for (let i = 0; i < files.length; i++) {
     const beforeUploadTotal = uploadedMaterialsSize() + files[i].size;
     if (beforeUploadTotal > MAX_TOTAL_UPLOAD_SIZE) {
-      Utils.showToast('已达到 50MB 上传上限，后续文件未上传', 'warning', 4000);
+      Utils.showToast('已达到50MB上传上限，后续文件未上传', 'warning', 4000);
       break;
     }
     const file = files[i];
     try {
-      setUploading('materials-zone', `上传中… (${i + 1}/${files.length})`);
+      setUploading('materials-zone', `上传中…… (${i + 1}/${files.length})`);
       const url = await uploadFile(file);
       uploadedMaterialFiles.push({ name: file.name, size: file.size, url });
     } catch (err) {
@@ -98,7 +98,7 @@ function renderMaterialFilePreviews() {
     </div>`).join('');
 }
 
-/* ===== 岗位摘要 ===== */
+/* ===== 项目摘要 ===== */
 function renderJobSummary(job) {
   const cat = Utils.getCategoryInfo(job.category);
   const dl = Utils.deadlineText(job.deadline);
@@ -115,7 +115,7 @@ function renderJobSummary(job) {
       </div>
     </div>`;
   const bcJob = document.getElementById('bc-job');
-  if (bcJob) { bcJob.textContent = '岗位详情'; bcJob.href = `job-detail.html?id=${job.id}`; }
+  if (bcJob) { bcJob.textContent = '项目详情'; bcJob.href = `job-detail.html?id=${job.id}`; }
 }
 
 /* ===== 链接行 ===== */
@@ -127,7 +127,7 @@ function addLinkRow(index) {
   row.innerHTML = `
     <span class="portfolio-link-index">链接 ${index}</span>
     <input type="url" class="form-input" name="link_url_${index}" placeholder="https://...">
-    <input type="text" class="form-input form-input--sm" name="link_label_${index}" placeholder="备注（如：Behance主页）">
+    <input type="text" class="form-input form-input--sm" name="link_label_${index}" placeholder="备注（如：小红书主页）">
     ${index > 1 ? `<button type="button" class="btn-remove-link" onclick="removeLinkRow(this)">×</button>` : ''}`;
   container.appendChild(row);
 }
@@ -164,9 +164,10 @@ function collectFormData() {
 
 function validateForm(data) {
   const errors = {};
-  if (!data.name) errors.name = '请填写您的姓名';
+  if (!data.name) errors.name = '请填写你的姓名';
   if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.email = '请填写有效的邮箱地址';
   if (!data.phone || !/^1[3-9]\d{9}$/.test(data.phone)) errors.phone = '请填写有效的11位手机号';
+  if (!data.wechat) errors.wechat = '请填写微信号';
   if (!data.bio) errors.bio = '请填写200字内的个人介绍';
   if (data.bio && data.bio.length > MAX_BIO_LENGTH) errors.bio = '个人介绍请控制在200字内';
   const totalSize = (data.portfolioFiles || []).reduce((sum, file) => sum + Number(file.size || 0), 0);
@@ -176,7 +177,7 @@ function validateForm(data) {
 }
 
 function clearErrors() {
-  ['name','email','phone','bio','materials'].forEach(f => {
+  ['name','email','phone','wechat','bio','materials'].forEach(f => {
     const el = document.getElementById(`err-${f}`);
     if (el) el.textContent = '';
     const input = document.getElementById(`field-${f}`);
@@ -221,7 +222,7 @@ async function handleSubmit(e) {
     btn.classList.remove('btn--loading');
     btn.innerHTML = '提交投递';
     if (err.status === 409) {
-      Utils.showToast('您已经投递过该岗位，无需重复提交', 'warning', 4000);
+      Utils.showToast('你已经投递过该岗位，无需重复提交', 'warning', 4000);
     } else if (err.status === 401) {
       window.location.href = applicantLoginUrl();
     } else {
@@ -244,7 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const job = await Store.getJobById(jobId);
   if (!job || job.status !== 'open' || Utils.isPastDeadline(job.deadline)) {
-    document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该岗位不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
+    document.querySelector('main').innerHTML = `<p style="padding:60px;text-align:center;">该项目不存在或已截止，<a href="index.html" style="color:var(--color-brand);">返回首页</a></p>`;
     return;
   }
 

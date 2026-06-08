@@ -42,7 +42,7 @@ router.post('/send-otp', async (req, res) => {
     if (e.code === 'email_not_configured' || e.code === 'email_send_failed') {
       return res.status(502).json({
         error: e.code,
-        message: '验证码邮件暂时发送失败，请稍后再试，或联系工作人员协助登录。',
+        message: '验证码邮件暂时发送失败，请稍后再试。',
       });
     }
     res.status(500).json({ error: 'Server error' });

@@ -65,7 +65,7 @@ function renderJobItem(job, index) {
       </div>
       <div>
         <h3>${esc(job.title)}</h3>
-        <p>${esc(shortDescription(job.description) || '这是一份正在招募中的创作岗位，欢迎打开详情了解项目背景与投递要求。')}</p>
+        <p>${esc(shortDescription(job.description) || '这是一份正在招募中的创作项目，欢迎打开详情了解项目背景与投递要求。')}</p>
       </div>
       <div class="home-job-meta">
         <span>${esc(cat.label)} / 招募 ${job.slots || 1} 人</span>
@@ -78,7 +78,7 @@ function renderJobItem(job, index) {
 async function renderGrid() {
   const list = document.getElementById('jobs-list');
   const empty = document.getElementById('empty-state');
-  list.innerHTML = '<div class="home-loading">正在整理当前招募中的岗位......</div>';
+  list.innerHTML = '<div class="home-loading">正在整理当前招募中的创作项目</div>';
 
   try {
     const jobs = await Store.getJobs({ status: 'all', keyword: currentKeyword });
@@ -103,7 +103,7 @@ async function renderGrid() {
   } catch {
     list.innerHTML = '';
     empty.style.display = 'block';
-    empty.querySelector('strong').textContent = '暂时无法载入招募岗位';
+    empty.querySelector('strong').textContent = '暂时无法载入创作项目';
     empty.querySelector('span').textContent = '请稍后刷新页面，或直接联系编辑部确认';
   }
 }

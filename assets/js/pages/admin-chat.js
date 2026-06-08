@@ -152,7 +152,7 @@ function applySessionMeta(session) {
   currentSession = session;
   document.getElementById('modal-job-title').textContent = '对话详情';
   const meta = [
-    session.jobTitle ? `岗位：${session.jobTitle}` : '通用咨询',
+    session.jobTitle ? `项目：${session.jobTitle}` : '通用咨询',
     session.email ? `邮箱：${session.email}` : null,
     `创建：${(session.createdAt || '').slice(0, 16).replace('T', ' ')}`,
   ].filter(Boolean).join(' · ');

@@ -19,9 +19,9 @@ function jobEditorialLabel(category) {
     event_planner: 'EVENT',
     interview: 'INTERVIEW',
     x: 'X',
-    other: 'OPEN CALL',
+    other: 'PROJECT',
   };
-  return labels[category] || 'OPEN CALL';
+  return labels[category] || 'PROJECT';
 }
 
 function safeCssColor(value, fallback) {
@@ -64,7 +64,7 @@ function renderDetail(job) {
   const applyText = '立即投递';
 
   document.title = `${job.title} | about编辑部`;
-  document.getElementById('bc-title').textContent = '岗位详情';
+  document.getElementById('bc-title').textContent = '项目详情';
 
   const descriptionList = renderOrderedList(splitLines(job.description));
   const reqs = renderOrderedList(job.requirements || []);
@@ -72,14 +72,14 @@ function renderDetail(job) {
 
   document.getElementById('detail-layout').innerHTML = `
     <div class="detail-main">
-      <div class="detail-hashtags" aria-label="岗位标签">
+      <div class="detail-hashtags" aria-label="项目标签">
         <span>#${esc(statusInfo.label)}</span>
         <span>#${esc(job.department || 'about编辑部')}</span>
         <span>#${esc(cat.label)}</span>
       </div>
       <h1 class="detail-title">${esc(job.title)}</h1>
       ${descriptionList ? `<div class="detail-section">
-        <p class="detail-section-title">岗位描述</p>
+        <p class="detail-section-title">项目描述</p>
         ${descriptionList}
       </div>` : ''}
       ${reqs ? `<div class="detail-section">
@@ -103,7 +103,7 @@ function renderDetail(job) {
           <span class="sidebar-value">${Utils.feeTypeLabel(job.feeType)}</span>
         </div>
         <div class="sidebar-row">
-          <span class="sidebar-label">招募人数</span>
+          <span class="sidebar-label">招募数量</span>
           <span class="sidebar-value">${job.slots || 1} 人</span>
         </div>
         <div class="sidebar-row">
@@ -118,7 +118,7 @@ function renderDetail(job) {
         ? `<button class="btn btn--ghost btn--lg" disabled style="cursor:not-allowed;">招募已截止</button>`
         : `<a href="${applyEntryUrl}" class="btn btn--primary btn--lg">${applyText}</a>`}
       <div class="detail-share">
-        <button class="btn btn--ghost btn--lg detail-share-btn" id="detail-share-btn" onclick="toggleShareMenu(event)" aria-haspopup="true" aria-expanded="false">分享岗位</button>
+        <button class="btn btn--ghost btn--lg detail-share-btn" id="detail-share-btn" onclick="toggleShareMenu(event)" aria-haspopup="true" aria-expanded="false">分享项目</button>
         <div class="detail-share-menu" id="detail-share-menu" hidden>
           <button type="button" onclick="copyLink()">复制链接</button>
           <button type="button" onclick="openPoster()">生成海报</button>
@@ -212,7 +212,7 @@ window.closePoster = closePoster;
 function downloadPoster() {
   const canvas = document.getElementById('poster-canvas');
   const a = document.createElement('a');
-  a.download = `about编辑部-${(_currentJob?.title || '岗位').slice(0, 12)}.png`;
+  a.download = `about编辑部-${(_currentJob?.title || '项目').slice(0, 12)}.png`;
   a.href = canvas.toDataURL('image/png');
   a.click();
 }
@@ -359,7 +359,7 @@ async function drawPoster(job) {
   ctx.font = '600 18px "SF Pro Display", "PingFang SC", sans-serif';
   ctx.fillStyle = 'rgba(251,248,241,0.64)';
   ctx.textAlign = 'right';
-  ctx.fillText('OPEN CALL 2026', W - 64, 58);
+  ctx.fillText('about recruit', W - 64, 58);
 
   ctx.strokeStyle = '#111111';
   ctx.lineWidth = 2;
@@ -371,7 +371,7 @@ async function drawPoster(job) {
   ctx.fillStyle = '#111111';
   ctx.textAlign = 'left';
   ctx.font = posterFont(22, 700, '"SF Pro Display", "PingFang SC", sans-serif');
-  ctx.fillText('POSITION', contentX, 188);
+  ctx.fillText('项目', contentX, 188);
   ctx.font = posterFont(22, 500);
   ctx.fillStyle = '#6f6a60';
   drawFittedLine(ctx, `${job.department || 'about编辑部'} / ${cat.label}`, contentX, 224, contentW);
@@ -400,7 +400,7 @@ async function drawPoster(job) {
   const metaY = dividerY + 58;
   const meta = [
     ['截止日期', dl.text],
-    ['招募人数', `${job.slots || 1} 人`],
+    ['招募数量', `${job.slots || 1} 人`],
     ['稿费', fee],
     ['结算方式', Utils.feeTypeLabel(job.feeType)],
   ];
@@ -419,7 +419,7 @@ async function drawPoster(job) {
 
   const descY = Math.min(metaY + 204, 848);
   ctx.fillStyle = '#3f3b34';
-  const desc = fitWrappedText(ctx, job.description || '打开岗位详情，查看项目背景、具体要求与投递方式。', contentW, {
+  const desc = fitWrappedText(ctx, job.description || '打开项目详情，查看项目背景、具体要求与投递方式。', contentW, {
     maxLines: 3,
     maxHeight: 118,
     minSize: 22,
@@ -434,7 +434,7 @@ async function drawPoster(job) {
   ctx.fillRect(64, H - 160, W - 128, 68);
   ctx.fillStyle = '#fbf8f1';
   ctx.font = posterFont(24, 700);
-  ctx.fillText('扫码查看岗位详情', contentX, H - 118);
+  ctx.fillText('扫码查看创作项目详情', contentX, H - 118);
 
   try {
     const qrSrc = await generateQRDataURL(url);
@@ -448,11 +448,11 @@ async function drawPoster(job) {
   ctx.fillStyle = '#b84a36';
   ctx.font = posterFont(22, 700, '"SF Pro Display", "PingFang SC", sans-serif');
   ctx.textAlign = 'left';
-  ctx.fillText('CREATIVE PARTNER RECRUITMENT', contentX, H - 204);
+  ctx.fillText('about recruit', contentX, H - 204);
   ctx.fillStyle = 'rgba(17,17,17,0.48)';
   ctx.font = posterFont(18, 400, '"SF Pro Display", "PingFang SC", sans-serif');
   ctx.textAlign = 'left';
-  ctx.fillText('about editor desk open call', contentX, H - 60);
+  ctx.fillText('about编辑部', contentX, H - 60);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const job = await Store.getJobById(jobId);
   if (!job) {
-    document.getElementById('detail-layout').innerHTML = `<div style="padding:60px 0;text-align:center;color:var(--color-text-muted);">岗位不存在，<a href="index.html" style="color:var(--color-brand);">返回首页</a></div>`;
+    document.getElementById('detail-layout').innerHTML = `<div style="padding:60px 0;text-align:center;color:var(--color-text-muted);">项目不存在，<a href="index.html" style="color:var(--color-brand);">返回首页</a></div>`;
     return;
   }
 

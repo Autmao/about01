@@ -57,10 +57,10 @@ function collectData(status = 'open') {
 
 function validate(data) {
   const errors = {};
-  if (!data.title) errors.title = '请填写岗位名称';
-  if (!data.department) errors.department = '请选择岗位所属';
-  if (!data.category) errors.category = '请选择岗位类型';
-  if (!data.description) errors.desc = '请填写岗位描述';
+  if (!data.title) errors.title = '请填写项目名称';
+  if (!data.department) errors.department = '请选择项目所属';
+  if (!data.category) errors.category = '请选择项目类型';
+  if (!data.description) errors.desc = '请填写项目描述';
   if (!data.deadline) errors.deadline = '请选择截止日期';
   if (data.status === 'open' && Utils.isPastDeadline(data.deadline)) {
     errors.deadline = '截止日期已过，请调整日期后再开启招募';
@@ -105,7 +105,7 @@ function fillForm(job) {
   const statusRadio = document.querySelector(`input[name=status][value="${job.status}"]`);
   if (statusRadio) statusRadio.checked = true;
 
-  document.getElementById('page-title').textContent = '编辑岗位';
+  document.getElementById('page-title').textContent = '编辑项目';
   document.getElementById('submit-btn').textContent = '保存修改';
 }
 
@@ -145,10 +145,10 @@ async function handleSubmit(e) {
   try {
     if (editId) {
       await Store.updateJob(editId, data);
-      Utils.showToast('岗位已更新', 'success');
+      Utils.showToast('项目已更新', 'success');
     } else {
       await Store.createJob(data);
-      Utils.showToast('岗位已发布', 'success');
+      Utils.showToast('项目已发布', 'success');
     }
     await Utils.sleep(800);
     window.location.href = 'index.html';

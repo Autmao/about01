@@ -122,7 +122,7 @@ module.exports = app;
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`\n  about编辑部 Open Call 招募平台`);
+    console.log(`\n  about编辑部创作招募平台`);
     console.log(`  前台: http://localhost:${PORT}`);
     console.log(`  后台: http://localhost:${PORT}/admin/`);
     console.log(`  Health: http://localhost:${PORT}/health\n`);

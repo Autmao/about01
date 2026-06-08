@@ -6,9 +6,9 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#B8EF72">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="about招募">
+  <meta name="apple-mobile-web-app-title" content="about recruit">
   <link rel="apple-touch-icon" href="/assets/icons/about-icon-192.png">
-  <title>登录 | about编辑部 Open Call</title>
+  <title>about recruit</title>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/components.css">
@@ -334,7 +334,7 @@
 
   <main class="login-shell">
     <section class="login-intro">
-      <div class="login-kicker">Open Call Login</div>
+      <div class="login-kicker">about recruit</div>
       <h1 id="login-title"><span>选择你的</span><span>登录入口。</span></h1>
       <p id="login-desc"></p>
     </section>
@@ -352,14 +352,14 @@
         <span class="login-choice-card__label">Creative Partner</span>
         <span>
           <strong>我是创作伙伴</strong>
-          <small>想要投递岗位、查询进度。</small>
+          <small>想要投递创作项目、查询进度。</small>
         </span>
       </a>
       <a class="login-choice-card" href="login.html?role=staff" data-role-option="staff">
         <span class="login-choice-card__label">Staff</span>
         <span>
           <strong>我是工作人员</strong>
-          <small>进入Open Call工作台。</small>
+          <small>进入创作项目招募工作台。</small>
         </span>
       </a>
     </section>
@@ -368,7 +368,7 @@
       <div class="login-panel" id="applicant-panel">
         <div class="login-panel__label">Creative Partner</div>
         <h2>创作伙伴</h2>
-        <p>首次使用的创作伙伴可直接输入邮箱获取验证码，验证后将自动创建账号。投递岗位时也会默认使用此邮箱接收状态通知。</p>
+        <p>首次使用的创作伙伴可直接输入邮箱获取验证码，验证后将自动创建账号。投递项目时也会默认使用此邮箱接收状态通知。</p>
         <form id="applicant-form" novalidate>
           <div class="form-field">
             <label class="form-label">邮箱</label>
@@ -391,7 +391,7 @@
       <div class="login-panel" id="staff-panel">
         <div class="login-panel__label">Staff</div>
         <h2>工作人员</h2>
-        <p>使用工作台账号登录，管理岗位、投递、咨询记录与协作账号。</p>
+        <p>使用工作台账号登录，管理项目、投递、咨询记录与协作账号。</p>
         <form id="staff-form" novalidate>
           <div class="form-field">
             <label class="form-label">登录账号</label>
@@ -509,10 +509,10 @@
       });
       if (selectedRole === 'applicant') {
         titleEl.innerHTML = '<span>创作伙伴</span><span>登录。</span>';
-        descEl.textContent = '想要投递岗位、查询进度。';
+        descEl.textContent = '想要投递创作项目、查询进度。';
       } else if (selectedRole === 'staff') {
         titleEl.innerHTML = '<span>工作人员</span><span>登录。</span>';
-        descEl.textContent = '进入Open Call工作台。';
+        descEl.textContent = '进入创作项目招募工作台。';
       }
       window.scrollTo(0, 0);
       requestAnimationFrame(() => window.scrollTo(0, 0));

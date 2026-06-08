@@ -6,7 +6,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#B8EF72">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="about招募">
+  <meta name="apple-mobile-web-app-title" content="about recruit">
   <link rel="apple-touch-icon" href="/assets/icons/about-icon-192.png">
   <title>投递申请 | about编辑部</title>
   <link rel="stylesheet" href="assets/css/base.css">
@@ -24,7 +24,7 @@
   <main class="container apply-shell">
 
     <nav class="breadcrumb">
-      <a href="#" id="bc-job" onclick="history.back();return false;">岗位详情</a>
+      <a href="#" id="bc-job" onclick="history.back();return false;">项目详情</a>
       <span class="breadcrumb__sep">/</span>
       <span class="breadcrumb__current">投递申请</span>
     </nav>
@@ -56,8 +56,9 @@
             <span class="form-error" id="err-phone"></span>
           </div>
           <div class="form-field">
-            <label class="form-label">微信号 <span class="form-optional">选填</span></label>
+            <label class="form-label">微信号 <span class="form-required">*</span></label>
             <input type="text" class="form-input" id="field-wechat" name="wechat" placeholder="方便快速沟通">
+            <span class="form-error" id="err-wechat"></span>
           </div>
         </div>
       </div>
@@ -83,7 +84,7 @@
             <input type="file" id="materials-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp" style="display:none" multiple>
             <div class="upload-zone__inner" onclick="document.getElementById('materials-input').click()">
               <span class="upload-zone__text">点击上传文件</span>
-              <span class="upload-zone__hint">可上传多个文件，所有文件合计不超过 50MB</span>
+              <span class="upload-zone__hint">可上传多个文件，所有文件合计不超过50MB</span>
             </div>
             <div id="materials-files-preview"></div>
           </div>
@@ -97,12 +98,12 @@
           <label class="form-label">作品集链接 <span class="form-optional">选填，最多3个</span></label>
           <div id="portfolio-links-container"></div>
           <button type="button" class="btn btn--ghost btn--sm" id="add-link-btn" style="margin-top: var(--space-2);">+ 添加链接</button>
-          <span class="form-hint">可以是 Behance、网盘分享、个人网站、公众号等任何链接</span>
+          <span class="form-hint">可以是个人网站、网盘分享、公众号等任何链接</span>
         </div>
       </div>
 
       <div style="font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-6); line-height: var(--leading-loose);">
-        提交即代表您同意我们将您的信息用于本次合作筛选，上述所有信息我们不会向第三方披露。
+        提交即代表你同意我们将你的信息用于本次合作筛选，上述所有信息我们不会向第三方披露。
       </div>
 
       <div class="form-actions" style="border-top:none; padding-top:0;">
@@ -115,10 +116,10 @@
     <div class="success-state" id="success-state">
       <span class="success-icon">🎉</span>
       <h2 class="success-title">投递成功！</h2>
-      <p class="success-desc">我们已收到您的申请，通常在 3 个工作日内回复。</p>
+      <p class="success-desc">我们已收到你的申请，通常在 3 个工作日内回复。</p>
       <p class="success-desc">后续可用邮箱查询状态；重要结果也会发送至：<strong id="success-email"></strong></p>
       <div class="success-id" id="success-id"></div>
-      <a href="index.html" class="btn btn--primary">返回首页，查看其他岗位</a>
+      <a href="index.html" class="btn btn--primary">返回首页，查看其他创作项目</a>
     </div>
 
   </main>

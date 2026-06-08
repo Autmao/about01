@@ -55,7 +55,7 @@ const Utils = {
     return { text: dateString, cls: 'deadline--normal' };
   },
 
-  /* 岗位类型映射 */
+  /* 项目类型映射 */
   categoryMap: {
     writing:       { label: '撰稿人',     icon: 'W', color: '#D0DDE8' },
     editing:       { label: '编辑',       icon: 'E', color: '#D8D0E8' },
@@ -112,14 +112,14 @@ const Utils = {
     pending:  { label: '待处理', cls: 'tag--pending' },
     read:     { label: '已读',   cls: 'tag--read' },
     hired:    { label: '已录用', cls: 'tag--hired' },
-    rejected: { label: '已婉拒', cls: 'tag--rejected' },
+    rejected: { label: '未通过', cls: 'tag--rejected' },
   },
 
   getStatusInfo(status) {
     return this.statusMap[status] || { label: status, cls: '' };
   },
 
-  /* 岗位状态映射 */
+  /* 项目状态映射 */
   jobStatusMap: {
     open:   { label: '招募中', cls: 'tag--open' },
     closed: { label: '已截止', cls: 'tag--closed' },

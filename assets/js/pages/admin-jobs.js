@@ -112,7 +112,7 @@ async function toggleStatus(jobId, newStatus) {
   try {
     await Store.updateJob(jobId, { status: newStatus });
     await Promise.all([renderStats(), renderJobsTable()]);
-    Utils.showToast(`岗位已${newStatus === 'open' ? '开启招募' : '关闭招募'}`, 'success');
+    Utils.showToast(`项目已${newStatus === 'open' ? '开启招募' : '关闭招募'}`, 'success');
   } catch (e) {
     Utils.showToast(e.message || '操作失败，请稍后重试', 'error');
   }
@@ -124,7 +124,7 @@ async function deleteJob(jobId) {
   Utils.showConfirm(`确定删除「${job?.title}」？此操作不可恢复。`, async () => {
     await Store.deleteJob(jobId);
     await Promise.all([renderStats(), renderJobsTable()]);
-    Utils.showToast('岗位已删除', 'success');
+    Utils.showToast('项目已删除', 'success');
   });
 }
 window.deleteJob = deleteJob;

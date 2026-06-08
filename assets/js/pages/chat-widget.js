@@ -18,7 +18,7 @@
   const pendingEchoes = [];
   const POLL_INTERVAL_MS = 2500;
   const AI_RETURN_NOTICE_LEGACY = '人工暂时搬砖中，AI助手继续服务。';
-  const AI_RETURN_NOTICE = '人工暂时搬砖中，招募助手继续服务。';
+  const AI_RETURN_NOTICE = '人工暂时搬砖中，招募助手继续服务';
   let aiLimit = 3;
   let aiUserCount = 0;
 
@@ -34,7 +34,7 @@
   /* ── 注入 HTML ── */
   const container = document.createElement('div');
   container.innerHTML = `
-    <button class="chat-fab" id="chat-fab" aria-label="岗位咨询" onclick="window.__openChatWidget()">
+    <button class="chat-fab" id="chat-fab" aria-label="项目咨询" onclick="window.__openChatWidget()">
       <span class="chat-fab__mark" aria-hidden="true"></span>
       <span class="chat-fab__badge" id="chat-fab-badge"></span>
     </button>
@@ -42,14 +42,14 @@
       <div class="chat-header">
         <div>
           <div class="chat-header__title">about编辑部招募助手</div>
-          <div class="chat-header__sub" id="chat-header-sub">如有岗位相关疑问，欢迎咨询</div>
+          <div class="chat-header__sub" id="chat-header-sub">如有项目相关疑问，欢迎咨询</div>
         </div>
         <button class="chat-header__close" onclick="window.__closeChatWidget()">×</button>
       </div>
       <label class="chat-topic">
-        <span>咨询岗位</span>
+        <span>咨询项目</span>
         <select class="chat-topic__select" id="chat-job-select">
-          <option value="">不指定岗位</option>
+          <option value="">不指定项目</option>
         </select>
       </label>
       <div class="chat-usage" id="chat-usage">
@@ -153,9 +153,7 @@
         data.messages.forEach(m => renderStoredMessage(m));
       } else {
         // 欢迎语
-        const welcome = selectedJobId
-          ? '你好，我是 about编辑部招募助手。\n\n本轮最多回复 3 条，请尽量把岗位职责、要求、投递方式等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。'
-          : '你好，我是 about编辑部招募助手。\n\n本轮最多回复 3 条，请尽量把岗位、投递流程、作品准备等问题一次说清楚。\n\n我会优先根据公开招募信息帮你收束答案。';
+        const welcome = '你好，我是about编辑部招募助手。\n\n本轮最多回复 3 条，请尽量把项目细节问题一次说清楚。\n\n我会优先根据公开招募信息帮你整理答案。';
         renderMessage('assistant', welcome);
       }
       scrollToBottom();
@@ -173,7 +171,7 @@
     if (currentStatus === 'bot' && aiUserCount >= aiLimit && !shouldSubmitAfterLimit(content)) {
       inputEl.value = '';
       inputEl.style.height = 'auto';
-      renderNotice('本轮咨询的 3 条额度已经用完。建议你根据上面的回复核对岗位要求、整理投递材料。');
+      renderNotice('本轮咨询的 3 条额度已经用完。建议你根据上面的回复核对项目要求、整理投递材料。');
       scrollToBottom();
       inputEl.focus();
       return;
@@ -334,7 +332,7 @@
 
   function formatChatText(role, content) {
     let text = String(content || '').replace(/\r\n/g, '\n').trim();
-    if (role === 'assistant' && (text === AI_RETURN_NOTICE || text === AI_RETURN_NOTICE_LEGACY)) return '招募助手继续服务。';
+    if (role === 'assistant' && (text === AI_RETURN_NOTICE || text === `${AI_RETURN_NOTICE}。` || text === AI_RETURN_NOTICE_LEGACY)) return '招募助手继续服务';
     if (role !== 'assistant') return text;
     text = text
       .replace(/\*\*/g, '')
@@ -356,16 +354,16 @@
       const jobs = await res.json();
       const hasInitial = jobs.some(job => job.id === initialJobId);
       jobSelectEl.innerHTML = `
-        <option value="">不指定岗位</option>
-        ${!hasInitial && initialJobId ? `<option value="${escapeHtml(initialJobId)}">当前岗位</option>` : ''}
+        <option value="">不指定项目</option>
+        ${!hasInitial && initialJobId ? `<option value="${escapeHtml(initialJobId)}">当前项目</option>` : ''}
         ${(jobs || []).map(job => `<option value="${escapeHtml(job.id)}">${escapeHtml(job.title)}</option>`).join('')}
       `;
       jobSelectEl.value = selectedJobId || '';
       updateHeader('bot');
     } catch {
       jobSelectEl.innerHTML = `
-        <option value="">不指定岗位</option>
-        ${initialJobId ? `<option value="${escapeHtml(initialJobId)}">当前岗位</option>` : ''}
+        <option value="">不指定项目</option>
+        ${initialJobId ? `<option value="${escapeHtml(initialJobId)}">当前项目</option>` : ''}
       `;
       jobSelectEl.value = selectedJobId || '';
     }
